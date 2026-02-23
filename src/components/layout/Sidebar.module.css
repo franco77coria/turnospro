@@ -1,0 +1,159 @@
+.sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--sidebar-width);
+    background: var(--bg-primary);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 50;
+    overflow-y: auto;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.logoIcon {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+}
+
+.logoText {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.logoName {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.logoRole {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+.nav {
+    flex: 1;
+    padding: var(--space-3) var(--space-2);
+}
+
+.navGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition);
+}
+
+.navItem:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.navItem.active {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.navIcon {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.bottom {
+    padding: var(--space-3) var(--space-2) var(--space-4);
+    border-top: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.userCard {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin-top: var(--space-2);
+    border-radius: var(--radius-md);
+    background: var(--bg-secondary);
+}
+
+.userInfo {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.userName {
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.userEmail {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.logoutBtn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.logoutBtn:hover {
+    background: var(--bg-primary);
+    color: var(--danger);
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+}

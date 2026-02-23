@@ -1,0 +1,79 @@
+.team {
+    max-width: 1200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.memberGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+}
+
+.memberCard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.memberTop {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.memberAvatar {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.memberInfo {
+    flex: 1;
+}
+
+.memberInfo h3 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+}
+
+.memberDetail {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.memberActions {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: auto;
+}
+
+.statusToggle {
+    padding: 0;
+}
+
+.emptyCard {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+    .memberGrid {
+        grid-template-columns: 1fr;
+    }
+}

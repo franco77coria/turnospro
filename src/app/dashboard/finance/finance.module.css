@@ -1,0 +1,128 @@
+.finance {
+    max-width: 1200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.headerActions {
+    display: flex;
+    gap: var(--space-3);
+}
+
+.dateInput {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    background: var(--bg-primary);
+    margin-top: var(--space-2);
+}
+
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+}
+
+.breakdownCard {
+    margin-bottom: var(--space-5);
+}
+
+.breakdownCard h3 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+}
+
+.breakdownList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.breakdownItem {
+    display: grid;
+    grid-template-columns: 1fr auto 100px;
+    gap: var(--space-3);
+    align-items: center;
+    font-size: var(--font-size-sm);
+}
+
+.breakdownAmount {
+    font-weight: 600;
+}
+
+.breakdownBar {
+    height: 6px;
+    background: var(--bg-tertiary);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.breakdownBar div {
+    height: 100%;
+    background: var(--accent);
+    border-radius: var(--radius-full);
+    transition: width var(--transition-slow);
+}
+
+.tableHeader {
+    padding: var(--space-4) var(--space-4) 0;
+}
+
+.closureSummary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.closureRow {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--font-size-sm);
+    padding: var(--space-2) 0;
+}
+
+.closureTotal {
+    border-top: 1px solid var(--border);
+    font-weight: 700;
+    font-size: var(--font-size-md);
+    padding-top: var(--space-3);
+    margin-top: var(--space-2);
+}
+
+@media (max-width: 768px) {
+    .statsGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .headerActions {
+        width: 100%;
+    }
+
+    .headerActions .btn {
+        flex: 1;
+    }
+
+    .breakdownItem {
+        grid-template-columns: 1fr auto;
+    }
+
+    .breakdownBar {
+        display: none;
+    }
+}

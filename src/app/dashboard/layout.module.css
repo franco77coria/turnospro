@@ -1,0 +1,27 @@
+.dashboardLayout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.mainContent {
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: var(--space-6) var(--space-8);
+    padding-bottom: var(--space-16);
+    min-height: 100vh;
+}
+
+.loadingScreen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+}
+
+@media (max-width: 768px) {
+    .mainContent {
+        margin-left: 0;
+        padding: var(--space-4);
+        padding-bottom: calc(var(--mobile-nav-height) + var(--space-8));
+    }
+}

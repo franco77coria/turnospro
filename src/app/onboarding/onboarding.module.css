@@ -1,0 +1,119 @@
+.onboarding {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    padding: var(--space-4);
+}
+
+.card {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    max-width: 560px;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+}
+
+.header {
+    text-align: center;
+    margin-bottom: var(--space-8);
+}
+
+.logoMark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: white;
+    font-weight: 800;
+    margin-bottom: var(--space-4);
+}
+
+.header h1 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.header p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.typeGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.typeCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-primary);
+}
+
+.typeCard:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.typeCard.typeSelected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.typeIcon {
+    font-size: 28px;
+}
+
+.typeName {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.selectedType {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: var(--accent-light);
+    border-radius: var(--radius-md);
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
+.changeBtn {
+    margin-left: auto;
+    color: var(--accent);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+}
+
+@media (max-width: 480px) {
+    .typeGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .card {
+        padding: var(--space-5);
+    }
+}

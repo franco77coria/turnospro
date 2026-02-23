@@ -1,0 +1,253 @@
+'use client'
+import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
+import { useState, useEffect } from 'react'
+import { APPOINTMENT_STATUS } from '@/lib/data'
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
+import styles from './calendar.module.css'
+
+const HOURS = Array.from({ length: 14 }, (_, i) => `${(i + 7).toString().padStart(2, '0')}:00`)
+const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+function getWeekDates(date) {
+    const d = new Date(date)
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
+    const monday = new Date(d.setDate(diff))
+    return Array.from({ length: 7 }, (_, i) => {
+        const dt = new Date(monday)
+        dt.setDate(monday.getDate() + i)
+        return dt
+    })
+}
+
+function formatDate(d) {
+    return d.toISOString().split('T')[0]
+}
+
+export default function CalendarPage() {
+    const { business } = useAuth()
+    const [currentDate, setCurrentDate] = useState(new Date())
+    const [appointments, setAppointments] = useState([])
+    const [showNewModal, setShowNewModal] = useState(false)
+    const [newApt, setNewApt] = useState({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
+    const [teamMembers, setTeamMembers] = useState([])
+
+    const weekDates = getWeekDates(currentDate)
+    const today = formatDate(new Date())
+
+    useEffect(() => {
+        if (!business?.id) return
+        loadAppointments()
+        loadTeam()
+    }, [business?.id, currentDate])
+
+    async function loadAppointments() {
+        if (!supabase) return
+        const start = formatDate(weekDates[0])
+        const end = formatDate(weekDates[6])
+        const { data } = await supabase
+            .from('appointments')
+            .select('*, clients(name), team_members(name)')
+            .eq('business_id', business.id)
+            .gte('date', start)
+            .lte('date', end)
+            .order('time')
+        setAppointments(data || [])
+    }
+
+    async function loadTeam() {
+        if (!supabase) return
+        const { data } = await supabase
+            .from('team_members')
+            .select('*')
+            .eq('business_id', business.id)
+            .eq('active', true)
+        setTeamMembers(data || [])
+    }
+
+    async function handleCreateAppointment(e) {
+        e.preventDefault()
+        if (!supabase) return
+        try {
+            let clientId = null
+            if (newApt.client_name) {
+                const { data: existingClient } = await supabase
+                    .from('clients')
+                    .select('id')
+                    .eq('business_id', business.id)
+                    .eq('name', newApt.client_name)
+                    .single()
+
+                if (existingClient) {
+                    clientId = existingClient.id
+                } else {
+                    const { data: newClient } = await supabase
+                        .from('clients')
+                        .insert([{ business_id: business.id, name: newApt.client_name }])
+                        .select()
+                        .single()
+                    clientId = newClient?.id
+                }
+            }
+
+            await supabase.from('appointments').insert([{
+                business_id: business.id,
+                client_id: clientId,
+                service_name: newApt.service_name,
+                date: newApt.date,
+                time: newApt.time,
+                duration: newApt.duration,
+                status: 'confirmed',
+                team_member_id: newApt.team_member_id || null,
+            }])
+
+            setShowNewModal(false)
+            setNewApt({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
+            loadAppointments()
+        } catch (err) {
+            console.error('Error creating appointment:', err)
+        }
+    }
+
+    function navigate(dir) {
+        const d = new Date(currentDate)
+        d.setDate(d.getDate() + (dir * 7))
+        setCurrentDate(d)
+    }
+
+    const getAppointmentsForSlot = (date, hour) => {
+        const dateStr = formatDate(date)
+        return appointments.filter(a => a.date === dateStr && a.time?.startsWith(hour.split(':')[0]))
+    }
+
+    const statusColor = (status) => {
+        const colors = { pending: '#F59E0B', confirmed: '#6366F1', completed: '#22C55E', cancelled: '#EF4444' }
+        return colors[status] || '#9CA3AF'
+    }
+
+    return (
+        <div className={styles.calendar}>
+            <div className={styles.header}>
+                <div className={styles.headerLeft}>
+                    <h1>Calendario</h1>
+                    <div className={styles.navBtns}>
+                        <button className="btn btn-secondary btn-sm" onClick={() => navigate(-1)}><ChevronLeft size={16} /></button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setCurrentDate(new Date())}>Hoy</button>
+                        <button className="btn btn-secondary btn-sm" onClick={() => navigate(1)}><ChevronRight size={16} /></button>
+                    </div>
+                    <span className={styles.currentMonth}>
+                        {currentDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
+                    </span>
+                </div>
+                <button className="btn btn-primary" onClick={() => {
+                    setNewApt(prev => ({ ...prev, date: today }))
+                    setShowNewModal(true)
+                }}>
+                    <Plus size={16} /> Nuevo turno
+                </button>
+            </div>
+
+            <div className={styles.calendarGrid}>
+                <div className={styles.gridHeader}>
+                    <div className={styles.timeCol}></div>
+                    {weekDates.map((date, i) => (
+                        <div key={i} className={`${styles.dayCol} ${formatDate(date) === today ? styles.today : ''}`}>
+                            <span className={styles.dayName}>{DAYS[date.getDay()]}</span>
+                            <span className={styles.dayNum}>{date.getDate()}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <div className={styles.gridBody}>
+                    {HOURS.map(hour => (
+                        <div key={hour} className={styles.timeRow}>
+                            <div className={styles.timeLabel}>{hour}</div>
+                            {weekDates.map((date, i) => {
+                                const slotApts = getAppointmentsForSlot(date, hour)
+                                return (
+                                    <div key={i} className={styles.cell} onClick={() => {
+                                        setNewApt(prev => ({ ...prev, date: formatDate(date), time: hour }))
+                                        setShowNewModal(true)
+                                    }}>
+                                        {slotApts.map(apt => (
+                                            <div
+                                                key={apt.id}
+                                                className={styles.aptBlock}
+                                                style={{ borderLeftColor: statusColor(apt.status) }}
+                                            >
+                                                <span className={styles.aptBlockName}>{apt.clients?.name || apt.service_name}</span>
+                                                <span className={styles.aptBlockService}>{apt.time?.slice(0, 5)}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    ))}
+                </div>
+            </div>
+
+            {showNewModal && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowNewModal(false)}>
+                    <div className="modal">
+                        <div className="modal-header">
+                            <h3>Nuevo turno</h3>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setShowNewModal(false)}><X size={16} /></button>
+                        </div>
+                        <form onSubmit={handleCreateAppointment}>
+                            <div className="modal-body">
+                                <div className="form-group">
+                                    <label className="label">Cliente</label>
+                                    <input className="input" placeholder="Nombre del cliente" value={newApt.client_name}
+                                        onChange={e => setNewApt(prev => ({ ...prev, client_name: e.target.value }))} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Servicio</label>
+                                    <select className="input select" value={newApt.service_name}
+                                        onChange={e => {
+                                            const svc = business?.services?.find(s => s.name === e.target.value)
+                                            setNewApt(prev => ({ ...prev, service_name: e.target.value, duration: svc?.duration || 30 }))
+                                        }} required>
+                                        <option value="">Seleccionar...</option>
+                                        {(business?.services || []).map((s, i) => (
+                                            <option key={i} value={s.name}>{s.name} — ${s.price?.toLocaleString()}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                    <div className="form-group">
+                                        <label className="label">Fecha</label>
+                                        <input className="input" type="date" value={newApt.date}
+                                            onChange={e => setNewApt(prev => ({ ...prev, date: e.target.value }))} required />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">Hora</label>
+                                        <input className="input" type="time" value={newApt.time}
+                                            onChange={e => setNewApt(prev => ({ ...prev, time: e.target.value }))} required />
+                                    </div>
+                                </div>
+                                {teamMembers.length > 0 && (
+                                    <div className="form-group">
+                                        <label className="label">Profesional</label>
+                                        <select className="input select" value={newApt.team_member_id || ''}
+                                            onChange={e => setNewApt(prev => ({ ...prev, team_member_id: e.target.value }))}>
+                                            <option value="">Cualquiera</option>
+                                            {teamMembers.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowNewModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary">Crear turno</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+        </div>
+    )
+}

@@ -1,0 +1,179 @@
+.calendar {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-5);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.navBtns {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.currentMonth {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-transform: capitalize;
+}
+
+.calendarGrid {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    min-width: 700px;
+}
+
+.gridHeader {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    border-bottom: 1px solid var(--border);
+}
+
+.timeCol {
+    padding: var(--space-3);
+    border-right: 1px solid var(--border-light);
+}
+
+.dayCol {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-3);
+    gap: 2px;
+    border-right: 1px solid var(--border-light);
+}
+
+.dayCol:last-child {
+    border-right: none;
+}
+
+.dayCol.today {
+    background: var(--accent-light);
+}
+
+.dayName {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.dayNum {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+}
+
+.today .dayNum {
+    color: var(--accent);
+}
+
+.gridBody {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+}
+
+.timeRow {
+    display: grid;
+    grid-template-columns: 60px repeat(7, 1fr);
+    min-height: 60px;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.timeLabel {
+    padding: var(--space-2);
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    text-align: right;
+    padding-right: var(--space-3);
+    border-right: 1px solid var(--border-light);
+}
+
+.cell {
+    border-right: 1px solid var(--border-light);
+    padding: 2px;
+    cursor: pointer;
+    min-height: 60px;
+    transition: background var(--transition);
+}
+
+.cell:last-child {
+    border-right: none;
+}
+
+.cell:hover {
+    background: var(--bg-hover);
+}
+
+.aptBlock {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 3px 6px;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+
+.aptBlockName {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.aptBlockService {
+    font-size: 10px;
+    color: var(--text-secondary);
+}
+
+@media (max-width: 768px) {
+    .header h1 {
+        font-size: var(--font-size-lg);
+    }
+
+    .calendarGrid {
+        min-width: 100%;
+    }
+
+    .gridHeader {
+        grid-template-columns: 40px repeat(7, 1fr);
+    }
+
+    .timeRow {
+        grid-template-columns: 40px repeat(7, 1fr);
+        min-height: 48px;
+    }
+
+    .timeLabel {
+        font-size: 10px;
+        padding: 2px;
+    }
+
+    .dayName {
+        font-size: 10px;
+    }
+
+    .dayNum {
+        font-size: var(--font-size-sm);
+    }
+}
