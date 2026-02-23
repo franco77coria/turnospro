@@ -19,19 +19,62 @@ export function AuthProvider({ children }) {
                 .eq('id', userId)
                 .single()
 
-            setProfile(profileData)
+            if (profileData) {
+                setProfile(profileData)
 
-            if (profileData?.business_id) {
-                const { data: businessData } = await supabase
-                    .from('businesses')
-                    .select('*')
-                    .eq('id', profileData.business_id)
-                    .single()
+                if (profileData.business_id) {
+                    const { data: businessData } = await supabase
+                        .from('businesses')
+                        .select('*')
+                        .eq('id', profileData.business_id)
+                        .single()
 
-                setBusiness(businessData)
+                    setBusiness(businessData)
+                }
+            } else {
+                // Profile doesn't exist yet - create it
+                const { data: { user: currentUser } } = await supabase.auth.getUser()
+                if (currentUser) {
+                    const { data: newProfile } = await supabase
+                        .from('profiles')
+                        .insert([{
+                            id: currentUser.id,
+                            email: currentUser.email,
+                            full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
+                            avatar_url: currentUser.user_metadata?.avatar_url || null,
+                            role: 'Dueño',
+                        }])
+                        .select()
+                        .single()
+
+                    setProfile(newProfile)
+                }
             }
         } catch (err) {
             console.error('Error fetching profile:', err)
+            // If profile doesn't exist (406 error), create it
+            if (err?.code === 'PGRST116') {
+                try {
+                    const { data: { user: currentUser } } = await supabase.auth.getUser()
+                    if (currentUser) {
+                        const { data: newProfile } = await supabase
+                            .from('profiles')
+                            .insert([{
+                                id: currentUser.id,
+                                email: currentUser.email,
+                                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
+                                avatar_url: currentUser.user_metadata?.avatar_url || null,
+                                role: 'Dueño',
+                            }])
+                            .select()
+                            .single()
+
+                        setProfile(newProfile)
+                    }
+                } catch (insertErr) {
+                    console.error('Error creating profile:', insertErr)
+                }
+            }
         }
     }, [])
 
@@ -43,18 +86,23 @@ export function AuthProvider({ children }) {
 
         // Check active session
         const getSession = async () => {
-            const { data: { session } } = await supabase.auth.getSession()
-            setUser(session?.user || null)
-            if (session?.user) {
-                await fetchProfile(session.user.id)
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                setUser(session?.user || null)
+                if (session?.user) {
+                    await fetchProfile(session.user.id)
+                }
+            } catch (err) {
+                console.error('Session error:', err)
             }
             setLoading(false)
         }
 
         getSession()
 
-        // Listen for auth changes
+        // Listen for auth changes (this handles OAuth redirects with hash fragments)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth event:', event)
             setUser(session?.user || null)
             if (session?.user) {
                 await fetchProfile(session.user.id)
@@ -69,13 +117,17 @@ export function AuthProvider({ children }) {
     }, [fetchProfile])
 
     const signInWithGoogle = async () => {
-        if (!supabase) return
+        if (!supabase) throw new Error('Supabase no configurado')
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: typeof window !== 'undefined'
                     ? `${window.location.origin}/auth/callback`
-                    : undefined
+                    : undefined,
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent',
+                }
             }
         })
         if (error) throw error
