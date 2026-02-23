@@ -5,20 +5,27 @@ import { useEffect, useState } from 'react'
 import styles from './login.module.css'
 
 export default function LoginPage() {
-    const { user, loading, signInWithGoogle } = useAuth()
+    const { user, loading, signInWithGoogle, isConfigured } = useAuth()
     const router = useRouter()
     const [signingIn, setSigningIn] = useState(false)
+    const [error, setError] = useState('')
 
     useEffect(() => {
         if (!loading && user) router.push('/dashboard')
     }, [user, loading, router])
 
     const handleGoogleLogin = async () => {
+        if (!isConfigured) {
+            setError('Supabase no está configurado. Verificá las variables de entorno.')
+            return
+        }
         try {
+            setError('')
             setSigningIn(true)
             await signInWithGoogle()
         } catch (err) {
             console.error('Login error:', err)
+            setError(err.message || 'Error al iniciar sesión. Intentá de nuevo.')
             setSigningIn(false)
         }
     }
@@ -31,6 +38,21 @@ export default function LoginPage() {
                 </div>
                 <h1>Bienvenido a TurnosPro</h1>
                 <p>Inicia sesión para gestionar tu negocio</p>
+
+                {error && (
+                    <div style={{
+                        padding: 'var(--space-3)',
+                        background: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        borderRadius: 'var(--radius-sm)',
+                        color: '#DC2626',
+                        fontSize: 'var(--font-size-sm)',
+                        marginBottom: 'var(--space-3)',
+                        textAlign: 'center',
+                    }}>
+                        {error}
+                    </div>
+                )}
 
                 <button
                     className={styles.googleBtn}
