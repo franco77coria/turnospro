@@ -152,6 +152,17 @@
     color: var(--danger);
 }
 
+
+.adminItem {
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--space-2);
+}
+
+.adminItem .navIcon {
+    color: var(--accent);
+}
+
 @media (max-width: 768px) {
     .sidebar {
         display: none;

@@ -1,0 +1,192 @@
+.registerPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    padding: var(--space-4);
+}
+
+.registerCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-8);
+    text-align: center;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: var(--shadow-sm);
+}
+
+.logo {
+    margin-bottom: var(--space-4);
+}
+
+.logoMark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    background: var(--accent);
+    color: white;
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+}
+
+.registerCard h1 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+
+.registerCard>p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-6);
+}
+
+/* Type selection */
+.typeGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.typeCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-5) var(--space-3);
+    background: var(--bg-primary);
+    border: 2px solid var(--border);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition);
+    text-align: center;
+}
+
+.typeCard:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+}
+
+.typeCard svg {
+    color: var(--accent);
+}
+
+.typeCard h3 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.typeCard p {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+.approvalBadge {
+    display: inline-block;
+    background: #FEF3C7;
+    color: #92400E;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: var(--space-1);
+}
+
+.backLink {
+    margin-top: var(--space-4);
+}
+
+.backLink a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    transition: color var(--transition);
+}
+
+.backLink a:hover {
+    color: var(--accent);
+}
+
+/* Step 2 */
+.stepHeader {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    text-align: left;
+    margin-bottom: var(--space-5);
+}
+
+.stepHeader h1 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--space-1);
+}
+
+.stepHeader p {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.backBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all var(--transition);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.backBtn:hover {
+    background: var(--bg-hover);
+}
+
+.form {
+    text-align: left;
+}
+
+.errorMsg {
+    padding: var(--space-3);
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-radius: var(--radius-sm);
+    color: #DC2626;
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--space-4);
+    text-align: center;
+}
+
+.successMsg {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.6;
+    margin-top: var(--space-4);
+}
+
+@media (max-width: 480px) {
+    .typeGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .registerCard {
+        padding: var(--space-6);
+    }
+}

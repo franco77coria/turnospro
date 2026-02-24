@@ -2,7 +2,8 @@
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut } from 'lucide-react'
+import { isSuperAdmin } from '@/lib/superadmin'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -21,12 +22,14 @@ const BOTTOM_ITEMS = [
 
 export default function Sidebar() {
     const pathname = usePathname()
-    const { profile, business, signOut } = useAuth()
+    const { user, profile, business, signOut } = useAuth()
 
     const isActive = (href) => {
         if (href === '/dashboard') return pathname === '/dashboard'
         return pathname.startsWith(href)
     }
+
+    const showAdmin = user && isSuperAdmin(user.email)
 
     return (
         <aside className={styles.sidebar}>
@@ -53,6 +56,16 @@ export default function Sidebar() {
                             </Link>
                         )
                     })}
+
+                    {showAdmin && (
+                        <Link
+                            href="/dashboard/admin"
+                            className={`${styles.navItem} ${styles.adminItem} ${isActive('/dashboard/admin') ? styles.active : ''}`}
+                        >
+                            <ShieldCheck size={18} className={styles.navIcon} />
+                            <span>Aprobaciones</span>
+                        </Link>
+                    )}
                 </div>
             </nav>
 
