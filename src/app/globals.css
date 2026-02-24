@@ -166,6 +166,12 @@ ol {
   transition: all var(--transition);
   white-space: nowrap;
   height: 36px;
+  overflow: hidden;
+  line-height: 1;
+}
+
+.btn svg {
+  flex-shrink: 0;
 }
 
 .btn-primary {
