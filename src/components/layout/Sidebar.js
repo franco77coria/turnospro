@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck } from 'lucide-react'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -58,13 +58,22 @@ export default function Sidebar() {
                     })}
 
                     {showAdmin && (
-                        <Link
-                            href="/dashboard/admin"
-                            className={`${styles.navItem} ${styles.adminItem} ${isActive('/dashboard/admin') ? styles.active : ''}`}
-                        >
-                            <ShieldCheck size={18} className={styles.navIcon} />
-                            <span>Aprobaciones</span>
-                        </Link>
+                        <>
+                            <Link
+                                href="/dashboard/admin"
+                                className={`${styles.navItem} ${styles.adminItem} ${isActive('/dashboard/admin') ? styles.active : ''}`}
+                            >
+                                <ShieldCheck size={18} className={styles.navIcon} />
+                                <span>Aprobaciones</span>
+                            </Link>
+                            <Link
+                                href="/dashboard/demo"
+                                className={`${styles.navItem} ${isActive('/dashboard/demo') ? styles.active : ''}`}
+                            >
+                                <Eye size={18} className={styles.navIcon} />
+                                <span>Demo Rubros</span>
+                            </Link>
+                        </>
                     )}
                 </div>
             </nav>
