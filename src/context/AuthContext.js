@@ -175,17 +175,30 @@ export function AuthProvider({ children }) {
     }
 
     const updateBusiness = async (updates) => {
-        if (!supabase || !business) return
-        const { data, error } = await supabase
-            .from('businesses')
-            .update(updates)
-            .eq('id', business.id)
-            .select()
-            .single()
+        if (!supabase || !business) {
+            console.error('updateBusiness: supabase or business is null', { supabase: !!supabase, business: !!business })
+            return null
+        }
+        try {
+            console.log('Updating business:', business.id, 'with:', JSON.stringify(updates).slice(0, 200))
+            const { data, error } = await supabase
+                .from('businesses')
+                .update(updates)
+                .eq('id', business.id)
+                .select()
+                .single()
 
-        if (error) throw error
-        setBusiness(data)
-        return data
+            if (error) {
+                console.error('Supabase update error:', error)
+                throw error
+            }
+            console.log('Business updated successfully:', data?.id)
+            setBusiness(data)
+            return data
+        } catch (err) {
+            console.error('updateBusiness failed:', err)
+            throw err
+        }
     }
 
     const value = {

@@ -115,13 +115,12 @@ export default function BookingPage() {
             await supabase.from('appointments').insert([{
                 business_id: business.id,
                 client_id: clientId,
-                service: selectedService.name,
+                service_name: selectedService.name,
                 date: selectedDate,
                 time: selectedTime,
                 duration: selectedService.duration,
                 price: selectedService.price,
                 status: 'confirmed',
-                reminder_sent: false,
             }])
 
             // Send confirmation email

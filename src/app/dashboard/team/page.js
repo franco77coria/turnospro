@@ -108,13 +108,13 @@ export default function TeamPage() {
 
                 {members.length === 0 && (
                     <div className={`card ${styles.emptyCard}`}>
-                        <div className="empty-state">
-                            <h3>Sin miembros del equipo</h3>
-                            <p>Agregá a tu equipo para asignarles turnos</p>
-                            <button className="btn btn-primary btn-sm" onClick={() => {
+                        <div style={{ textAlign: 'center', padding: 'var(--space-10) var(--space-6)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>Sin miembros del equipo</h3>
+                            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-4)' }}>Agregá a tu equipo para asignarles turnos</p>
+                            <button className="btn btn-primary" onClick={() => {
                                 setForm({ name: '', email: '', phone: '', role: roles[2] || 'Profesional' })
                                 setShowModal(true)
-                            }}><Plus size={14} /> Agregar</button>
+                            }}><Plus size={14} /> Agregar miembro</button>
                         </div>
                     </div>
                 )}
