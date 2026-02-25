@@ -1,31 +1,65 @@
 'use client'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/context/AuthContext'
+import { supabase } from '@/lib/supabase'
 
 export default function AuthCallbackPage() {
     const router = useRouter()
-    const { user, loading } = useAuth()
 
     useEffect(() => {
-        // The Supabase client automatically detects hash fragments
-        // (access_token, refresh_token) from the URL and sets up the session.
-        // onAuthStateChange in AuthContext will fire, setting the user.
-        // We just need to wait and redirect.
+        const handleCallback = async () => {
+            if (!supabase) {
+                router.replace('/login?error=config')
+                return
+            }
 
-        if (!loading && user) {
-            router.replace('/dashboard')
+            try {
+                // Check for error in URL params
+                const params = new URLSearchParams(window.location.search)
+                const errorParam = params.get('error')
+                if (errorParam) {
+                    console.error('Auth callback error:', errorParam)
+                    router.replace(`/login?error=${errorParam}`)
+                    return
+                }
+
+                // Check for code exchange (PKCE flow)
+                const code = params.get('code')
+                if (code) {
+                    const { error } = await supabase.auth.exchangeCodeForSession(code)
+                    if (error) {
+                        console.error('Code exchange error:', error)
+                        router.replace('/login?error=exchange')
+                        return
+                    }
+                }
+
+                // Verify the user is now authenticated
+                const { data: { user }, error } = await supabase.auth.getUser()
+
+                if (error || !user) {
+                    // Fallback: wait a moment and try again 
+                    // (hash fragment flow might still be processing)
+                    await new Promise(r => setTimeout(r, 1500))
+                    const { data: { user: retryUser } } = await supabase.auth.getUser()
+
+                    if (retryUser) {
+                        router.replace('/dashboard')
+                    } else {
+                        router.replace('/login?error=auth')
+                    }
+                    return
+                }
+
+                router.replace('/dashboard')
+            } catch (err) {
+                console.error('Auth callback error:', err)
+                router.replace('/login?error=unknown')
+            }
         }
 
-        // If after 5 seconds we still don't have a user, redirect to login
-        const timeout = setTimeout(() => {
-            if (!user) {
-                router.replace('/login?error=auth')
-            }
-        }, 5000)
-
-        return () => clearTimeout(timeout)
-    }, [user, loading, router])
+        handleCallback()
+    }, [router])
 
     return (
         <div style={{

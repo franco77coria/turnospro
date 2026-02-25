@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 
 const AuthContext = createContext({})
@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
     const [profile, setProfile] = useState(null)
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
+    const initializedRef = useRef(false)
 
     const fetchProfile = useCallback(async (userId) => {
         if (!supabase) return
@@ -52,7 +53,6 @@ export function AuthProvider({ children }) {
             }
         } catch (err) {
             console.error('Error fetching profile:', err)
-            // If profile doesn't exist (406 error), create it
             if (err?.code === 'PGRST116') {
                 try {
                     const { data: { user: currentUser } } = await supabase.auth.getUser()
@@ -84,13 +84,23 @@ export function AuthProvider({ children }) {
             return
         }
 
+        // Prevent double-initialization in React 18 StrictMode
+        if (initializedRef.current) return
+        initializedRef.current = true
+
         // Check active session
         const getSession = async () => {
             try {
-                const { data: { session } } = await supabase.auth.getSession()
-                setUser(session?.user || null)
-                if (session?.user) {
-                    await fetchProfile(session.user.id)
+                // Use getUser() which validates the token server-side (more reliable)
+                const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+                if (error) {
+                    console.warn('Session validation error:', error.message)
+                    setUser(null)
+                } else {
+                    setUser(currentUser || null)
+                    if (currentUser) {
+                        await fetchProfile(currentUser.id)
+                    }
                 }
             } catch (err) {
                 console.error('Session error:', err)
@@ -100,12 +110,13 @@ export function AuthProvider({ children }) {
 
         getSession()
 
-        // Listen for auth changes (this handles OAuth redirects with hash fragments)
+        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             console.log('Auth event:', event)
-            setUser(session?.user || null)
-            if (session?.user) {
-                await fetchProfile(session.user.id)
+            const sessionUser = session?.user || null
+            setUser(sessionUser)
+            if (sessionUser) {
+                await fetchProfile(sessionUser.id)
             } else {
                 setProfile(null)
                 setBusiness(null)
@@ -124,10 +135,6 @@ export function AuthProvider({ children }) {
                 redirectTo: typeof window !== 'undefined'
                     ? `${window.location.origin}/auth/callback`
                     : undefined,
-                queryParams: {
-                    access_type: 'offline',
-                    prompt: 'consent',
-                }
             }
         })
         if (error) throw error
