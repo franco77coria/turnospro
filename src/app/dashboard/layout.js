@@ -8,7 +8,7 @@ import { isSuperAdmin } from '@/lib/superadmin'
 import styles from './layout.module.css'
 
 export default function DashboardLayout({ children }) {
-    const { user, loading, profile, business, createBusiness } = useAuth()
+    const { user, loading, profile, business, createBusiness, refreshProfile } = useAuth()
     const router = useRouter()
     const creatingBusinessRef = useRef(false)
     const [timedOut, setTimedOut] = useState(false)
@@ -27,59 +27,33 @@ export default function DashboardLayout({ children }) {
     }, [user, loading, router])
 
     useEffect(() => {
-        if (!loading && user && !business && !creatingBusinessRef.current) {
-            // Superadmin skips onboarding — auto-create a default business
-            if (isSuperAdmin(user.email)) {
-                creatingBusinessRef.current = true
-                // First check if a business already exists for this user
-                const checkAndCreate = async () => {
-                    try {
-                        const { supabase } = await import('@/lib/supabase')
-                        if (!supabase) return
+        if (loading || !user || business || creatingBusinessRef.current) return
 
-                        // Check if there's already a business
-                        const { data: existing } = await supabase
-                            .from('businesses')
-                            .select('*')
-                            .eq('owner_id', user.id)
-                            .limit(1)
-                            .single()
-
-                        if (existing) {
-                            // Business exists, just need to link profile
-                            await supabase.from('profiles').update({ business_id: existing.id }).eq('id', user.id)
-                            // Force refresh the auth context
-                            window.location.reload()
-                            return
-                        }
-
-                        // No business exists, create one
-                        await createBusiness({
-                            name: 'GLOWUP Admin',
-                            business_type: 'barberia',
-                            phone: '',
-                            address: '',
-                            services: [
-                                { name: 'Corte Clásico', price: 2500, duration: 30 },
-                                { name: 'Corte + Barba', price: 4000, duration: 50 },
-                                { name: 'Barba', price: 2000, duration: 20 },
-                            ],
-                            roles: ['Dueño', 'Admin', 'Profesional', 'Recepcionista'],
-                            settings: {
-                                work_hours: { start: '09:00', end: '20:00' },
-                                work_days: [1, 2, 3, 4, 5, 6],
-                                slot_duration: 30,
-                            }
-                        })
-                    } catch (err) {
-                        console.error('Auto-create business error:', err)
-                        creatingBusinessRef.current = false
-                    }
+        if (isSuperAdmin(user.email)) {
+            creatingBusinessRef.current = true
+            // Superadmin: create a default business with real services
+            createBusiness({
+                name: 'GLOWUP Admin',
+                business_type: 'barberia',
+                phone: '',
+                address: '',
+                services: [
+                    { name: 'Corte Clásico', price: 2500, duration: 30 },
+                    { name: 'Corte + Barba', price: 4000, duration: 50 },
+                    { name: 'Barba', price: 2000, duration: 20 },
+                ],
+                roles: ['Dueño', 'Admin', 'Barbero', 'Recepcionista'],
+                settings: {
+                    work_hours: { start: '09:00', end: '20:00' },
+                    work_days: [1, 2, 3, 4, 5, 6],
+                    slot_duration: 30,
                 }
-                checkAndCreate()
-            } else {
-                router.push('/onboarding')
-            }
+            }).catch(err => {
+                console.error('Auto-create business error:', err)
+                creatingBusinessRef.current = false
+            })
+        } else {
+            router.push('/onboarding')
         }
     }, [user, business, loading, router, createBusiness])
 

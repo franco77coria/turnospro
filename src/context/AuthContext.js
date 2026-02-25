@@ -14,26 +14,14 @@ export function AuthProvider({ children }) {
     const fetchProfile = useCallback(async (userId) => {
         if (!supabase) return
         try {
-            const { data: profileData } = await supabase
+            const { data: profileData, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', userId)
                 .single()
 
-            if (profileData) {
-                setProfile(profileData)
-
-                if (profileData.business_id) {
-                    const { data: businessData } = await supabase
-                        .from('businesses')
-                        .select('*')
-                        .eq('id', profileData.business_id)
-                        .single()
-
-                    setBusiness(businessData)
-                }
-            } else {
-                // Profile doesn't exist yet - create it
+            if (profileError && profileError.code === 'PGRST116') {
+                // Profile doesn't exist — create it
                 const { data: { user: currentUser } } = await supabase.auth.getUser()
                 if (currentUser) {
                     const { data: newProfile } = await supabase
@@ -47,34 +35,58 @@ export function AuthProvider({ children }) {
                         }])
                         .select()
                         .single()
-
                     setProfile(newProfile)
+                }
+                return
+            }
+
+            if (profileData) {
+                setProfile(profileData)
+
+                if (profileData.business_id) {
+                    const { data: businessData } = await supabase
+                        .from('businesses')
+                        .select('*')
+                        .eq('id', profileData.business_id)
+                        .single()
+
+                    if (businessData) {
+                        setBusiness(businessData)
+                    } else {
+                        // business_id set but business not found — try finding by owner
+                        const { data: ownedBiz } = await supabase
+                            .from('businesses')
+                            .select('*')
+                            .eq('owner_id', userId)
+                            .limit(1)
+                            .maybeSingle()
+
+                        if (ownedBiz) {
+                            // Fix the profile link
+                            await supabase.from('profiles').update({ business_id: ownedBiz.id }).eq('id', userId)
+                            setBusiness(ownedBiz)
+                            setProfile(prev => ({ ...prev, business_id: ownedBiz.id }))
+                        }
+                    }
+                } else {
+                    // No business_id on profile — check if user owns a business
+                    const { data: ownedBiz } = await supabase
+                        .from('businesses')
+                        .select('*')
+                        .eq('owner_id', userId)
+                        .limit(1)
+                        .maybeSingle()
+
+                    if (ownedBiz) {
+                        // Link it
+                        await supabase.from('profiles').update({ business_id: ownedBiz.id }).eq('id', userId)
+                        setBusiness(ownedBiz)
+                        setProfile(prev => ({ ...prev, business_id: ownedBiz.id }))
+                    }
                 }
             }
         } catch (err) {
             console.error('Error fetching profile:', err)
-            if (err?.code === 'PGRST116') {
-                try {
-                    const { data: { user: currentUser } } = await supabase.auth.getUser()
-                    if (currentUser) {
-                        const { data: newProfile } = await supabase
-                            .from('profiles')
-                            .insert([{
-                                id: currentUser.id,
-                                email: currentUser.email,
-                                full_name: currentUser.user_metadata?.full_name || currentUser.email?.split('@')[0] || 'Usuario',
-                                avatar_url: currentUser.user_metadata?.avatar_url || null,
-                                role: 'Dueño',
-                            }])
-                            .select()
-                            .single()
-
-                        setProfile(newProfile)
-                    }
-                } catch (insertErr) {
-                    console.error('Error creating profile:', insertErr)
-                }
-            }
         }
     }, [])
 
@@ -88,10 +100,8 @@ export function AuthProvider({ children }) {
         if (initializedRef.current) return
         initializedRef.current = true
 
-        // Check active session
         const getSession = async () => {
             try {
-                // Use getUser() which validates the token server-side (more reliable)
                 const { data: { user: currentUser }, error } = await supabase.auth.getUser()
                 if (error) {
                     console.warn('Session validation error:', error.message)
@@ -110,9 +120,7 @@ export function AuthProvider({ children }) {
 
         getSession()
 
-        // Listen for auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            console.log('Auth event:', event)
             const sessionUser = session?.user || null
             setUser(sessionUser)
             if (sessionUser) {
@@ -149,7 +157,24 @@ export function AuthProvider({ children }) {
     }
 
     const createBusiness = async (businessData) => {
-        if (!supabase) return
+        if (!supabase || !user) return null
+
+        // Check if business already exists for this user
+        const { data: existing } = await supabase
+            .from('businesses')
+            .select('*')
+            .eq('owner_id', user.id)
+            .limit(1)
+            .maybeSingle()
+
+        if (existing) {
+            // Already have a business, just link and use it
+            await supabase.from('profiles').update({ business_id: existing.id }).eq('id', user.id)
+            setBusiness(existing)
+            setProfile(prev => ({ ...prev, business_id: existing.id }))
+            return existing
+        }
+
         const { data, error } = await supabase
             .from('businesses')
             .insert([{
@@ -176,29 +201,22 @@ export function AuthProvider({ children }) {
 
     const updateBusiness = async (updates) => {
         if (!supabase || !business) {
-            console.error('updateBusiness: supabase or business is null', { supabase: !!supabase, business: !!business })
+            console.error('updateBusiness: no supabase or business')
             return null
         }
-        try {
-            console.log('Updating business:', business.id, 'with:', JSON.stringify(updates).slice(0, 200))
-            const { data, error } = await supabase
-                .from('businesses')
-                .update(updates)
-                .eq('id', business.id)
-                .select()
-                .single()
+        const { data, error } = await supabase
+            .from('businesses')
+            .update(updates)
+            .eq('id', business.id)
+            .select()
+            .single()
 
-            if (error) {
-                console.error('Supabase update error:', error)
-                throw error
-            }
-            console.log('Business updated successfully:', data?.id)
-            setBusiness(data)
-            return data
-        } catch (err) {
-            console.error('updateBusiness failed:', err)
-            throw err
+        if (error) {
+            console.error('updateBusiness error:', error)
+            throw error
         }
+        setBusiness(data)
+        return data
     }
 
     const value = {
