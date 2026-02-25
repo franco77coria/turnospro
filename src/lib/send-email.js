@@ -34,10 +34,10 @@ export async function sendAppointmentConfirmation({ appointment, client, busines
             time: appointment.time,
             duration: service?.duration || appointment.duration,
             professional: professional?.name || appointment.professional,
-            businessName: business?.name || 'TurnosPro',
+            businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `https://turnospro-omega.vercel.app/dashboard/appointments`,
+            appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
         }
     })
 }
@@ -58,10 +58,10 @@ export async function sendAppointmentReminder({ appointment, client, business, s
             date: formattedDate,
             time: appointment.time,
             hoursUntil: hoursUntil || 24,
-            businessName: business?.name || 'TurnosPro',
+            businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `https://turnospro-omega.vercel.app/dashboard/appointments`,
+            appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
         }
     })
 }

@@ -32,7 +32,7 @@ export default function DashboardLayout({ children }) {
             if (isSuperAdmin(user.email)) {
                 creatingBusinessRef.current = true
                 createBusiness({
-                    name: 'TurnosPro Admin',
+                    name: 'GLOWUP Admin',
                     business_type: 'custom',
                     phone: '',
                     address: '',

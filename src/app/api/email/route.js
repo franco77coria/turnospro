@@ -36,7 +36,7 @@ export async function POST(request) {
         }
 
         const { data: emailData, error } = await resend.emails.send({
-            from: `${data.businessName} <turnos@turnospro.app>`,
+            from: `${data.businessName} <turnos@GLOWUP.app>`,
             to: [to],
             subject,
             html,
@@ -47,7 +47,7 @@ export async function POST(request) {
             // If domain not verified, use Resend's onboarding email
             if (error.message?.includes('domain')) {
                 const { data: fallbackData, error: fallbackError } = await resend.emails.send({
-                    from: 'TurnosPro <onboarding@resend.dev>',
+                    from: 'GLOWUP <onboarding@resend.dev>',
                     to: [to],
                     subject,
                     html,

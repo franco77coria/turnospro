@@ -2,7 +2,7 @@ import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 
 export const metadata = {
-  title: 'TurnosPro — Gestión de turnos para tu negocio',
+  title: 'GLOWUP — Gestión de turnos para tu negocio',
   description: 'Sistema universal de turnos, equipo y finanzas para peluquerías, barberías, spas, consultorios y más.',
 }
 

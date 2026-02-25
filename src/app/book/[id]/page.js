@@ -141,7 +141,7 @@ export default function BookingPage() {
                             businessName: business.name,
                             businessType: business.business_type,
                             businessPhone: business.phone,
-                            appointmentUrl: `https://turnospro-omega.vercel.app/book/${id}`,
+                            appointmentUrl: `https://glowup-omega.vercel.app/book/${id}`,
                         }
                     })
                 })
@@ -373,7 +373,7 @@ export default function BookingPage() {
 
                 {/* Footer */}
                 <div className={styles.footer}>
-                    Powered by <a href="https://turnospro-omega.vercel.app" target="_blank" rel="noopener">TurnosPro</a>
+                    Powered by <a href="https://glowup-omega.vercel.app" target="_blank" rel="noopener">GLOWUP</a>
                 </div>
             </div>
         </div>

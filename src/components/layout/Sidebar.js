@@ -36,7 +36,7 @@ export default function Sidebar() {
             <div className={styles.logo}>
                 <div className={styles.logoIcon}>T</div>
                 <div className={styles.logoText}>
-                    <span className={styles.logoName}>{business?.name || 'TurnosPro'}</span>
+                    <span className={styles.logoName}>{business?.name || 'GLOWUP'}</span>
                     <span className={styles.logoRole}>{profile?.role || 'Admin'}</span>
                 </div>
             </div>

@@ -131,13 +131,13 @@ export default function RegisterPage() {
                             <button className={styles.typeCard} onClick={() => handleSelectType('user')}>
                                 <User size={28} />
                                 <h3>Cliente</h3>
-                                <p>Quiero reservar turnos en negocios que usan TurnosPro</p>
+                                <p>Quiero reservar turnos en negocios que usan GLOWUP</p>
                             </button>
 
                             <button className={styles.typeCard} onClick={() => handleSelectType('business')}>
                                 <Store size={28} />
                                 <h3>Negocio</h3>
-                                <p>Quiero gestionar mi negocio con TurnosPro</p>
+                                <p>Quiero gestionar mi negocio con GLOWUP</p>
                                 <span className={styles.approvalBadge}>Requiere aprobación</span>
                             </button>
                         </div>

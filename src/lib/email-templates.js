@@ -1,4 +1,4 @@
-// Email HTML templates for TurnosPro
+// Email HTML templates for GLOWUP
 // Minimalist, professional, themed by business type
 
 const RUBRO_THEMES = {
@@ -23,7 +23,7 @@ function baseLayout(content, theme, businessName) {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TurnosPro</title>
+    <title>GLOWUP</title>
 </head>
 <body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;">
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 16px;">
@@ -43,7 +43,7 @@ function baseLayout(content, theme, businessName) {
                                     </td>
                                     <td align="right">
                                         <span style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;">
-                                            TurnosPro
+                                            GLOWUP
                                         </span>
                                     </td>
                                 </tr>
@@ -63,7 +63,7 @@ function baseLayout(content, theme, businessName) {
                         <td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#fafafa;">
                             <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.6;">
                                 Este email fue enviado por ${businessName} a través de 
-                                <a href="https://turnospro-omega.vercel.app" style="color:${theme.accent};text-decoration:none;">TurnosPro</a>.<br>
+                                <a href="https://GLOWUP-omega.vercel.app" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
                                 Si no solicitaste este turno, podés ignorar este email.
                             </p>
                         </td>

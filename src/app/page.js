@@ -41,7 +41,7 @@ export default function Landing() {
         <div className={styles.navInner}>
           <Link href="/" className={styles.navLogo}>
             <span className={styles.logoMark}>T</span>
-            <span className={styles.logoText}>TurnosPro</span>
+            <span className={styles.logoText}>GLOWUP</span>
           </Link>
           <div className={styles.navLinks}>
             <a href="#features" className={styles.navLink}>Funciones</a>
@@ -147,9 +147,9 @@ export default function Landing() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <span className={styles.footerLogo}>
-            <span className={styles.logoMark}>T</span> TurnosPro
+            <span className={styles.logoMark}>T</span> GLOWUP
           </span>
-          <span className={styles.footerText}>© 2026 TurnosPro. Todos los derechos reservados.</span>
+          <span className={styles.footerText}>© 2026 GLOWUP. Todos los derechos reservados.</span>
         </div>
       </footer>
     </div>

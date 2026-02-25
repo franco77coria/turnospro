@@ -38,7 +38,7 @@ export default function LoginPage() {
                     <span className={styles.logoMark}>T</span>
                 </div>
                 <h1>Iniciar sesión</h1>
-                <p>Accedé a tu cuenta de TurnosPro</p>
+                <p>Accedé a tu cuenta de GLOWUP</p>
 
                 {error && (
                     <div className={styles.errorMsg}>

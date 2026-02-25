@@ -60,14 +60,14 @@ export async function GET(request) {
                     date: formattedDate,
                     time: apt.time,
                     hoursUntil: hoursUntil || 1,
-                    businessName: apt.businesses?.name || 'TurnosPro',
+                    businessName: apt.businesses?.name || 'GLOWUP',
                     businessType: apt.businesses?.business_type || 'custom',
                     businessPhone: apt.businesses?.phone,
-                    appointmentUrl: `https://turnospro-omega.vercel.app/dashboard/appointments`,
+                    appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
                 })
 
                 await resend.emails.send({
-                    from: 'TurnosPro <onboarding@resend.dev>',
+                    from: 'GLOWUP <onboarding@resend.dev>',
                     to: [apt.clients.email],
                     subject: `Recordatorio — Tu turno es ${hoursUntil <= 1 ? 'en menos de 1 hora' : `en ${hoursUntil} horas`} | ${apt.businesses?.name}`,
                     html,
