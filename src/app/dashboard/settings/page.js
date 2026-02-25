@@ -14,6 +14,11 @@ export default function SettingsPage() {
     })
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
+    const [error, setError] = useState('')
+    const [workHoursForm, setWorkHoursForm] = useState({
+        start: business?.settings?.work_hours?.start || '09:00',
+        end: business?.settings?.work_hours?.end || '20:00',
+    })
 
     useEffect(() => {
         if (business) {
@@ -29,15 +34,25 @@ export default function SettingsPage() {
     async function handleSave(e) {
         e.preventDefault()
         setSaving(true)
+        setError('')
         try {
-            await updateBusiness(form)
+            await updateBusiness({
+                ...form,
+                settings: {
+                    ...business?.settings,
+                    work_hours: workHoursForm,
+                }
+            })
             setSaved(true)
             setTimeout(() => setSaved(false), 2000)
-        } catch (err) { console.error(err) }
+        } catch (err) {
+            console.error(err)
+            setError('Error al guardar. Intentá de nuevo.')
+        }
         setSaving(false)
     }
 
-    const workHours = business?.settings?.work_hours || { start: '09:00', end: '20:00' }
+
 
     return (
         <div style={{ maxWidth: 600 }}>
@@ -71,11 +86,13 @@ export default function SettingsPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div className="form-group">
                             <label className="label">Apertura</label>
-                            <input className="input" type="time" defaultValue={workHours.start} />
+                            <input className="input" type="time" value={workHoursForm.start}
+                                onChange={e => setWorkHoursForm(p => ({ ...p, start: e.target.value }))} />
                         </div>
                         <div className="form-group">
                             <label className="label">Cierre</label>
-                            <input className="input" type="time" defaultValue={workHours.end} />
+                            <input className="input" type="time" value={workHoursForm.end}
+                                onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
                         </div>
                     </div>
                 </div>
@@ -92,6 +109,12 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
+                {error && (
+                    <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+                        {error}
+                    </div>
+                )}
+
                 <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={saving}>
                     {saving ? <div className="loading-spinner" /> : saved ? 'Guardado' : <><Save size={16} /> Guardar cambios</>}
                 </button>
@@ -102,7 +125,7 @@ export default function SettingsPage() {
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                     Estas acciones son irreversibles.
                 </p>
-                <button className="btn btn-danger btn-sm"><Trash2 size={14} /> Eliminar negocio</button>
+                <button className="btn btn-danger btn-sm" onClick={() => alert('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>
             </div>
         </div>
     )

@@ -61,7 +61,7 @@ export default function FinancePage() {
     async function handleCloseCash() {
         if (!supabase) return
         try {
-            await supabase.from('cash_closures').insert([{
+            const { error } = await supabase.from('cash_closures').insert([{
                 business_id: business.id,
                 date: selectedDate,
                 total_income: income,
@@ -70,10 +70,16 @@ export default function FinancePage() {
                 cash_amount: cash,
                 transaction_count: transactions.length,
             }])
+            if (error) {
+                console.error('Cash closure error:', error)
+                alert('Error al registrar cierre: ' + (error.message || 'tabla no encontrada'))
+                return
+            }
             setShowClosureModal(false)
             alert('Cierre de caja registrado correctamente')
         } catch (err) {
             console.error('Error closing cash:', err)
+            alert('Error al registrar el cierre de caja')
         }
     }
 

@@ -14,7 +14,7 @@ export async function GET(request) {
 
     const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
     const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -36,7 +36,6 @@ export async function GET(request) {
             `)
             .eq('date', today)
             .eq('status', 'confirmed')
-            .eq('reminder_sent', false)
 
         if (error) throw error
 
@@ -56,7 +55,7 @@ export async function GET(request) {
             try {
                 const html = reminderEmail({
                     clientName: apt.clients.name || 'Cliente',
-                    serviceName: apt.service || 'Turno',
+                    serviceName: apt.service_name || 'Turno',
                     date: formattedDate,
                     time: apt.time,
                     hoursUntil: hoursUntil || 1,
@@ -73,10 +72,10 @@ export async function GET(request) {
                     html,
                 })
 
-                // Mark reminder as sent
+                // Mark reminder as sent via notes field
                 await supabase
                     .from('appointments')
-                    .update({ reminder_sent: true })
+                    .update({ notes: 'reminder_sent' })
                     .eq('id', apt.id)
 
                 sentCount++

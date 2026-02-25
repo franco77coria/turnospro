@@ -5,10 +5,11 @@ import { createClient } from '@supabase/supabase-js'
 import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin } from 'lucide-react'
 import styles from './booking.module.css'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+const supabase = supabaseUrl && supabaseKey
+    ? createClient(supabaseUrl, supabaseKey)
+    : null
 
 export default function BookingPage() {
     const { id } = useParams()
