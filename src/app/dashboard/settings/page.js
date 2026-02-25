@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Save, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -14,6 +14,17 @@ export default function SettingsPage() {
     })
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
+
+    useEffect(() => {
+        if (business) {
+            setForm({
+                name: business.name || '',
+                phone: business.phone || '',
+                address: business.address || '',
+                business_type: business.business_type || '',
+            })
+        }
+    }, [business?.id, business?.name, business?.phone, business?.address, business?.business_type])
 
     async function handleSave(e) {
         e.preventDefault()

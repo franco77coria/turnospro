@@ -1,6 +1,6 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus, X, Trash2 } from 'lucide-react'
 
 export default function ServicesPage() {
@@ -9,6 +9,13 @@ export default function ServicesPage() {
     const [showModal, setShowModal] = useState(false)
     const [editIdx, setEditIdx] = useState(-1)
     const [form, setForm] = useState({ name: '', price: '', duration: '' })
+
+    // Sync services from context, necessary if business object is populated post-mount or updated
+    useEffect(() => {
+        if (business?.services) {
+            setServices(business.services)
+        }
+    }, [business?.services])
 
     async function handleSave(e) {
         e.preventDefault()
