@@ -55,9 +55,14 @@ export default function DemoPage() {
             {/* Demo preview */}
             {demo && (
                 <div className={styles.preview}>
-                    <div className={styles.previewHeader}>
-                        <h2>{demo.name}</h2>
-                        <span className="badge badge-accent">{RUBRO_LIST.find(r => r.key === selectedRubro)?.label}</span>
+                    <div className={styles.previewHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                            <h2>{demo.name}</h2>
+                            <span className="badge badge-accent">{RUBRO_LIST.find(r => r.key === selectedRubro)?.label}</span>
+                        </div>
+                        <button className="btn btn-primary" onClick={() => alert('Estás en el Modo Demo (solo visualización). Para crear un turno real, andá a "Calendario" o "Turnos" en el menú lateral de tu negocio.')}>
+                            + Nuevo turno
+                        </button>
                     </div>
 
                     {/* Stats */}

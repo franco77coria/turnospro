@@ -195,56 +195,66 @@ export default function CalendarPage() {
                             <h3>Nuevo turno</h3>
                             <button className="btn btn-ghost btn-icon" onClick={() => setShowNewModal(false)}><X size={16} /></button>
                         </div>
-                        <form onSubmit={handleCreateAppointment}>
-                            <div className="modal-body">
-                                <div className="form-group">
-                                    <label className="label">Cliente</label>
-                                    <input className="input" placeholder="Nombre del cliente" value={newApt.client_name}
-                                        onChange={e => setNewApt(prev => ({ ...prev, client_name: e.target.value }))} required />
-                                </div>
-                                <div className="form-group">
-                                    <label className="label">Servicio</label>
-                                    <select className="input select" value={newApt.service_name}
-                                        onChange={e => {
-                                            const svc = business?.services?.find(s => s.name === e.target.value)
-                                            setNewApt(prev => ({ ...prev, service_name: e.target.value, duration: svc?.duration || 30 }))
-                                        }} required>
-                                        <option value="">Seleccionar...</option>
-                                        {(business?.services || []).map((s, i) => (
-                                            <option key={i} value={s.name}>{s.name} — ${s.price?.toLocaleString()}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                        {(!business?.services || business.services.length === 0) ? (
+                            <div className="modal-body" style={{ textAlign: 'center', padding: 'var(--space-6) var(--space-4)' }}>
+                                <p style={{ marginBottom: 'var(--space-4)' }}>
+                                    <strong>No tenés servicios configurados.</strong><br />
+                                    Para crear un turno necesitás tener al menos un servicio en tu rubro.
+                                </p>
+                                <a href="/dashboard/services" className="btn btn-primary" style={{ display: 'inline-flex' }}>Ir a Servicios</a>
+                            </div>
+                        ) : (
+                            <form onSubmit={handleCreateAppointment}>
+                                <div className="modal-body">
                                     <div className="form-group">
-                                        <label className="label">Fecha</label>
-                                        <input className="input" type="date" value={newApt.date}
-                                            onChange={e => setNewApt(prev => ({ ...prev, date: e.target.value }))} required />
+                                        <label className="label">Cliente</label>
+                                        <input className="input" placeholder="Nombre del cliente" value={newApt.client_name}
+                                            onChange={e => setNewApt(prev => ({ ...prev, client_name: e.target.value }))} required />
                                     </div>
                                     <div className="form-group">
-                                        <label className="label">Hora</label>
-                                        <input className="input" type="time" value={newApt.time}
-                                            onChange={e => setNewApt(prev => ({ ...prev, time: e.target.value }))} required />
-                                    </div>
-                                </div>
-                                {teamMembers.length > 0 && (
-                                    <div className="form-group">
-                                        <label className="label">Profesional</label>
-                                        <select className="input select" value={newApt.team_member_id || ''}
-                                            onChange={e => setNewApt(prev => ({ ...prev, team_member_id: e.target.value }))}>
-                                            <option value="">Cualquiera</option>
-                                            {teamMembers.map(m => (
-                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                        <label className="label">Servicio</label>
+                                        <select className="input select" value={newApt.service_name}
+                                            onChange={e => {
+                                                const svc = business?.services?.find(s => s.name === e.target.value)
+                                                setNewApt(prev => ({ ...prev, service_name: e.target.value, duration: svc?.duration || 30 }))
+                                            }} required>
+                                            <option value="">Seleccionar...</option>
+                                            {(business?.services || []).map((s, i) => (
+                                                <option key={i} value={s.name}>{s.name} — ${s.price?.toLocaleString()}</option>
                                             ))}
                                         </select>
                                     </div>
-                                )}
-                            </div>
-                            <div className="modal-footer">
-                                <button type="button" className="btn btn-secondary" onClick={() => setShowNewModal(false)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary">Crear turno</button>
-                            </div>
-                        </form>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                        <div className="form-group">
+                                            <label className="label">Fecha</label>
+                                            <input className="input" type="date" value={newApt.date}
+                                                onChange={e => setNewApt(prev => ({ ...prev, date: e.target.value }))} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label">Hora</label>
+                                            <input className="input" type="time" value={newApt.time}
+                                                onChange={e => setNewApt(prev => ({ ...prev, time: e.target.value }))} required />
+                                        </div>
+                                    </div>
+                                    {teamMembers.length > 0 && (
+                                        <div className="form-group">
+                                            <label className="label">Profesional</label>
+                                            <select className="input select" value={newApt.team_member_id || ''}
+                                                onChange={e => setNewApt(prev => ({ ...prev, team_member_id: e.target.value }))}>
+                                                <option value="">Cualquiera</option>
+                                                {teamMembers.map(m => (
+                                                    <option key={m.id} value={m.id}>{m.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setShowNewModal(false)}>Cancelar</button>
+                                    <button type="submit" className="btn btn-primary">Crear turno</button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
             )}
