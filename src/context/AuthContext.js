@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
     const [profile, setProfile] = useState(null)
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
-    const initializedRef = useRef(false)
 
     const fetchProfile = useCallback(async (userId) => {
         if (!supabase) return
@@ -95,10 +94,6 @@ export function AuthProvider({ children }) {
             setLoading(false)
             return
         }
-
-        // Prevent double-initialization in React 18 StrictMode
-        if (initializedRef.current) return
-        initializedRef.current = true
 
         const getSession = async () => {
             try {

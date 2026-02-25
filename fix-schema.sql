@@ -38,3 +38,30 @@ FOR DELETE USING (
 -- 5) Allow public to read businesses (needed for booking page)
 CREATE POLICY "Anyone can read businesses for booking" ON businesses
 FOR SELECT USING (true);
+
+-- ================================================
+-- 6) Create cash_closures table for finance module
+-- ================================================
+CREATE TABLE IF NOT EXISTS cash_closures (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    business_id UUID NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    total_income NUMERIC(12,2) DEFAULT 0,
+    total_expenses NUMERIC(12,2) DEFAULT 0,
+    balance NUMERIC(12,2) DEFAULT 0,
+    cash_amount NUMERIC(12,2) DEFAULT 0,
+    transaction_count INTEGER DEFAULT 0,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE cash_closures ENABLE ROW LEVEL SECURITY;
+
+-- Policy: business members can manage their closures
+CREATE POLICY "Business members can manage cash closures" ON cash_closures
+FOR ALL USING (
+    business_id IN (
+        SELECT business_id FROM profiles WHERE id = auth.uid()
+    )
+);
