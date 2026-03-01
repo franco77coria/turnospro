@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye } from 'lucide-react'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -73,6 +73,17 @@ export default function Sidebar() {
                                 <Eye size={18} className={styles.navIcon} />
                                 <span>Demo Rubros</span>
                             </Link>
+                            {business?.id && (
+                                <a
+                                    href={`/book/${business.id}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={styles.navItem}
+                                >
+                                    <ExternalLink size={18} className={styles.navIcon} />
+                                    <span>Vista cliente</span>
+                                </a>
+                            )}
                         </>
                     )}
                 </div>

@@ -53,13 +53,16 @@ export default function CalendarPage() {
         const wd = getWeekDates(currentDate)
         const start = formatDate(wd[0])
         const end = formatDate(wd[6])
-        const { data } = await supabase
+        console.log('[Calendar] Loading appointments:', { businessId: business.id, start, end })
+        const { data, error: queryError } = await supabase
             .from('appointments')
             .select('*, clients(name, email, phone), team_members(name)')
             .eq('business_id', business.id)
             .gte('date', start)
             .lte('date', end)
             .order('time')
+        if (queryError) console.error('[Calendar] Query error:', queryError)
+        console.log('[Calendar] Appointments found:', data?.length, data?.map(a => ({ date: a.date, time: a.time, service: a.service_name })))
         setAppointments(data || [])
     }, [business?.id, currentDate])
 

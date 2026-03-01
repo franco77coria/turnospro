@@ -177,6 +177,10 @@ export function AuthProvider({ children }) {
         setUser(null)
         setProfile(null)
         setBusiness(null)
+        // Full page redirect to clear all client state
+        if (typeof window !== 'undefined') {
+            window.location.href = '/login'
+        }
     }
 
     const createBusiness = async (businessData) => {
