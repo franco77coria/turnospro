@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
+import { sendAppointmentConfirmation } from '@/lib/send-email'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import styles from './calendar.module.css'
 
@@ -41,11 +42,13 @@ export default function CalendarPage() {
 
     const loadAppointments = useCallback(async () => {
         if (!supabase || !business?.id) return
-        const start = formatDate(weekDates[0])
-        const end = formatDate(weekDates[6])
+        // Calculate week dates inside the callback to avoid stale closures
+        const wd = getWeekDates(currentDate)
+        const start = formatDate(wd[0])
+        const end = formatDate(wd[6])
         const { data } = await supabase
             .from('appointments')
-            .select('*, clients(name), team_members(name)')
+            .select('*, clients(name, email, phone), team_members(name)')
             .eq('business_id', business.id)
             .gte('date', start)
             .lte('date', end)
@@ -88,30 +91,36 @@ export default function CalendarPage() {
         setSaving(true)
         try {
             let clientId = null
+            let clientData = null
+
             if (newApt.client_name) {
+                // Check if client exists
                 const { data: existingClient } = await supabase
                     .from('clients')
-                    .select('id')
+                    .select('id, name, email, phone')
                     .eq('business_id', business.id)
                     .eq('name', newApt.client_name)
                     .maybeSingle()
 
                 if (existingClient) {
                     clientId = existingClient.id
+                    clientData = existingClient
                 } else {
                     const { data: newClient, error: clientError } = await supabase
                         .from('clients')
                         .insert([{ business_id: business.id, name: newApt.client_name }])
-                        .select()
+                        .select('id, name, email, phone')
                         .single()
                     if (clientError) throw clientError
                     clientId = newClient?.id
+                    clientData = newClient
                 }
             }
 
             const selectedService = services.find(s => s.name === newApt.service_name)
+            const selectedProfessional = teamMembers.find(m => m.id === newApt.team_member_id)
 
-            const { error: aptError } = await supabase.from('appointments').insert([{
+            const appointmentData = {
                 business_id: business.id,
                 client_id: clientId,
                 service_name: newApt.service_name,
@@ -121,12 +130,29 @@ export default function CalendarPage() {
                 status: 'confirmed',
                 team_member_id: newApt.team_member_id || null,
                 price: selectedService?.price || null,
-            }])
+            }
+
+            const { data: createdApt, error: aptError } = await supabase
+                .from('appointments')
+                .insert([appointmentData])
+                .select()
+                .single()
             if (aptError) throw aptError
 
             setShowNewModal(false)
             setNewApt({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
-            loadAppointments()
+            await loadAppointments()
+
+            // Send confirmation email (fire-and-forget, don't block UI)
+            if (clientData) {
+                sendAppointmentConfirmation({
+                    appointment: createdApt || appointmentData,
+                    client: clientData,
+                    business,
+                    service: selectedService,
+                    professional: selectedProfessional,
+                }).catch(err => console.warn('Email send failed:', err))
+            }
         } catch (err) {
             console.error('Error creating appointment:', err)
             setError('Error al crear el turno. Intenta de nuevo.')
