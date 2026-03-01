@@ -6,15 +6,23 @@ import Link from 'next/link'
 import styles from './login.module.css'
 
 function LoginContent() {
-    const { user, loading, signInWithGoogle, isConfigured } = useAuth()
+    const { user, profile, loading, signInWithGoogle, isConfigured } = useAuth()
     const router = useRouter()
     const searchParams = useSearchParams()
     const [error, setError] = useState('')
 
     useEffect(() => {
-        const redirect = searchParams.get('redirect') || '/dashboard'
-        if (!loading && user) router.replace(redirect)
-    }, [user, loading, router, searchParams])
+        if (!loading && user) {
+            const explicit = searchParams.get('redirect')
+            if (explicit) {
+                router.replace(explicit)
+            } else {
+                // Route based on account type
+                const isClient = profile?.role === 'user' && !profile?.business_id
+                router.replace(isClient ? '/book' : '/dashboard')
+            }
+        }
+    }, [user, loading, profile, router, searchParams])
 
     const handleGoogleLogin = async () => {
         if (!isConfigured) {

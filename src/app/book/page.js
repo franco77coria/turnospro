@@ -43,7 +43,7 @@ export default function BookListPage() {
                 <div className={styles.container}>
                     <div className={styles.header}>
                         <Link href="/" className={styles.logo}>
-                            <span className={styles.logoMark}>T</span>
+                            <span className={styles.logoMark}>G</span>
                             <span className={styles.logoText}>GLOWUP</span>
                         </Link>
                     </div>
@@ -66,7 +66,7 @@ export default function BookListPage() {
             <div className={styles.container}>
                 <div className={styles.header}>
                     <Link href="/" className={styles.logo}>
-                        <span className={styles.logoMark}>T</span>
+                        <span className={styles.logoMark}>G</span>
                         <span className={styles.logoText}>GLOWUP</span>
                     </Link>
                 </div>

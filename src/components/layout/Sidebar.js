@@ -111,7 +111,15 @@ export default function Sidebar() {
                         <span className={styles.userName}>{profile?.full_name || 'Usuario'}</span>
                         <span className={styles.userEmail}>{profile?.email || ''}</span>
                     </div>
-                    <button onClick={signOut} className={styles.logoutBtn} title="Cerrar sesión">
+                    <button onClick={async () => {
+                        try {
+                            await signOut()
+                        } catch (e) {
+                            console.error('Logout error:', e)
+                        }
+                        // Force hard redirect regardless
+                        window.location.href = '/login'
+                    }} className={styles.logoutBtn} title="Cerrar sesión">
                         <LogOut size={14} />
                     </button>
                 </div>
