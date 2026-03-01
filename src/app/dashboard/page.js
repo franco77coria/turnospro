@@ -10,14 +10,20 @@ export default function DashboardPage() {
     const { profile, business } = useAuth()
     const [stats, setStats] = useState({ todayAppointments: 0, newClients: 0, revenue: 0, attendance: 0 })
     const [upcomingAppointments, setUpcomingAppointments] = useState([])
-
-    const today = new Date().toISOString().split('T')[0]
-    const greeting = new Date().getHours() < 12 ? 'Buenos días' : new Date().getHours() < 18 ? 'Buenas tardes' : 'Buenas noches'
+    const [today, setToday] = useState('')
+    const [greeting, setGreeting] = useState('')
 
     useEffect(() => {
-        if (!business?.id) return
+        const now = new Date()
+        setToday(now.toISOString().split('T')[0])
+        const h = now.getHours()
+        setGreeting(h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches')
+    }, [])
+
+    useEffect(() => {
+        if (!business?.id || !today) return
         loadDashboardData()
-    }, [business?.id])
+    }, [business?.id, today])
 
     async function loadDashboardData() {
         if (!supabase) return
