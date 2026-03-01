@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }) {
         if (isSuperAdmin(user.email)) {
             creatingBusinessRef.current = true
             createBusiness({
-                name: 'GLOWUP Admin',
+                name: 'GLOWUP',
                 business_type: 'barberia',
                 phone: '',
                 address: '',
