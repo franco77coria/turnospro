@@ -252,3 +252,322 @@
         min-height: 40px;
     }
 }
+
+/* ========== WIZARD STYLES ========== */
+
+.wizardProgress {
+    display: flex;
+    gap: var(--space-2);
+    padding: 0 var(--space-6) var(--space-3);
+}
+
+.wizardDot {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: all var(--transition);
+}
+
+.wizardDotActive {
+    background: var(--accent);
+}
+
+.wizardDotCurrent {
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+}
+
+/* Client list */
+.clientList {
+    max-height: 240px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.clientItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+.clientItem:hover {
+    background: var(--bg-hover);
+}
+
+.clientItemSelected {
+    background: var(--accent-light) !important;
+}
+
+.clientItemNew {
+    border: 1px dashed var(--border);
+}
+
+.clientAvatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    flex-shrink: 0;
+}
+
+.clientInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.clientName {
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.clientDetail {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+}
+
+/* Service cards */
+.serviceGrid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.serviceCard {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    text-align: left;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-primary);
+    font-family: inherit;
+    color: inherit;
+    width: 100%;
+}
+
+.serviceCard:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.serviceCardSelected {
+    border-color: var(--accent) !important;
+    background: var(--accent-light) !important;
+    box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.serviceCardTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.serviceCardName {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+}
+
+.serviceCardBottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.serviceCardDuration {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.serviceCardPrice {
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    color: var(--accent);
+}
+
+/* Date pills */
+.datePills {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-3);
+    -webkit-overflow-scrolling: touch;
+}
+
+.datePill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 48px;
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-primary);
+    font-family: inherit;
+    color: inherit;
+    flex-shrink: 0;
+}
+
+.datePill:hover {
+    border-color: var(--accent);
+}
+
+.datePillSelected {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: white !important;
+}
+
+.datePillToday {
+    border-color: var(--accent);
+}
+
+.datePillDay {
+    font-size: var(--font-size-xs);
+    text-transform: capitalize;
+}
+
+.datePillNum {
+    font-size: var(--font-size-md);
+    font-weight: 700;
+}
+
+/* Professional pills */
+.proPills {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.proPill {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-primary);
+    font-family: inherit;
+    color: inherit;
+}
+
+.proPill:hover {
+    border-color: var(--accent);
+}
+
+.proPillSelected {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+/* Time grid */
+.timeGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+    max-height: 180px;
+    overflow-y: auto;
+}
+
+.timeSlot {
+    padding: var(--space-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--bg-primary);
+    font-family: inherit;
+    color: inherit;
+}
+
+.timeSlot:hover {
+    border-color: var(--accent);
+    background: var(--accent-light);
+}
+
+.timeSlotSelected {
+    background: var(--accent) !important;
+    border-color: var(--accent) !important;
+    color: white !important;
+}
+
+/* Summary card */
+.summaryCard {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.summaryRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.summaryRow:last-child {
+    border-bottom: none;
+}
+
+.summaryLabel {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.summaryValue {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.summaryTotal {
+    background: var(--accent-light);
+}
+
+.summaryTotal .summaryValue {
+    color: var(--accent);
+    font-size: var(--font-size-md);
+}
+
+@media (max-width: 768px) {
+    .timeGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
