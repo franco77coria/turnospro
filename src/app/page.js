@@ -43,7 +43,10 @@ export default function Landing() {
             <a href="#features" className={styles.navLink}>Funciones</a>
             <a href="#rubros" className={styles.navLink}>Rubros</a>
             {user ? (
-              <Link href="/dashboard" className="btn btn-primary">Mi Dashboard</Link>
+              <>
+                <Link href="/dashboard/calendar" className={styles.navLink}>Agendar turno</Link>
+                <Link href="/dashboard" className="btn btn-primary">Mi Dashboard</Link>
+              </>
             ) : (
               <Link href="/login" className="btn btn-primary">Comenzar gratis</Link>
             )}
@@ -63,10 +66,21 @@ export default function Landing() {
             Para peluquerías, barberías, spas, consultorios y cualquier emprendimiento.
           </p>
           <div className={styles.heroCTA}>
-            <Link href="/login" className="btn btn-primary btn-lg">
-              Empezar gratis <ArrowRight size={16} />
-            </Link>
-            <a href="#features" className="btn btn-secondary btn-lg">Ver más</a>
+            {user ? (
+              <>
+                <Link href="/dashboard/calendar" className="btn btn-primary btn-lg">
+                  Agendar turno <CalendarDays size={16} />
+                </Link>
+                <Link href="/dashboard" className="btn btn-secondary btn-lg">Mi Dashboard</Link>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="btn btn-primary btn-lg">
+                  Empezar gratis <ArrowRight size={16} />
+                </Link>
+                <a href="#features" className="btn btn-secondary btn-lg">Ver más</a>
+              </>
+            )}
           </div>
         </div>
         <div className={styles.heroVisual}>
