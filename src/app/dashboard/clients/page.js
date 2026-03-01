@@ -2,16 +2,17 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
-import { Plus, X, Search } from 'lucide-react'
+import { Plus, X, Search, Trash2 } from 'lucide-react'
 import styles from './clients.module.css'
 
 export default function ClientsPage() {
-    const { business } = useAuth()
+    const { business, loading: authLoading } = useAuth()
     const [clients, setClients] = useState([])
     const [search, setSearch] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [editClient, setEditClient] = useState(null)
     const [form, setForm] = useState({ name: '', phone: '', email: '', notes: '' })
+    const [loadingClients, setLoadingClients] = useState(true)
 
     useEffect(() => {
         if (business?.id) loadClients()
@@ -25,6 +26,7 @@ export default function ClientsPage() {
             .eq('business_id', business.id)
             .order('name')
         setClients(data || [])
+        setLoadingClients(false)
     }
 
     async function handleSave(e) {
@@ -43,6 +45,19 @@ export default function ClientsPage() {
         } catch (err) { console.error('Error:', err) }
     }
 
+    async function handleDelete(clientId) {
+        if (!supabase) return
+        const confirmed = window.confirm('¿Estás seguro de que querés eliminar este cliente? Esta acción no se puede deshacer.')
+        if (!confirmed) return
+        try {
+            await supabase.from('appointments').delete().eq('client_id', clientId)
+            await supabase.from('clients').delete().eq('id', clientId)
+            setShowModal(false)
+            setEditClient(null)
+            loadClients()
+        } catch (err) { console.error('Error al eliminar:', err) }
+    }
+
     const openEdit = (c) => {
         setEditClient(c)
         setForm({ name: c.name, phone: c.phone || '', email: c.email || '', notes: c.notes || '' })
@@ -52,6 +67,16 @@ export default function ClientsPage() {
     const filtered = search
         ? clients.filter(c => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
         : clients
+
+    if (authLoading || !business?.id || loadingClients) {
+        return (
+            <div className={styles.clients}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={styles.clients}>
@@ -104,6 +129,7 @@ export default function ClientsPage() {
                                     <td className="hide-mobile" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.notes || '—'}</td>
                                     <td>
                                         <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}>Editar</button>
+                                        <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={(e) => { e.stopPropagation(); handleDelete(c.id) }}><Trash2 size={14} /></button>
                                     </td>
                                 </tr>
                             ))}
@@ -158,6 +184,11 @@ export default function ClientsPage() {
                                 </div>
                             </div>
                             <div className="modal-footer">
+                                {editClient && (
+                                    <button type="button" className="btn btn-ghost" style={{ color: 'var(--danger)', marginRight: 'auto' }} onClick={() => handleDelete(editClient.id)}>
+                                        <Trash2 size={14} /> Eliminar
+                                    </button>
+                                )}
                                 <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancelar</button>
                                 <button type="submit" className="btn btn-primary">Guardar</button>
                             </div>

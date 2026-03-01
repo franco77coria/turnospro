@@ -7,10 +7,11 @@ import { Check, X as XIcon, Plus } from 'lucide-react'
 import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
-    const { business } = useAuth()
+    const { business, loading: authLoading } = useAuth()
     const [appointments, setAppointments] = useState([])
     const [filter, setFilter] = useState('all')
     const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0])
+    const [loadingApts, setLoadingApts] = useState(true)
 
     useEffect(() => {
         if (business?.id) loadAppointments()
@@ -30,6 +31,7 @@ export default function AppointmentsPage() {
 
         const { data } = await query.limit(50)
         setAppointments(data || [])
+        setLoadingApts(false)
     }
 
     async function updateStatus(id, status) {
@@ -88,6 +90,16 @@ export default function AppointmentsPage() {
             )}
         </div>
     )
+
+    if (authLoading || !business?.id || loadingApts) {
+        return (
+            <div className={styles.appointments}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={styles.appointments}>

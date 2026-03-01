@@ -7,7 +7,7 @@ import { CalendarDays, Users, DollarSign, CheckCircle, Clock, UserPlus, Receipt,
 import styles from './dashboard.module.css'
 
 export default function DashboardPage() {
-    const { profile, business } = useAuth()
+    const { profile, business, loading: authLoading } = useAuth()
     const [stats, setStats] = useState({ todayAppointments: 0, newClients: 0, revenue: 0, attendance: 0 })
     const [upcomingAppointments, setUpcomingAppointments] = useState([])
     const [today, setToday] = useState('')
@@ -15,7 +15,10 @@ export default function DashboardPage() {
 
     useEffect(() => {
         const now = new Date()
-        setToday(now.toISOString().split('T')[0])
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        setToday(`${year}-${month}-${day}`)
         const h = now.getHours()
         setGreeting(h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches')
     }, [])
@@ -83,6 +86,16 @@ export default function DashboardPage() {
     const statusBadge = (status) => {
         const s = Object.values(APPOINTMENT_STATUS).find(a => a.id === status)
         return s ? <span className={`badge badge-${s.color}`}>{s.label}</span> : null
+    }
+
+    if (authLoading || !business?.id) {
+        return (
+            <div className={styles.dashboard}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
     }
 
     return (

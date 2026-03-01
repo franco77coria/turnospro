@@ -7,7 +7,11 @@ import { sendAppointmentConfirmation } from '@/lib/send-email'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import styles from './calendar.module.css'
 
-const HOURS = Array.from({ length: 14 }, (_, i) => `${(i + 7).toString().padStart(2, '0')}:00`)
+const HOURS = Array.from({ length: 56 }, (_, i) => {
+    const hour = Math.floor(i / 4) + 7
+    const min = (i % 4) * 15
+    return `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`
+})
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
 function getWeekDates(date) {
@@ -23,11 +27,14 @@ function getWeekDates(date) {
 }
 
 function formatDate(d) {
-    return d.toISOString().split('T')[0]
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
 }
 
 export default function CalendarPage() {
-    const { business } = useAuth()
+    const { business, loading: authLoading } = useAuth()
     const [currentDate, setCurrentDate] = useState(new Date())
     const [appointments, setAppointments] = useState([])
     const [showNewModal, setShowNewModal] = useState(false)
@@ -174,17 +181,27 @@ export default function CalendarPage() {
 
     const getMobileAppointments = (hour) => {
         const dateStr = formatDate(currentDate)
-        return appointments.filter(a => a.date === dateStr && a.time?.startsWith(hour.split(':')[0]))
+        return appointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
     }
 
     const getAppointmentsForSlot = (date, hour) => {
         const dateStr = formatDate(date)
-        return appointments.filter(a => a.date === dateStr && a.time?.startsWith(hour.split(':')[0]))
+        return appointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
     }
 
     const statusColor = (status) => {
         const colors = { pending: '#F59E0B', confirmed: '#6366F1', completed: '#22C55E', cancelled: '#EF4444' }
         return colors[status] || '#9CA3AF'
+    }
+
+    if (authLoading || !business?.id) {
+        return (
+            <div className={styles.calendar}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -333,7 +350,7 @@ export default function CalendarPage() {
                                         </div>
                                         <div className="form-group">
                                             <label className="label">Hora</label>
-                                            <input className="input" type="time" value={newApt.time}
+                                            <input className="input" type="time" step="900" value={newApt.time}
                                                 onChange={e => setNewApt(prev => ({ ...prev, time: e.target.value }))} required />
                                         </div>
                                     </div>

@@ -93,7 +93,7 @@
 .timeRow {
     display: grid;
     grid-template-columns: 60px repeat(7, 1fr);
-    min-height: 60px;
+    min-height: 36px;
     border-bottom: 1px solid var(--border-light);
 }
 
@@ -110,7 +110,7 @@
     border-right: 1px solid var(--border-light);
     padding: 2px;
     cursor: pointer;
-    min-height: 60px;
+    min-height: 36px;
     transition: background var(--transition);
 }
 

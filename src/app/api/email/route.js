@@ -35,30 +35,18 @@ export async function POST(request) {
                 return NextResponse.json({ error: 'Tipo de email no válido' }, { status: 400 })
         }
 
+        // Use onboarding@resend.dev — the only allowed sender on Resend free tier
+        // To use a custom sender, verify a domain at resend.com/domains
         const { data: emailData, error } = await resend.emails.send({
-            from: `${data.businessName} <turnos@GLOWUP.app>`,
+            from: `${data.businessName || 'TurnosPro'} <onboarding@resend.dev>`,
             to: [to],
             subject,
             html,
         })
 
         if (error) {
-            console.error('Resend error:', error)
-            // If domain not verified, use Resend's onboarding email
-            if (error.message?.includes('domain')) {
-                const { data: fallbackData, error: fallbackError } = await resend.emails.send({
-                    from: 'GLOWUP <onboarding@resend.dev>',
-                    to: [to],
-                    subject,
-                    html,
-                })
-
-                if (fallbackError) {
-                    return NextResponse.json({ error: fallbackError.message }, { status: 500 })
-                }
-                return NextResponse.json({ success: true, id: fallbackData?.id, fallback: true })
-            }
-            return NextResponse.json({ error: error.message }, { status: 500 })
+            console.error('Resend error:', JSON.stringify(error))
+            return NextResponse.json({ error: error.message || 'Error enviando email' }, { status: 500 })
         }
 
         return NextResponse.json({ success: true, id: emailData?.id })
