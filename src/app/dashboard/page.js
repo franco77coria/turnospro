@@ -42,6 +42,16 @@ export default function DashboardPage() {
 
             const revenue = transactions?.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0) || 0
 
+            // New clients this month
+            const monthStart = new Date()
+            monthStart.setDate(1)
+            const monthStartStr = monthStart.toISOString().split('T')[0]
+            const { count: newClientsCount } = await supabase
+                .from('clients')
+                .select('id', { count: 'exact', head: true })
+                .eq('business_id', business.id)
+                .gte('created_at', `${monthStartStr}T00:00:00`)
+
             const { data: upcoming } = await supabase
                 .from('appointments')
                 .select('*, clients(name, phone), team_members(name)')
@@ -54,7 +64,7 @@ export default function DashboardPage() {
 
             setStats({
                 todayAppointments: total,
-                newClients: 0,
+                newClients: newClientsCount || 0,
                 revenue,
                 attendance: total > 0 ? Math.round((completed / total) * 100) : 0,
             })
@@ -120,7 +130,8 @@ export default function DashboardPage() {
 
                     {upcomingAppointments.length === 0 ? (
                         <div className={styles.emptyMsg}>
-                            <p>No hay turnos próximos</p>
+                            <div className={styles.emptyIcon}><Clock size={24} /></div>
+                            <p>No hay turnos proximos</p>
                             <a href="/dashboard/calendar" className="btn btn-primary btn-sm">+ Nuevo turno</a>
                         </div>
                     ) : (

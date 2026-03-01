@@ -1,0 +1,108 @@
+.clients {
+    max-width: 1200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.searchWrap {
+    position: relative;
+    max-width: 400px;
+    margin-bottom: var(--space-4);
+}
+
+.searchIcon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+}
+
+.searchInput {
+    padding-left: 36px !important;
+}
+
+.emptyState {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--text-secondary);
+}
+
+/* Mobile card list */
+.cardList {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.clientCard {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+}
+
+.clientCardBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.clientCardName {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.clientCardPhone {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    display: block;
+}
+
+.clientCardEmail {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    display: block;
+    margin-bottom: var(--space-2);
+}
+
+.clientCardNotes {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 220px;
+}
+
+@media (max-width: 768px) {
+    .tableWrap {
+        display: none;
+    }
+
+    .cardList {
+        display: flex;
+    }
+
+    .searchWrap {
+        max-width: 100%;
+    }
+}

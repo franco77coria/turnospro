@@ -32,6 +32,8 @@ export default function CalendarPage() {
     const [showNewModal, setShowNewModal] = useState(false)
     const [newApt, setNewApt] = useState({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
     const [teamMembers, setTeamMembers] = useState([])
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
 
     const weekDates = getWeekDates(currentDate)
     const today = formatDate(new Date())
@@ -69,6 +71,8 @@ export default function CalendarPage() {
     async function handleCreateAppointment(e) {
         e.preventDefault()
         if (!supabase) return
+        setError('')
+        setSaving(true)
         try {
             let clientId = null
             if (newApt.client_name) {
@@ -77,21 +81,22 @@ export default function CalendarPage() {
                     .select('id')
                     .eq('business_id', business.id)
                     .eq('name', newApt.client_name)
-                    .single()
+                    .maybeSingle()
 
                 if (existingClient) {
                     clientId = existingClient.id
                 } else {
-                    const { data: newClient } = await supabase
+                    const { data: newClient, error: clientError } = await supabase
                         .from('clients')
                         .insert([{ business_id: business.id, name: newApt.client_name }])
                         .select()
                         .single()
+                    if (clientError) throw clientError
                     clientId = newClient?.id
                 }
             }
 
-            await supabase.from('appointments').insert([{
+            const { error: aptError } = await supabase.from('appointments').insert([{
                 business_id: business.id,
                 client_id: clientId,
                 service_name: newApt.service_name,
@@ -101,19 +106,33 @@ export default function CalendarPage() {
                 status: 'confirmed',
                 team_member_id: newApt.team_member_id || null,
             }])
+            if (aptError) throw aptError
 
             setShowNewModal(false)
             setNewApt({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
             loadAppointments()
         } catch (err) {
             console.error('Error creating appointment:', err)
+            setError('Error al crear el turno. Intenta de nuevo.')
         }
+        setSaving(false)
     }
 
     function navigate(dir) {
         const d = new Date(currentDate)
         d.setDate(d.getDate() + (dir * 7))
         setCurrentDate(d)
+    }
+
+    function navigateDay(dir) {
+        const d = new Date(currentDate)
+        d.setDate(d.getDate() + dir)
+        setCurrentDate(d)
+    }
+
+    const getMobileAppointments = (hour) => {
+        const dateStr = formatDate(currentDate)
+        return appointments.filter(a => a.date === dateStr && a.time?.startsWith(hour.split(':')[0]))
     }
 
     const getAppointmentsForSlot = (date, hour) => {
@@ -188,6 +207,39 @@ export default function CalendarPage() {
                 </div>
             </div>
 
+            {/* Mobile: Day view */}
+            <div className={styles.mobileView}>
+                <div className={styles.mobileHeader}>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigateDay(-1)}><ChevronLeft size={16} /></button>
+                    <span className={styles.mobileDateLabel}>
+                        {currentDate.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'short' })}
+                    </span>
+                    <button className="btn btn-secondary btn-sm" onClick={() => navigateDay(1)}><ChevronRight size={16} /></button>
+                </div>
+                <div className={styles.mobileTimeline}>
+                    {HOURS.map(hour => {
+                        const slotApts = getMobileAppointments(hour)
+                        return (
+                            <div key={hour} className={styles.mobileSlot} onClick={() => {
+                                setNewApt(prev => ({ ...prev, date: formatDate(currentDate), time: hour }))
+                                setError('')
+                                setShowNewModal(true)
+                            }}>
+                                <span className={styles.mobileSlotTime}>{hour}</span>
+                                <div className={styles.mobileSlotContent}>
+                                    {slotApts.length > 0 ? slotApts.map(apt => (
+                                        <div key={apt.id} className={styles.mobileApt} style={{ borderLeftColor: statusColor(apt.status) }}>
+                                            <span className={styles.mobileAptName}>{apt.clients?.name || apt.service_name}</span>
+                                            <span className={styles.mobileAptService}>{apt.service_name} - {apt.time?.slice(0, 5)}</span>
+                                        </div>
+                                    )) : null}
+                                </div>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+
             {showNewModal && (
                 <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowNewModal(false)}>
                     <div className="modal">
@@ -206,6 +258,11 @@ export default function CalendarPage() {
                         ) : (
                             <form onSubmit={handleCreateAppointment}>
                                 <div className="modal-body">
+                                    {error && (
+                                        <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+                                            {error}
+                                        </div>
+                                    )}
                                     <div className="form-group">
                                         <label className="label">Cliente</label>
                                         <input className="input" placeholder="Nombre del cliente" value={newApt.client_name}
@@ -251,7 +308,9 @@ export default function CalendarPage() {
                                 </div>
                                 <div className="modal-footer">
                                     <button type="button" className="btn btn-secondary" onClick={() => setShowNewModal(false)}>Cancelar</button>
-                                    <button type="submit" className="btn btn-primary">Crear turno</button>
+                                    <button type="submit" className="btn btn-primary" disabled={saving}>
+                                        {saving ? <div className="loading-spinner" /> : 'Crear turno'}
+                                    </button>
                                 </div>
                             </form>
                         )}

@@ -1,15 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin } from 'lucide-react'
 import styles from './booking.module.css'
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-const supabase = supabaseUrl && supabaseKey
-    ? createClient(supabaseUrl, supabaseKey)
-    : null
 
 export default function BookingPage() {
     const { id } = useParams()
@@ -29,6 +23,7 @@ export default function BookingPage() {
     }, [id])
 
     async function loadBusiness() {
+        if (!supabase) { setLoading(false); return }
         const { data } = await supabase
             .from('businesses')
             .select('*')

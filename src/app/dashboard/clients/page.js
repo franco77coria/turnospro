@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { Plus, X, Search } from 'lucide-react'
+import styles from './clients.module.css'
 
 export default function ClientsPage() {
     const { business } = useAuth()
@@ -42,16 +43,22 @@ export default function ClientsPage() {
         } catch (err) { console.error('Error:', err) }
     }
 
+    const openEdit = (c) => {
+        setEditClient(c)
+        setForm({ name: c.name, phone: c.phone || '', email: c.email || '', notes: c.notes || '' })
+        setShowModal(true)
+    }
+
     const filtered = search
         ? clients.filter(c => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
         : clients
 
     return (
-        <div style={{ maxWidth: 1200 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div className={styles.clients}>
+            <div className={styles.header}>
                 <div>
-                    <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Clientes</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>{clients.length} clientes registrados</p>
+                    <h1>Clientes</h1>
+                    <p className={styles.subtitle}>{clients.length} clientes registrados</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => {
                     setEditClient(null)
@@ -60,50 +67,68 @@ export default function ClientsPage() {
                 }}><Plus size={16} /> Agregar cliente</button>
             </div>
 
-            <div style={{ position: 'relative', maxWidth: 400, marginBottom: 'var(--space-4)' }}>
-                <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
-                <input className="input" placeholder="Buscar por nombre o teléfono..." value={search}
-                    onChange={e => setSearch(e.target.value)} style={{ paddingLeft: 36 }} />
+            <div className={styles.searchWrap}>
+                <Search size={16} className={styles.searchIcon} />
+                <input className={`input ${styles.searchInput}`} placeholder="Buscar por nombre o telefono..." value={search}
+                    onChange={e => setSearch(e.target.value)} />
             </div>
 
-            <div className="table-container">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Cliente</th>
-                            <th>Teléfono</th>
-                            <th className="hide-mobile">Email</th>
-                            <th className="hide-mobile">Notas</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {filtered.length === 0 ? (
-                            <tr><td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>
-                                {search ? 'Sin resultados' : 'No hay clientes aún'}
-                            </td></tr>
-                        ) : filtered.map(c => (
-                            <tr key={c.id}>
-                                <td>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                        <div className="avatar avatar-sm">{c.name?.[0]?.toUpperCase()}</div>
-                                        <span style={{ fontWeight: 500 }}>{c.name}</span>
-                                    </div>
-                                </td>
-                                <td>{c.phone || '—'}</td>
-                                <td className="hide-mobile">{c.email || '—'}</td>
-                                <td className="hide-mobile" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.notes || '—'}</td>
-                                <td>
-                                    <button className="btn btn-ghost btn-sm" onClick={() => {
-                                        setEditClient(c)
-                                        setForm({ name: c.name, phone: c.phone || '', email: c.email || '', notes: c.notes || '' })
-                                        setShowModal(true)
-                                    }}>Editar</button>
-                                </td>
+            {/* Desktop: Table */}
+            <div className={styles.tableWrap}>
+                <div className="table-container">
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Telefono</th>
+                                <th className="hide-mobile">Email</th>
+                                <th className="hide-mobile">Notas</th>
+                                <th>Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {filtered.length === 0 ? (
+                                <tr><td colSpan={5} className={styles.emptyState}>
+                                    {search ? 'Sin resultados' : 'No hay clientes aun'}
+                                </td></tr>
+                            ) : filtered.map(c => (
+                                <tr key={c.id}>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                            <div className="avatar avatar-sm">{c.name?.[0]?.toUpperCase()}</div>
+                                            <span style={{ fontWeight: 500 }}>{c.name}</span>
+                                        </div>
+                                    </td>
+                                    <td>{c.phone || '—'}</td>
+                                    <td className="hide-mobile">{c.email || '—'}</td>
+                                    <td className="hide-mobile" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.notes || '—'}</td>
+                                    <td>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(c)}>Editar</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile: Card list */}
+            <div className={styles.cardList}>
+                {filtered.length === 0 ? (
+                    <div className={`card ${styles.emptyState}`}>
+                        {search ? 'Sin resultados' : 'No hay clientes aun'}
+                    </div>
+                ) : filtered.map(c => (
+                    <div key={c.id} className={`card card-compact ${styles.clientCard}`} onClick={() => openEdit(c)}>
+                        <div className="avatar">{c.name?.[0]?.toUpperCase()}</div>
+                        <div className={styles.clientCardBody}>
+                            <span className={styles.clientCardName}>{c.name}</span>
+                            {c.phone && <span className={styles.clientCardPhone}>{c.phone}</span>}
+                            {c.email && <span className={styles.clientCardEmail}>{c.email}</span>}
+                            {c.notes && <span className={styles.clientCardNotes}>{c.notes}</span>}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             {showModal && (
@@ -120,7 +145,7 @@ export default function ClientsPage() {
                                     <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
                                 </div>
                                 <div className="form-group">
-                                    <label className="label">Teléfono</label>
+                                    <label className="label">Telefono</label>
                                     <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
                                 </div>
                                 <div className="form-group">

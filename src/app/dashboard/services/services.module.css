@@ -1,0 +1,122 @@
+.services {
+    max-width: 800px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+.error {
+    background: var(--danger-light);
+    color: var(--danger);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-sm);
+}
+
+.serviceList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.serviceCard {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.serviceInfo {
+    flex: 1;
+    min-width: 150px;
+}
+
+.serviceName {
+    font-weight: 600;
+    display: block;
+}
+
+.serviceDuration {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.servicePrice {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: var(--font-size-lg);
+}
+
+.serviceActions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.emptyState {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--text-secondary);
+}
+
+.emptyState p {
+    margin-bottom: var(--space-3);
+}
+
+.emptyState .emptyHint {
+    font-size: var(--font-size-xs);
+    margin-bottom: var(--space-4);
+}
+
+.emptyIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4);
+}
+
+.formGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+@media (max-width: 768px) {
+    .serviceCard {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .serviceActions {
+        width: 100%;
+    }
+
+    .serviceActions button {
+        flex: 1;
+    }
+
+    .formGrid {
+        grid-template-columns: 1fr;
+    }
+}

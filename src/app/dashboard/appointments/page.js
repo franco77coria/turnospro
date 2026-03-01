@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Check, X as XIcon, Plus } from 'lucide-react'
+import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
     const { business } = useAuth()
@@ -58,67 +59,100 @@ export default function AppointmentsPage() {
         return s ? <span className={`badge badge-${s.color}`}>{s.label}</span> : null
     }
 
+    const renderActions = (apt) => (
+        <div className={styles.statusActions}>
+            {apt.status === 'pending' && (
+                <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(apt.id, 'confirmed')}>
+                    <Check size={14} />
+                </button>
+            )}
+            {(apt.status === 'confirmed' || apt.status === 'pending') && (
+                <>
+                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--success)' }}
+                        onClick={() => updateStatus(apt.id, 'completed')}><Check size={14} /> Completar</button>
+                    <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}
+                        onClick={() => updateStatus(apt.id, 'cancelled')}><XIcon size={14} /></button>
+                </>
+            )}
+        </div>
+    )
+
     return (
-        <div style={{ maxWidth: 1200 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
-                <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Turnos</h1>
-                <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+        <div className={styles.appointments}>
+            <div className={styles.header}>
+                <h1>Turnos</h1>
+                <div className={styles.headerActions}>
                     <input type="date" className="input input-sm" style={{ width: 160 }} value={dateFilter}
                         onChange={e => setDateFilter(e.target.value)} />
                     <a href="/dashboard/calendar" className="btn btn-primary"><Plus size={16} /> Nuevo turno</a>
                 </div>
             </div>
 
-            <div className="tabs" style={{ marginBottom: 'var(--space-4)' }}>
-                {[{ id: 'all', label: 'Todos' }, ...Object.values(APPOINTMENT_STATUS)].map(s => (
-                    <button key={s.id} className={`tab ${filter === s.id ? 'active' : ''}`}
-                        onClick={() => setFilter(s.id)}>{s.label}</button>
-                ))}
+            <div className={styles.tabsWrap}>
+                <div className="tabs">
+                    {[{ id: 'all', label: 'Todos' }, ...Object.values(APPOINTMENT_STATUS)].map(s => (
+                        <button key={s.id} className={`tab ${filter === s.id ? 'active' : ''}`}
+                            onClick={() => setFilter(s.id)}>{s.label}</button>
+                    ))}
+                </div>
             </div>
 
-            <div className="table-container">
-                <table className="table">
-                    <thead>
-                        <tr>
-                            <th>Hora</th>
-                            <th>Cliente</th>
-                            <th>Servicio</th>
-                            <th className="hide-mobile">Profesional</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {appointments.length === 0 ? (
-                            <tr><td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>No hay turnos para esta fecha</td></tr>
-                        ) : appointments.map(apt => (
-                            <tr key={apt.id}>
-                                <td style={{ fontWeight: 600 }}>{apt.time?.slice(0, 5)}</td>
-                                <td>{apt.clients?.name || '—'}</td>
-                                <td>{apt.service_name}</td>
-                                <td className="hide-mobile">{apt.team_members?.name || '—'}</td>
-                                <td>{statusBadge(apt.status)}</td>
-                                <td>
-                                    <div style={{ display: 'flex', gap: 'var(--space-1)' }}>
-                                        {apt.status === 'pending' && (
-                                            <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(apt.id, 'confirmed')}>
-                                                <Check size={14} />
-                                            </button>
-                                        )}
-                                        {(apt.status === 'confirmed' || apt.status === 'pending') && (
-                                            <>
-                                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--success)' }}
-                                                    onClick={() => updateStatus(apt.id, 'completed')}><Check size={14} /> Completar</button>
-                                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }}
-                                                    onClick={() => updateStatus(apt.id, 'cancelled')}><XIcon size={14} /></button>
-                                            </>
-                                        )}
-                                    </div>
-                                </td>
+            {/* Desktop: Table */}
+            <div className={styles.tableWrap}>
+                <div className="table-container">
+                    <table className="table">
+                        <thead>
+                            <tr>
+                                <th>Hora</th>
+                                <th>Cliente</th>
+                                <th>Servicio</th>
+                                <th className="hide-mobile">Profesional</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {appointments.length === 0 ? (
+                                <tr><td colSpan={6} className={styles.emptyState}>No hay turnos para esta fecha</td></tr>
+                            ) : appointments.map(apt => (
+                                <tr key={apt.id}>
+                                    <td style={{ fontWeight: 600 }}>{apt.time?.slice(0, 5)}</td>
+                                    <td>{apt.clients?.name || '—'}</td>
+                                    <td>{apt.service_name}</td>
+                                    <td className="hide-mobile">{apt.team_members?.name || '—'}</td>
+                                    <td>{statusBadge(apt.status)}</td>
+                                    <td>{renderActions(apt)}</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Mobile: Card list */}
+            <div className={styles.cardList}>
+                {appointments.length === 0 ? (
+                    <div className={`card ${styles.emptyState}`}>No hay turnos para esta fecha</div>
+                ) : appointments.map(apt => (
+                    <div key={apt.id} className={`card ${styles.aptCard}`}>
+                        <div className={styles.aptCardTime}>
+                            <span className={styles.aptCardHour}>{apt.time?.slice(0, 5)}</span>
+                        </div>
+                        <div className={styles.aptCardBody}>
+                            <span className={styles.aptCardClient}>{apt.clients?.name || 'Cliente'}</span>
+                            <span className={styles.aptCardService}>{apt.service_name}</span>
+                            <div className={styles.aptCardMeta}>
+                                {statusBadge(apt.status)}
+                                {apt.team_members?.name && (
+                                    <span className="badge badge-neutral">{apt.team_members.name}</span>
+                                )}
+                            </div>
+                            <div className={styles.aptCardActions}>
+                                {renderActions(apt)}
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     )

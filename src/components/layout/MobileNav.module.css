@@ -24,19 +24,117 @@
     color: var(--text-tertiary);
     transition: color var(--transition);
     min-width: 56px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
 }
 
 .item.active {
     color: var(--accent);
 }
 
-.icon {
-    font-size: 20px;
-}
-
 .label {
     font-size: 10px;
     font-weight: 500;
+}
+
+/* More menu overlay */
+.moreOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 60;
+    display: flex;
+    align-items: flex-end;
+    animation: fadeIn 150ms ease;
+}
+
+.moreMenu {
+    width: 100%;
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    padding: var(--space-4);
+    padding-bottom: calc(var(--mobile-nav-height) + var(--space-4) + env(safe-area-inset-bottom, 0));
+    animation: slideUp 200ms ease;
+}
+
+.moreHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--space-3);
+    margin-bottom: var(--space-2);
+    border-bottom: 1px solid var(--border-light);
+    font-weight: 600;
+    font-size: var(--font-size-md);
+}
+
+.moreClose {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.moreClose:hover {
+    background: var(--bg-tertiary);
+}
+
+.moreItem {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-2);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all var(--transition);
+    background: none;
+    border: none;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.moreItem:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.moreItemActive {
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.logoutItem {
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--border-light);
+    padding-top: var(--space-3);
+    color: var(--danger);
+}
+
+.logoutItem:hover {
+    background: var(--danger-light);
+    color: var(--danger);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(100px); }
+    to { opacity: 1; transform: none; }
 }
 
 @media (max-width: 768px) {

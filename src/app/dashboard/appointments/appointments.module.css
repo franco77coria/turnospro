@@ -1,0 +1,131 @@
+.appointments {
+    max-width: 1200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-6);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+}
+
+.headerActions {
+    display: flex;
+    gap: var(--space-3);
+    align-items: center;
+}
+
+.tabsWrap {
+    margin-bottom: var(--space-4);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.statusActions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+/* Mobile card list */
+.cardList {
+    display: none;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.aptCard {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.aptCardTime {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 52px;
+    padding: var(--space-2);
+    background: var(--accent-light);
+    border-radius: var(--radius-md);
+}
+
+.aptCardHour {
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.aptCardDate {
+    font-size: 10px;
+    color: var(--accent);
+    opacity: 0.7;
+}
+
+.aptCardBody {
+    flex: 1;
+    min-width: 0;
+}
+
+.aptCardClient {
+    font-weight: 600;
+    font-size: var(--font-size-sm);
+    display: block;
+    margin-bottom: 2px;
+}
+
+.aptCardService {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    display: block;
+    margin-bottom: var(--space-2);
+}
+
+.aptCardMeta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.aptCardActions {
+    display: flex;
+    gap: var(--space-1);
+    margin-top: var(--space-2);
+}
+
+.emptyState {
+    text-align: center;
+    padding: var(--space-8);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+}
+
+@media (max-width: 768px) {
+    .tableWrap {
+        display: none;
+    }
+
+    .cardList {
+        display: flex;
+    }
+
+    .headerActions {
+        width: 100%;
+    }
+
+    .headerActions input[type="date"] {
+        flex: 1;
+    }
+
+    .tabsWrap .tabs {
+        width: max-content;
+    }
+}

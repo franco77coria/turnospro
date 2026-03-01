@@ -28,8 +28,8 @@ export async function middleware(request) {
         },
     })
 
-    // Refresh the auth token — this is critical for session persistence
-    await supabase.auth.getSession()
+    // Validate and refresh the auth token — getUser() validates server-side
+    await supabase.auth.getUser()
 
     return supabaseResponse
 }

@@ -1,7 +1,8 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { useState, useEffect } from 'react'
-import { Plus, X, Trash2 } from 'lucide-react'
+import { Plus, X, Tag } from 'lucide-react'
+import styles from './services.module.css'
 
 export default function ServicesPage() {
     const { business, updateBusiness } = useAuth()
@@ -12,7 +13,6 @@ export default function ServicesPage() {
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
-    // Always sync from business context
     useEffect(() => {
         if (business?.services && Array.isArray(business.services)) {
             setServices(business.services)
@@ -48,7 +48,7 @@ export default function ServicesPage() {
             setForm({ name: '', price: '', duration: '' })
         } catch (err) {
             console.error('Error saving service:', err)
-            setError('Error al guardar. Intentá de nuevo.')
+            setError('Error al guardar. Intenta de nuevo.')
         }
         setSaving(false)
     }
@@ -70,11 +70,11 @@ export default function ServicesPage() {
     }
 
     return (
-        <div style={{ maxWidth: 800 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+        <div className={styles.services}>
+            <div className={styles.header}>
                 <div>
-                    <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Servicios</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>{services.length} servicios configurados</p>
+                    <h1>Servicios</h1>
+                    <p className={styles.subtitle}>{services.length} servicios configurados</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => {
                     setEditIdx(-1)
@@ -84,23 +84,19 @@ export default function ServicesPage() {
                 }}><Plus size={14} /> Agregar servicio</button>
             </div>
 
-            {error && (
-                <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
-                    {error}
-                </div>
-            )}
+            {error && <div className={styles.error}>{error}</div>}
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div className={styles.serviceList}>
                 {services.map((s, i) => (
-                    <div key={i} className="card card-compact" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
-                        <div style={{ flex: 1, minWidth: 150 }}>
-                            <div style={{ fontWeight: 600 }}>{s.name}</div>
-                            <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>{s.duration} min</div>
+                    <div key={i} className={`card card-compact ${styles.serviceCard}`}>
+                        <div className={styles.serviceInfo}>
+                            <span className={styles.serviceName}>{s.name}</span>
+                            <span className={styles.serviceDuration}>{s.duration} min</span>
                         </div>
-                        <div style={{ fontWeight: 700, color: 'var(--accent)', fontSize: 'var(--font-size-lg)' }}>
+                        <div className={styles.servicePrice}>
                             ${s.price?.toLocaleString()}
                         </div>
-                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        <div className={styles.serviceActions}>
                             <button className="btn btn-ghost btn-sm" onClick={() => {
                                 setEditIdx(i)
                                 setForm({ name: s.name, price: s.price.toString(), duration: s.duration.toString() })
@@ -113,10 +109,13 @@ export default function ServicesPage() {
                 ))}
 
                 {services.length === 0 && (
-                    <div className="card" style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--text-secondary)' }}>
-                        <p style={{ marginBottom: 'var(--space-3)' }}>No hay servicios configurados</p>
-                        <p style={{ fontSize: 'var(--font-size-xs)', marginBottom: 'var(--space-4)' }}>
-                            Agregá al menos un servicio para poder crear turnos
+                    <div className={`card ${styles.emptyState}`}>
+                        <div className={styles.emptyIcon}>
+                            <Tag size={24} />
+                        </div>
+                        <p>No hay servicios configurados</p>
+                        <p className={styles.emptyHint}>
+                            Agrega al menos un servicio para poder crear turnos
                         </p>
                         <button className="btn btn-primary btn-sm" onClick={() => {
                             setForm({ name: '', price: '', duration: '' })
@@ -136,24 +135,20 @@ export default function ServicesPage() {
                         </div>
                         <form onSubmit={handleSave}>
                             <div className="modal-body">
-                                {error && (
-                                    <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-sm)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
-                                        {error}
-                                    </div>
-                                )}
+                                {error && <div className={styles.error}>{error}</div>}
                                 <div className="form-group">
                                     <label className="label">Nombre *</label>
-                                    <input className="input" placeholder="Ej: Corte Clásico" value={form.name}
+                                    <input className="input" placeholder="Ej: Corte Clasico" value={form.name}
                                         onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
                                 </div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                <div className={styles.formGrid}>
                                     <div className="form-group">
                                         <label className="label">Precio ($) *</label>
                                         <input className="input" type="number" placeholder="2500" value={form.price}
                                             onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required min="0" />
                                     </div>
                                     <div className="form-group">
-                                        <label className="label">Duración (min) *</label>
+                                        <label className="label">Duracion (min) *</label>
                                         <input className="input" type="number" placeholder="30" value={form.duration}
                                             onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} required min="1" />
                                     </div>

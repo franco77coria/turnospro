@@ -146,34 +146,109 @@
     color: var(--text-secondary);
 }
 
+/* Mobile: day view */
+.mobileView {
+    display: none;
+}
+
+.mobileHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+}
+
+.mobileDateLabel {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.mobileTimeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.mobileSlot {
+    display: flex;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius-md);
+    min-height: 52px;
+    cursor: pointer;
+    transition: background var(--transition);
+}
+
+.mobileSlot:hover {
+    background: var(--bg-hover);
+}
+
+.mobileSlotTime {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-tertiary);
+    min-width: 48px;
+    padding-top: 2px;
+}
+
+.mobileSlotContent {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.mobileApt {
+    background: var(--accent-light);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: var(--space-2) var(--space-3);
+}
+
+.mobileAptName {
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    display: block;
+}
+
+.mobileAptService {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+}
+
+.mobileEmpty {
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+}
+
 @media (max-width: 768px) {
+    .calendarGrid {
+        display: none;
+    }
+
+    .mobileView {
+        display: block;
+    }
+
     .header h1 {
         font-size: var(--font-size-lg);
     }
 
-    .calendarGrid {
-        min-width: 100%;
+    .headerLeft {
+        gap: var(--space-2);
     }
 
-    .gridHeader {
-        grid-template-columns: 40px repeat(7, 1fr);
+    .currentMonth {
+        display: none;
     }
 
-    .timeRow {
-        grid-template-columns: 40px repeat(7, 1fr);
-        min-height: 48px;
-    }
-
-    .timeLabel {
-        font-size: 10px;
-        padding: 2px;
-    }
-
-    .dayName {
-        font-size: 10px;
-    }
-
-    .dayNum {
-        font-size: var(--font-size-sm);
+    .navBtns button {
+        min-width: 40px;
+        min-height: 40px;
     }
 }
