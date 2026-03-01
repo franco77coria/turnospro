@@ -100,12 +100,17 @@ export function AuthProvider({ children }) {
         }
 
         let isMounted = true
+        let initialLoadDone = false
 
         const initAuth = async () => {
             try {
-                const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+                // Use getSession() — reads from cookies instantly, no network call.
+                // The middleware already validates the token server-side with getUser().
+                const { data: { session }, error } = await supabase.auth.getSession()
 
                 if (!isMounted) return
+
+                const currentUser = session?.user || null
 
                 if (error || !currentUser) {
                     setUser(null)
@@ -119,19 +124,25 @@ export function AuthProvider({ children }) {
                 console.error('Auth init error:', err)
             }
 
-            if (isMounted) setLoading(false)
+            if (isMounted) {
+                setLoading(false)
+                initialLoadDone = true
+            }
         }
 
         initAuth()
 
-        // Listen for auth changes (login/logout after initial load)
+        // Listen for auth changes (login/logout AFTER initial load)
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!isMounted) return
+
+            // Skip events that don't represent actual user changes
+            if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
 
             const sessionUser = session?.user || null
             setUser(sessionUser)
 
-            if (event === 'SIGNED_IN' && sessionUser) {
+            if (event === 'SIGNED_IN' && sessionUser && initialLoadDone) {
                 await loadUserData(sessionUser.id, sessionUser.email, sessionUser.user_metadata)
             } else if (event === 'SIGNED_OUT') {
                 setProfile(null)
