@@ -136,7 +136,7 @@ export default function BookingPage() {
                             businessName: business.name,
                             businessType: business.business_type,
                             businessPhone: business.phone,
-                            appointmentUrl: `https://glowup.vercel.app/book/${id}`,
+                            appointmentUrl: `https://glowup-turnos.vercel.app/book/${id}`,
                         }
                     })
                 })
@@ -368,7 +368,7 @@ export default function BookingPage() {
 
                 {/* Footer */}
                 <div className={styles.footer}>
-                    Powered by <a href="https://glowup.vercel.app" target="_blank" rel="noopener">GLOWUP</a>
+                    Powered by <a href="https://glowup-turnos.vercel.app" target="_blank" rel="noopener">GLOWUP</a>
                 </div>
             </div>
         </div>
