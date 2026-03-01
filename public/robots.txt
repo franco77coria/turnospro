@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard/
+Disallow: /onboarding/
+
+Sitemap: https://glowup-turnos.vercel.app/sitemap.xml
