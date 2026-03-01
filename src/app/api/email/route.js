@@ -38,7 +38,7 @@ export async function POST(request) {
         // Use onboarding@resend.dev — the only allowed sender on Resend free tier
         // To use a custom sender, verify a domain at resend.com/domains
         const { data: emailData, error } = await resend.emails.send({
-            from: `${data.businessName || 'TurnosPro'} <onboarding@resend.dev>`,
+            from: `${data.businessName || 'GLOWUP'} <onboarding@resend.dev>`,
             to: [to],
             subject,
             html,
