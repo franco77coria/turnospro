@@ -36,7 +36,7 @@ export default function Landing() {
       <nav className={styles.nav}>
         <div className={styles.navInner}>
           <Link href="/" className={styles.navLogo}>
-            <span className={styles.logoMark}>T</span>
+            <span className={styles.logoMark}>G</span>
             <span className={styles.logoText}>GLOWUP</span>
           </Link>
           <div className={styles.navLinks}>
@@ -161,7 +161,7 @@ export default function Landing() {
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <span className={styles.footerLogo}>
-            <span className={styles.logoMark}>T</span> GLOWUP
+            <span className={styles.logoMark}>G</span> GLOWUP
           </span>
           <span className={styles.footerText}>© 2026 GLOWUP. Todos los derechos reservados.</span>
         </div>

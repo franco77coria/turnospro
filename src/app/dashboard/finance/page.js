@@ -7,13 +7,15 @@ import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X 
 import styles from './finance.module.css'
 
 export default function FinancePage() {
-    const { business } = useAuth()
+    const { business, loading: authLoading } = useAuth()
     const [transactions, setTransactions] = useState([])
     const [filter, setFilter] = useState('all')
     const [showExpenseModal, setShowExpenseModal] = useState(false)
     const [showClosureModal, setShowClosureModal] = useState(false)
     const [expenseForm, setExpenseForm] = useState({ concept: '', amount: '', category: 'products', payment_method: 'cash' })
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0])
+    const now = new Date()
+    const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const [selectedDate, setSelectedDate] = useState(localToday)
 
     useEffect(() => {
         if (business?.id) loadTransactions()
@@ -87,6 +89,16 @@ export default function FinancePage() {
         ...pm,
         total: transactions.filter(t => t.payment_method === pm.id && t.type === 'income').reduce((s, t) => s + t.amount, 0)
     })).filter(pm => pm.total > 0)
+
+    if (authLoading || !business?.id) {
+        return (
+            <div className={styles.finance}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div className={styles.finance}>

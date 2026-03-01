@@ -35,7 +35,7 @@ export default function LoginPage() {
         <div className={styles.loginPage}>
             <div className={styles.loginCard}>
                 <div className={styles.logo}>
-                    <span className={styles.logoMark}>T</span>
+                    <span className={styles.logoMark}>G</span>
                 </div>
                 <h1>Iniciar sesión</h1>
                 <p>Accedé a tu cuenta de GLOWUP</p>

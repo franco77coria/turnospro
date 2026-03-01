@@ -6,7 +6,7 @@ import { Plus, Mail, Phone, X } from 'lucide-react'
 import styles from './team.module.css'
 
 export default function TeamPage() {
-    const { business } = useAuth()
+    const { business, loading: authLoading } = useAuth()
     const [members, setMembers] = useState([])
     const [showModal, setShowModal] = useState(false)
     const [editMember, setEditMember] = useState(null)
@@ -61,6 +61,16 @@ export default function TeamPage() {
     const roleBadgeColor = (role) => {
         const colors = { 'Dueño': 'accent', 'Admin': 'info', 'Recepcionista': 'neutral' }
         return colors[role] || 'accent'
+    }
+
+    if (authLoading || !business?.id) {
+        return (
+            <div className={styles.team}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
     }
 
     return (

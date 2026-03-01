@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react'
 import { Save, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
-    const { business, updateBusiness, profile } = useAuth()
+    const { business, updateBusiness, profile, loading: authLoading } = useAuth()
     const [form, setForm] = useState({
         name: business?.name || '',
         phone: business?.phone || '',
@@ -53,6 +53,16 @@ export default function SettingsPage() {
     }
 
 
+
+    if (authLoading || !business?.id) {
+        return (
+            <div style={{ maxWidth: 600 }}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div style={{ maxWidth: 600 }}>

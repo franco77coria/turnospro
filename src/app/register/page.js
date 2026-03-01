@@ -89,7 +89,7 @@ export default function RegisterPage() {
             <div className={styles.registerPage}>
                 <div className={styles.registerCard}>
                     <div className={styles.logo}>
-                        <span className={styles.logoMark}>T</span>
+                        <span className={styles.logoMark}>G</span>
                     </div>
                     {accountType === 'business' ? (
                         <>
@@ -123,7 +123,7 @@ export default function RegisterPage() {
         <div className={styles.registerPage}>
             <div className={styles.registerCard}>
                 <div className={styles.logo}>
-                    <span className={styles.logoMark}>T</span>
+                    <span className={styles.logoMark}>G</span>
                 </div>
 
                 {step === 1 ? (
