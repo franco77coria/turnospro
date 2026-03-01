@@ -2,11 +2,14 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
+import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin, LogIn } from 'lucide-react'
 import styles from './booking.module.css'
+import Link from 'next/link'
 
 export default function BookingPage() {
     const { id } = useParams()
+    const { user, loading: authLoading } = useAuth()
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
     const [step, setStep] = useState(1)
@@ -152,7 +155,7 @@ export default function BookingPage() {
         setSubmitting(false)
     }
 
-    if (loading) {
+    if (loading || authLoading) {
         return (
             <div className={styles.bookingPage}>
                 <div className={styles.loadingWrap}>
@@ -169,6 +172,39 @@ export default function BookingPage() {
                     <div className={styles.errorCard}>
                         <h2>Negocio no encontrado</h2>
                         <p>El link de reservas no es válido o el negocio fue eliminado.</p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
+    if (!user) {
+        return (
+            <div className={styles.bookingPage}>
+                <div className={styles.container}>
+                    <div className={styles.bookingHeader}>
+                        <div className={styles.businessLogo}>
+                            {business.name?.[0]?.toUpperCase()}
+                        </div>
+                        <h1>{business.name}</h1>
+                        {business.address && (
+                            <p className={styles.address}><MapPin size={14} /> {business.address}</p>
+                        )}
+                    </div>
+                    <div className={styles.errorCard} style={{ textAlign: 'center' }}>
+                        <LogIn size={32} style={{ color: 'var(--accent)', marginBottom: 'var(--space-3)' }} />
+                        <h2>Iniciá sesión para reservar</h2>
+                        <p style={{ marginBottom: 'var(--space-4)' }}>
+                            Para reservar un turno necesitás tener una cuenta en GLOWUP.
+                        </p>
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            <Link href={`/login?redirect=/book/${id}`} className="btn btn-primary">
+                                Iniciar sesión
+                            </Link>
+                            <Link href={`/register?redirect=/book/${id}`} className="btn btn-secondary">
+                                Crear cuenta
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

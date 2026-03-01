@@ -27,12 +27,8 @@ const RUBROS = [
 ]
 
 export default function Landing() {
-  const { user, loading } = useAuth()
+  const { user } = useAuth()
   const router = useRouter()
-
-  useEffect(() => {
-    if (!loading && user) router.push('/dashboard')
-  }, [user, loading, router])
 
   return (
     <div className={styles.landing}>
@@ -46,7 +42,11 @@ export default function Landing() {
           <div className={styles.navLinks}>
             <a href="#features" className={styles.navLink}>Funciones</a>
             <a href="#rubros" className={styles.navLink}>Rubros</a>
-            <Link href="/login" className="btn btn-primary">Comenzar gratis</Link>
+            {user ? (
+              <Link href="/dashboard" className="btn btn-primary">Mi Dashboard</Link>
+            ) : (
+              <Link href="/login" className="btn btn-primary">Comenzar gratis</Link>
+            )}
           </div>
         </div>
       </nav>
