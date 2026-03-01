@@ -1,0 +1,173 @@
+.bookPage {
+    min-height: 100vh;
+    background: var(--bg-secondary);
+    display: flex;
+    justify-content: center;
+    padding: var(--space-4);
+}
+
+.container {
+    width: 100%;
+    max-width: 640px;
+}
+
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-6) 0 var(--space-4);
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+}
+
+.logoMark {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    font-size: var(--font-size-sm);
+}
+
+.logoText {
+    color: var(--text-primary);
+}
+
+.pageHeader {
+    text-align: center;
+    margin-bottom: var(--space-6);
+}
+
+.pageHeader h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    margin-bottom: var(--space-1);
+}
+
+.pageHeader p {
+    color: var(--text-secondary);
+}
+
+.authCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.authCard h2 {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--space-2);
+}
+
+.authCard p {
+    color: var(--text-secondary);
+    margin-bottom: var(--space-5);
+}
+
+.authButtons {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.emptyState {
+    text-align: center;
+    padding: var(--space-10);
+    color: var(--text-tertiary);
+}
+
+.emptyState svg {
+    margin-bottom: var(--space-3);
+}
+
+.businessGrid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.businessCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    text-decoration: none;
+    color: var(--text-primary);
+    transition: all var(--transition);
+}
+
+.businessCard:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.1);
+    transform: translateY(-1px);
+}
+
+.bizAvatar {
+    width: 48px;
+    height: 48px;
+    background: var(--accent-light);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+    flex-shrink: 0;
+}
+
+.bizInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.bizInfo h3 {
+    font-size: var(--font-size-md);
+    font-weight: 600;
+}
+
+.bizType {
+    font-size: var(--font-size-xs);
+    color: var(--accent);
+    text-transform: capitalize;
+    font-weight: 500;
+}
+
+.bizAddress,
+.bizServices {
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.bizArrow {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+}

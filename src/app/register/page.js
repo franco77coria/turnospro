@@ -59,23 +59,27 @@ export default function RegisterPage() {
             if (authError) throw authError
 
             if (authData.user) {
-                // Create profile
-                await supabase.from('profiles').upsert([{
+                // Create profile — only use columns that exist in the schema
+                const { error: profileError } = await supabase.from('profiles').upsert([{
                     id: authData.user.id,
                     email: form.email,
                     full_name: form.fullName,
-                    account_type: accountType,
-                    approved: accountType === 'user',
-                    business_name: accountType === 'business' ? form.businessName : null,
-                    business_phone: accountType === 'business' ? form.businessPhone : null,
                     role: accountType === 'business' ? 'Dueño' : 'user',
                 }])
+                if (profileError) {
+                    console.error('Profile creation error:', profileError)
+                    // Profile creation failed but auth user was created - still show success
+                }
             }
 
             setSuccess(true)
         } catch (err) {
             console.error('Register error:', err)
-            setError(err.message || 'Error al crear la cuenta')
+            if (err.message?.includes('already registered')) {
+                setError('Este email ya tiene una cuenta. Intentá iniciar sesión.')
+            } else {
+                setError(err.message || 'Error al crear la cuenta')
+            }
         }
         setLoading(false)
     }

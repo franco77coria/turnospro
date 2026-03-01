@@ -49,11 +49,19 @@ export default function CalendarPage() {
 
     const loadAppointments = useCallback(async () => {
         if (!supabase || !business?.id) return
-        // Calculate week dates inside the callback to avoid stale closures
         const wd = getWeekDates(currentDate)
         const start = formatDate(wd[0])
         const end = formatDate(wd[6])
-        console.log('[Calendar] Loading appointments:', { businessId: business.id, start, end })
+
+        // Debug: check if ANY appointments exist for this business
+        const { data: allApts, error: debugError } = await supabase
+            .from('appointments')
+            .select('id, date, time, service_name')
+            .eq('business_id', business.id)
+            .limit(5)
+        console.log('[Calendar] ALL appointments in DB:', allApts, debugError ? `Error: ${debugError.message}` : '')
+        console.log('[Calendar] Querying range:', start, 'to', end)
+
         const { data, error: queryError } = await supabase
             .from('appointments')
             .select('*, clients(name, email, phone), team_members(name)')
@@ -62,7 +70,7 @@ export default function CalendarPage() {
             .lte('date', end)
             .order('time')
         if (queryError) console.error('[Calendar] Query error:', queryError)
-        console.log('[Calendar] Appointments found:', data?.length, data?.map(a => ({ date: a.date, time: a.time, service: a.service_name })))
+        console.log('[Calendar] Filtered results:', data?.length, data)
         setAppointments(data || [])
     }, [business?.id, currentDate])
 
