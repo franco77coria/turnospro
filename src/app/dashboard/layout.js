@@ -3,35 +3,28 @@ import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { isSuperAdmin } from '@/lib/superadmin'
 import styles from './layout.module.css'
 
 export default function DashboardLayout({ children }) {
-    const { user, loading, profile, business, createBusiness, refreshProfile } = useAuth()
+    const { user, loading, profile, business, createBusiness } = useAuth()
     const router = useRouter()
     const creatingBusinessRef = useRef(false)
-    const [timedOut, setTimedOut] = useState(false)
 
-    // Safety timeout: if loading takes more than 8s, stop the spinner
-    useEffect(() => {
-        if (!loading) return
-        const timer = setTimeout(() => setTimedOut(true), 8000)
-        return () => clearTimeout(timer)
-    }, [loading])
-
+    // Redirect to login if not authenticated
     useEffect(() => {
         if (!loading && !user) {
-            router.push('/login')
+            router.replace('/login')
         }
     }, [user, loading, router])
 
+    // Auto-create business for superadmin if needed
     useEffect(() => {
         if (loading || !user || business || creatingBusinessRef.current) return
 
         if (isSuperAdmin(user.email)) {
             creatingBusinessRef.current = true
-            // Superadmin: create a default business with real services
             createBusiness({
                 name: 'GLOWUP Admin',
                 business_type: 'barberia',
@@ -52,25 +45,18 @@ export default function DashboardLayout({ children }) {
                 console.error('Auto-create business error:', err)
                 creatingBusinessRef.current = false
             })
-        } else {
-            router.push('/onboarding')
+        } else if (!profile?.business_id) {
+            // Non-superadmin without business → onboarding
+            router.replace('/onboarding')
         }
-    }, [user, business, loading, router, createBusiness])
+    }, [user, business, profile, loading, router, createBusiness])
 
-    if (loading && !timedOut) {
+    if (loading) {
         return (
             <div className={styles.loadingScreen}>
                 <div className="loading-spinner" />
             </div>
         )
-    }
-
-    // If timed out, redirect to login instead of spinning forever
-    if (timedOut && !user) {
-        if (typeof window !== 'undefined') {
-            router.push('/login')
-        }
-        return null
     }
 
     if (!user) return null

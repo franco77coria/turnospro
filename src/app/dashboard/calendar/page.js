@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react'
 import styles from './calendar.module.css'
@@ -32,20 +32,15 @@ export default function CalendarPage() {
     const [showNewModal, setShowNewModal] = useState(false)
     const [newApt, setNewApt] = useState({ client_name: '', service_name: '', date: '', time: '', duration: 30 })
     const [teamMembers, setTeamMembers] = useState([])
+    const [services, setServices] = useState([])
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
 
     const weekDates = getWeekDates(currentDate)
     const today = formatDate(new Date())
 
-    useEffect(() => {
-        if (!business?.id) return
-        loadAppointments()
-        loadTeam()
-    }, [business?.id, currentDate])
-
-    async function loadAppointments() {
-        if (!supabase) return
+    const loadAppointments = useCallback(async () => {
+        if (!supabase || !business?.id) return
         const start = formatDate(weekDates[0])
         const end = formatDate(weekDates[6])
         const { data } = await supabase
@@ -56,17 +51,35 @@ export default function CalendarPage() {
             .lte('date', end)
             .order('time')
         setAppointments(data || [])
-    }
+    }, [business?.id, currentDate])
 
-    async function loadTeam() {
-        if (!supabase) return
+    const loadTeam = useCallback(async () => {
+        if (!supabase || !business?.id) return
         const { data } = await supabase
             .from('team_members')
             .select('*')
             .eq('business_id', business.id)
             .eq('active', true)
         setTeamMembers(data || [])
-    }
+    }, [business?.id])
+
+    // Load services directly from DB for reliability
+    const loadServices = useCallback(async () => {
+        if (!supabase || !business?.id) return
+        const { data } = await supabase
+            .from('businesses')
+            .select('services')
+            .eq('id', business.id)
+            .single()
+        setServices(Array.isArray(data?.services) ? data.services : [])
+    }, [business?.id])
+
+    useEffect(() => {
+        if (!business?.id) return
+        loadAppointments()
+        loadTeam()
+        loadServices()
+    }, [business?.id, loadAppointments, loadTeam, loadServices])
 
     async function handleCreateAppointment(e) {
         e.preventDefault()
@@ -96,15 +109,18 @@ export default function CalendarPage() {
                 }
             }
 
+            const selectedService = services.find(s => s.name === newApt.service_name)
+
             const { error: aptError } = await supabase.from('appointments').insert([{
                 business_id: business.id,
                 client_id: clientId,
                 service_name: newApt.service_name,
                 date: newApt.date,
                 time: newApt.time,
-                duration: newApt.duration,
+                duration: newApt.duration || selectedService?.duration || 30,
                 status: 'confirmed',
                 team_member_id: newApt.team_member_id || null,
+                price: selectedService?.price || null,
             }])
             if (aptError) throw aptError
 
@@ -161,6 +177,7 @@ export default function CalendarPage() {
                 </div>
                 <button className="btn btn-primary" onClick={() => {
                     setNewApt(prev => ({ ...prev, date: today }))
+                    setError('')
                     setShowNewModal(true)
                 }}>
                     <Plus size={16} /> Nuevo turno
@@ -187,6 +204,7 @@ export default function CalendarPage() {
                                 return (
                                     <div key={i} className={styles.cell} onClick={() => {
                                         setNewApt(prev => ({ ...prev, date: formatDate(date), time: hour }))
+                                        setError('')
                                         setShowNewModal(true)
                                     }}>
                                         {slotApts.map(apt => (
@@ -247,7 +265,7 @@ export default function CalendarPage() {
                             <h3>Nuevo turno</h3>
                             <button className="btn btn-ghost btn-icon" onClick={() => setShowNewModal(false)}><X size={16} /></button>
                         </div>
-                        {(!business?.services || business.services.length === 0) ? (
+                        {services.length === 0 ? (
                             <div className="modal-body" style={{ textAlign: 'center', padding: 'var(--space-6) var(--space-4)' }}>
                                 <p style={{ marginBottom: 'var(--space-4)' }}>
                                     <strong>No tenés servicios configurados.</strong><br />
@@ -272,11 +290,11 @@ export default function CalendarPage() {
                                         <label className="label">Servicio</label>
                                         <select className="input select" value={newApt.service_name}
                                             onChange={e => {
-                                                const svc = business?.services?.find(s => s.name === e.target.value)
+                                                const svc = services.find(s => s.name === e.target.value)
                                                 setNewApt(prev => ({ ...prev, service_name: e.target.value, duration: svc?.duration || 30 }))
                                             }} required>
                                             <option value="">Seleccionar...</option>
-                                            {(business?.services || []).map((s, i) => (
+                                            {services.map((s, i) => (
                                                 <option key={i} value={s.name}>{s.name} — ${s.price?.toLocaleString()}</option>
                                             ))}
                                         </select>

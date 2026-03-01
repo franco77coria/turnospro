@@ -1,6 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
-import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Tag } from 'lucide-react'
 import styles from './services.module.css'
 
@@ -12,37 +13,74 @@ export default function ServicesPage() {
     const [form, setForm] = useState({ name: '', price: '', duration: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
+    const [loadingServices, setLoadingServices] = useState(true)
+
+    // Load services directly from DB (not from context) to avoid stale data
+    const loadServices = useCallback(async () => {
+        if (!supabase || !business?.id) {
+            setLoadingServices(false)
+            return
+        }
+        try {
+            const { data } = await supabase
+                .from('businesses')
+                .select('services')
+                .eq('id', business.id)
+                .single()
+            setServices(Array.isArray(data?.services) ? data.services : [])
+        } catch (err) {
+            console.error('Error loading services:', err)
+        }
+        setLoadingServices(false)
+    }, [business?.id])
 
     useEffect(() => {
-        if (business?.services && Array.isArray(business.services)) {
-            setServices(business.services)
-        }
-    }, [business])
+        loadServices()
+    }, [loadServices])
 
     async function handleSave(e) {
         e.preventDefault()
         setError('')
         setSaving(true)
         try {
+            // Read fresh services from DB before modifying
+            const { data: freshBiz } = await supabase
+                .from('businesses')
+                .select('services')
+                .eq('id', business.id)
+                .single()
+
+            const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
+
             const newService = {
                 name: form.name.trim(),
                 price: parseFloat(form.price),
                 duration: parseInt(form.duration)
             }
+
             let updated
             if (editIdx >= 0) {
-                updated = [...services]
-                updated[editIdx] = newService
+                updated = [...currentServices]
+                // Match by index only if same service exists at that position
+                if (updated[editIdx]) {
+                    updated[editIdx] = newService
+                } else {
+                    updated.push(newService)
+                }
             } else {
-                updated = [...services, newService]
+                updated = [...currentServices, newService]
             }
 
-            const result = await updateBusiness({ services: updated })
-            if (result) {
-                setServices(result.services || updated)
-            } else {
-                setServices(updated)
-            }
+            const { data: result, error: updateError } = await supabase
+                .from('businesses')
+                .update({ services: updated })
+                .eq('id', business.id)
+                .select()
+                .single()
+
+            if (updateError) throw updateError
+
+            setServices(result.services || updated)
             setShowModal(false)
             setEditIdx(-1)
             setForm({ name: '', price: '', duration: '' })
@@ -55,18 +93,57 @@ export default function ServicesPage() {
 
     async function handleDelete(idx) {
         if (!confirm('¿Eliminar este servicio?')) return
+        setError('')
         try {
-            const updated = services.filter((_, i) => i !== idx)
-            const result = await updateBusiness({ services: updated })
-            if (result) {
-                setServices(result.services || updated)
+            // Read fresh services from DB before deleting
+            const { data: freshBiz } = await supabase
+                .from('businesses')
+                .select('services')
+                .eq('id', business.id)
+                .single()
+
+            const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
+            const serviceName = services[idx]?.name
+
+            // Delete by matching name (more reliable than index if data shifted)
+            let updated
+            if (serviceName) {
+                let found = false
+                updated = currentServices.filter(s => {
+                    if (!found && s.name === serviceName) {
+                        found = true
+                        return false
+                    }
+                    return true
+                })
             } else {
-                setServices(updated)
+                updated = currentServices.filter((_, i) => i !== idx)
             }
+
+            const { data: result, error: updateError } = await supabase
+                .from('businesses')
+                .update({ services: updated })
+                .eq('id', business.id)
+                .select()
+                .single()
+
+            if (updateError) throw updateError
+
+            setServices(result.services || updated)
         } catch (err) {
             console.error('Error deleting service:', err)
             setError('Error al eliminar.')
         }
+    }
+
+    if (loadingServices) {
+        return (
+            <div className={styles.services}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
+                    <div className="loading-spinner" />
+                </div>
+            </div>
+        )
     }
 
     return (
@@ -88,7 +165,7 @@ export default function ServicesPage() {
 
             <div className={styles.serviceList}>
                 {services.map((s, i) => (
-                    <div key={i} className={`card card-compact ${styles.serviceCard}`}>
+                    <div key={`${s.name}-${i}`} className={`card card-compact ${styles.serviceCard}`}>
                         <div className={styles.serviceInfo}>
                             <span className={styles.serviceName}>{s.name}</span>
                             <span className={styles.serviceDuration}>{s.duration} min</span>

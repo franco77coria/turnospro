@@ -39,13 +39,25 @@ export default function AppointmentsPage() {
         if (status === 'completed') {
             const apt = appointments.find(a => a.id === id)
             if (apt) {
-                const service = business?.services?.find(s => s.name === apt.service_name)
-                if (service?.price) {
+                // Use price stored on appointment first, then fall back to service lookup
+                let price = apt.price
+                if (!price) {
+                    // Fetch services fresh from DB
+                    const { data: bizData } = await supabase
+                        .from('businesses')
+                        .select('services')
+                        .eq('id', business.id)
+                        .single()
+                    const svcList = Array.isArray(bizData?.services) ? bizData.services : []
+                    const service = svcList.find(s => s.name === apt.service_name)
+                    price = service?.price
+                }
+                if (price) {
                     await supabase.from('transactions').insert([{
                         business_id: business.id,
                         type: 'income',
                         concept: `${apt.service_name} — ${apt.clients?.name || 'Cliente'}`,
-                        amount: service.price,
+                        amount: price,
                         payment_method: 'cash',
                     }])
                 }

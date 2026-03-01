@@ -28,8 +28,20 @@ export async function middleware(request) {
         },
     })
 
-    // Validate and refresh the auth token — getUser() validates server-side
-    await supabase.auth.getUser()
+    // Refresh the auth token — getUser() validates server-side
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // Protect dashboard routes — redirect to login if not authenticated
+    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+        const loginUrl = new URL('/login', request.url)
+        return NextResponse.redirect(loginUrl)
+    }
+
+    // Redirect authenticated users away from login/register
+    if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
+        const dashboardUrl = new URL('/dashboard', request.url)
+        return NextResponse.redirect(dashboardUrl)
+    }
 
     return supabaseResponse
 }
