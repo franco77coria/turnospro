@@ -3,8 +3,18 @@ import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import { useState, useEffect } from 'react'
 import { Save, Trash2 } from 'lucide-react'
+import PermissionGate from '@/components/PermissionGate'
+import { PERMISSIONS } from '@/lib/data'
 
 export default function SettingsPage() {
+    return (
+        <PermissionGate permission={PERMISSIONS.EDIT_SETTINGS}>
+            <SettingsContent />
+        </PermissionGate>
+    )
+}
+
+function SettingsContent() {
     const { business, updateBusiness, profile, loading: authLoading } = useAuth()
     const [form, setForm] = useState({
         name: business?.name || '',
@@ -19,6 +29,7 @@ export default function SettingsPage() {
         start: business?.settings?.work_hours?.start || '09:00',
         end: business?.settings?.work_hours?.end || '20:00',
     })
+    const [minCancelHours, setMinCancelHours] = useState(business?.settings?.min_cancel_hours ?? 2)
 
     useEffect(() => {
         if (business) {
@@ -41,6 +52,7 @@ export default function SettingsPage() {
                 settings: {
                     ...business?.settings,
                     work_hours: workHoursForm,
+                    min_cancel_hours: parseInt(minCancelHours) || 2,
                 }
             })
             setSaved(true)
@@ -105,6 +117,36 @@ export default function SettingsPage() {
                                 onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
                         </div>
                     </div>
+                </div>
+
+                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Turnos</h3>
+                    <div className="form-group">
+                        <label className="label">Horas mínimas para cancelar</label>
+                        <input className="input" type="number" min="0" max="72" value={minCancelHours}
+                            onChange={e => setMinCancelHours(e.target.value)} />
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                            Los clientes no podrán cancelar con menos de {minCancelHours}h de anticipación
+                        </span>
+                    </div>
+                    {business?.id && (
+                        <div className="form-group">
+                            <label className="label">Link de reservas</label>
+                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                <input className="input" value={
+                                    business.slug
+                                        ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
+                                        : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
+                                } readOnly style={{ opacity: 0.8 }} />
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
+                                    const url = business.slug
+                                        ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/s/${business.slug}`
+                                        : `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/${business.id}`
+                                    navigator.clipboard.writeText(url)
+                                }}>Copiar</button>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 <div className="card" style={{ marginBottom: 'var(--space-5)' }}>

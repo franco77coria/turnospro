@@ -3,9 +3,19 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Tag } from 'lucide-react'
+import PermissionGate from '@/components/PermissionGate'
+import { PERMISSIONS } from '@/lib/data'
 import styles from './services.module.css'
 
 export default function ServicesPage() {
+    return (
+        <PermissionGate permission={PERMISSIONS.EDIT_SERVICES}>
+            <ServicesContent />
+        </PermissionGate>
+    )
+}
+
+function ServicesContent() {
     const { business, updateBusiness } = useAuth()
     const [services, setServices] = useState([])
     const [showModal, setShowModal] = useState(false)
@@ -52,16 +62,20 @@ export default function ServicesPage() {
 
             const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
 
+            const editingService = editIdx >= 0 ? services[editIdx] : null
             const newService = {
+                id: editingService?.id || crypto.randomUUID(),
                 name: form.name.trim(),
                 price: parseFloat(form.price),
                 duration: parseInt(form.duration)
             }
 
             let updated
-            if (editIdx >= 0) {
+            if (editingService?.id) {
+                // Update by ID
+                updated = currentServices.map(s => s.id === editingService.id ? newService : s)
+            } else if (editIdx >= 0) {
                 updated = [...currentServices]
-                // Match by index only if same service exists at that position
                 if (updated[editIdx]) {
                     updated[editIdx] = newService
                 } else {
@@ -103,14 +117,16 @@ export default function ServicesPage() {
                 .single()
 
             const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
-            const serviceName = services[idx]?.name
+            const serviceToDelete = services[idx]
 
-            // Delete by matching name (more reliable than index if data shifted)
+            // Delete by ID (most reliable), fallback to name matching
             let updated
-            if (serviceName) {
+            if (serviceToDelete?.id) {
+                updated = currentServices.filter(s => s.id !== serviceToDelete.id)
+            } else if (serviceToDelete?.name) {
                 let found = false
                 updated = currentServices.filter(s => {
-                    if (!found && s.name === serviceName) {
+                    if (!found && s.name === serviceToDelete.name) {
                         found = true
                         return false
                     }
@@ -165,7 +181,7 @@ export default function ServicesPage() {
 
             <div className={styles.serviceList}>
                 {services.map((s, i) => (
-                    <div key={`${s.name}-${i}`} className={`card card-compact ${styles.serviceCard}`}>
+                    <div key={s.id || `${s.name}-${i}`} className={`card card-compact ${styles.serviceCard}`}>
                         <div className={styles.serviceInfo}>
                             <span className={styles.serviceName}>{s.name}</span>
                             <span className={styles.serviceDuration}>{s.duration} min</span>

@@ -4,9 +4,19 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { PAYMENT_METHODS, EXPENSE_CATEGORIES } from '@/lib/data'
 import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X } from 'lucide-react'
+import PermissionGate from '@/components/PermissionGate'
+import { PERMISSIONS } from '@/lib/data'
 import styles from './finance.module.css'
 
 export default function FinancePage() {
+    return (
+        <PermissionGate permission={PERMISSIONS.VIEW_FINANCE}>
+            <FinanceContent />
+        </PermissionGate>
+    )
+}
+
+function FinanceContent() {
     const { business, loading: authLoading } = useAuth()
     const [transactions, setTransactions] = useState([])
     const [filter, setFilter] = useState('all')

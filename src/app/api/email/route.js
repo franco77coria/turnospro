@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
 import { confirmationEmail, reminderEmail, welcomeEmail } from '@/lib/email-templates'
+import { generateCancelToken } from '@/lib/cancel-token'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -17,6 +18,12 @@ export async function POST(request) {
 
         switch (type) {
             case 'confirmation':
+                // Generate cancel link if appointment ID is available
+                if (data.appointmentId) {
+                    const cancelToken = await generateCancelToken(data.appointmentId)
+                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+                    data.cancelUrl = `${appUrl}/cancel/${cancelToken}`
+                }
                 html = confirmationEmail(data)
                 subject = `Turno confirmado — ${data.serviceName} | ${data.businessName}`
                 break

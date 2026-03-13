@@ -3,7 +3,8 @@ import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink } from 'lucide-react'
+import { filterNavByRole } from '@/lib/permissions'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -14,6 +15,7 @@ const NAV_ITEMS = [
     { href: '/dashboard/services', label: 'Servicios', icon: Tag },
     { href: '/dashboard/team', label: 'Equipo', icon: UserCircle },
     { href: '/dashboard/finance', label: 'Caja', icon: Wallet },
+    { href: '/dashboard/analytics', label: 'Estadísticas', icon: PieChart },
 ]
 
 const BOTTOM_ITEMS = [
@@ -30,6 +32,9 @@ export default function Sidebar() {
     }
 
     const showAdmin = user && isSuperAdmin(user.email)
+    const userRole = profile?.role || 'Profesional'
+    const visibleNavItems = filterNavByRole(NAV_ITEMS, userRole)
+    const visibleBottomItems = filterNavByRole(BOTTOM_ITEMS, userRole)
 
     return (
         <aside className={styles.sidebar}>
@@ -43,7 +48,7 @@ export default function Sidebar() {
 
             <nav className={styles.nav}>
                 <div className={styles.navGroup}>
-                    {NAV_ITEMS.map(item => {
+                    {visibleNavItems.map(item => {
                         const Icon = item.icon
                         return (
                             <Link
@@ -90,7 +95,7 @@ export default function Sidebar() {
             </nav>
 
             <div className={styles.bottom}>
-                {BOTTOM_ITEMS.map(item => {
+                {visibleBottomItems.map(item => {
                     const Icon = item.icon
                     return (
                         <Link

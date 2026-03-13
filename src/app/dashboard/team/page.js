@@ -3,9 +3,19 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { Plus, Mail, Phone, X } from 'lucide-react'
+import PermissionGate from '@/components/PermissionGate'
+import { PERMISSIONS } from '@/lib/data'
 import styles from './team.module.css'
 
 export default function TeamPage() {
+    return (
+        <PermissionGate permission={PERMISSIONS.MANAGE_TEAM}>
+            <TeamContent />
+        </PermissionGate>
+    )
+}
+
+function TeamContent() {
     const { business, loading: authLoading } = useAuth()
     const [members, setMembers] = useState([])
     const [showModal, setShowModal] = useState(false)

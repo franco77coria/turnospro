@@ -39,6 +39,7 @@ export default function CalendarPage() {
     const [appointments, setAppointments] = useState([])
     const [showNewModal, setShowNewModal] = useState(false)
     const [newApt, setNewApt] = useState({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: 30, team_member_id: null })
+    const [recurrence, setRecurrence] = useState({ enabled: false, type: 'weekly', count: 4 })
     const [teamMembers, setTeamMembers] = useState([])
     const [services, setServices] = useState([])
     const [clients, setClients] = useState([])
@@ -46,9 +47,17 @@ export default function CalendarPage() {
     const [error, setError] = useState('')
     const [wizardStep, setWizardStep] = useState(1)
     const [clientSearch, setClientSearch] = useState('')
+    const [occupiedSlots, setOccupiedSlots] = useState([])
+    const [loadingSlots, setLoadingSlots] = useState(false)
+    const [filterProfessional, setFilterProfessional] = useState(null)
 
     const weekDates = getWeekDates(currentDate)
     const today = formatDate(new Date())
+
+    // Filter appointments by selected professional
+    const filteredAppointments = filterProfessional
+        ? appointments.filter(a => a.team_member_id === filterProfessional)
+        : appointments
 
     const loadAppointments = useCallback(async () => {
         if (!supabase || !business?.id) return
@@ -129,6 +138,25 @@ export default function CalendarPage() {
             const selectedService = services.find(s => s.name === newApt.service_name)
             const selectedProfessional = teamMembers.find(m => m.id === newApt.team_member_id)
 
+            // Server-side availability check
+            const checkRes = await fetch('/api/appointments/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: business.id,
+                    date: newApt.date,
+                    time: newApt.time,
+                    duration: newApt.duration || selectedService?.duration || 30,
+                    team_member_id: newApt.team_member_id || null,
+                }),
+            })
+            const checkData = await checkRes.json()
+            if (!checkData.available) {
+                setError('Este horario ya está ocupado. Elegí otro.')
+                setSaving(false)
+                return
+            }
+
             const appointmentData = {
                 business_id: business.id,
                 client_id: clientId,
@@ -147,6 +175,39 @@ export default function CalendarPage() {
                 .select()
                 .single()
             if (aptError) throw aptError
+
+            // Create recurring appointments if enabled
+            if (recurrence.enabled && recurrence.count > 1) {
+                const daysInterval = recurrence.type === 'weekly' ? 7 : recurrence.type === 'biweekly' ? 14 : 30
+                const recurringApts = []
+                for (let i = 1; i < recurrence.count; i++) {
+                    const nextDate = new Date(newApt.date + 'T12:00:00')
+                    nextDate.setDate(nextDate.getDate() + (daysInterval * i))
+                    const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`
+
+                    // Check availability for each recurring date
+                    const rCheckRes = await fetch('/api/appointments/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            business_id: business.id, date: nextDateStr, time: newApt.time,
+                            duration: appointmentData.duration, team_member_id: newApt.team_member_id || null,
+                        }),
+                    })
+                    const rCheck = await rCheckRes.json()
+                    if (rCheck.available) {
+                        recurringApts.push({
+                            ...appointmentData,
+                            date: nextDateStr,
+                            parent_appointment_id: createdApt.id,
+                            recurrence: { type: recurrence.type, parent_id: createdApt.id },
+                        })
+                    }
+                }
+                if (recurringApts.length > 0) {
+                    await supabase.from('appointments').insert(recurringApts)
+                }
+            }
 
             setShowNewModal(false)
             resetWizard()
@@ -172,6 +233,7 @@ export default function CalendarPage() {
     function resetWizard() {
         setWizardStep(1)
         setNewApt({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: 30, team_member_id: null })
+        setRecurrence({ enabled: false, type: 'weekly', count: 4 })
         setClientSearch('')
         setError('')
     }
@@ -197,20 +259,52 @@ export default function CalendarPage() {
         return days
     }
 
+    // Load occupied slots when wizard date or team member changes
+    useEffect(() => {
+        if (!newApt.date || !business?.id || !supabase || !showNewModal) return
+        setLoadingSlots(true)
+        let query = supabase
+            .from('appointments')
+            .select('time, duration, team_member_id')
+            .eq('business_id', business.id)
+            .eq('date', newApt.date)
+            .not('status', 'in', '("cancelled","no_show")')
+
+        if (newApt.team_member_id) {
+            query = query.eq('team_member_id', newApt.team_member_id)
+        }
+
+        query.then(({ data }) => {
+            setOccupiedSlots((data || []).map(apt => {
+                const [h, m] = apt.time.split(':').map(Number)
+                const startMin = h * 60 + m
+                return { startMin, endMin: startMin + (apt.duration || 30) }
+            }))
+            setLoadingSlots(false)
+        })
+    }, [newApt.date, newApt.team_member_id, business?.id, showNewModal])
+
     const getAvailableSlots = () => {
         const startH = business?.settings?.work_hours?.start || '09:00'
         const endH = business?.settings?.work_hours?.end || '20:00'
         const [sh, sm] = startH.split(':').map(Number)
         const [eh, em] = endH.split(':').map(Number)
-        const slots = []
+        const allSlots = []
         for (let h = sh; h <= eh; h++) {
             for (let m = 0; m < 60; m += 15) {
                 if (h === sh && m < sm) continue
                 if (h === eh && m > em) continue
-                slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
+                allSlots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
             }
         }
-        return slots
+        // Filter occupied slots
+        const duration = newApt.duration || 30
+        return allSlots.filter(slot => {
+            const [sh2, sm2] = slot.split(':').map(Number)
+            const slotStart = sh2 * 60 + sm2
+            const slotEnd = slotStart + duration
+            return !occupiedSlots.some(o => slotStart < o.endMin && slotEnd > o.startMin)
+        })
     }
 
     function navigate(dir) {
@@ -227,12 +321,12 @@ export default function CalendarPage() {
 
     const getMobileAppointments = (hour) => {
         const dateStr = formatDate(currentDate)
-        return appointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
+        return filteredAppointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
     }
 
     const getAppointmentsForSlot = (date, hour) => {
         const dateStr = formatDate(date)
-        return appointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
+        return filteredAppointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
     }
 
     const statusColor = (status) => {
@@ -268,6 +362,26 @@ export default function CalendarPage() {
                     <Plus size={16} /> Nuevo turno
                 </button>
             </div>
+
+            {teamMembers.length > 0 && (
+                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
+                    <button
+                        className={`btn btn-sm ${!filterProfessional ? 'btn-primary' : 'btn-secondary'}`}
+                        onClick={() => setFilterProfessional(null)}
+                    >
+                        Todos
+                    </button>
+                    {teamMembers.map(m => (
+                        <button
+                            key={m.id}
+                            className={`btn btn-sm ${filterProfessional === m.id ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => setFilterProfessional(filterProfessional === m.id ? null : m.id)}
+                        >
+                            {m.name}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             <div className={styles.calendarGrid}>
                 <div className={styles.gridHeader}>
@@ -526,20 +640,30 @@ export default function CalendarPage() {
                                                     )}
 
                                                     <label className="label" style={{ marginBottom: 'var(--space-2)' }}>Horario</label>
-                                                    <div className={styles.timeGrid}>
-                                                        {getAvailableSlots().map(slot => (
-                                                            <button
-                                                                key={slot}
-                                                                className={`${styles.timeSlot} ${newApt.time === slot ? styles.timeSlotSelected : ''}`}
-                                                                onClick={() => {
-                                                                    setNewApt(prev => ({ ...prev, time: slot }))
-                                                                    setWizardStep(4)
-                                                                }}
-                                                            >
-                                                                {slot}
-                                                            </button>
-                                                        ))}
-                                                    </div>
+                                                    {loadingSlots ? (
+                                                        <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
+                                                            <div className="loading-spinner" />
+                                                        </div>
+                                                    ) : getAvailableSlots().length === 0 ? (
+                                                        <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+                                                            No hay horarios disponibles para esta fecha. Probá otro día.
+                                                        </p>
+                                                    ) : (
+                                                        <div className={styles.timeGrid}>
+                                                            {getAvailableSlots().map(slot => (
+                                                                <button
+                                                                    key={slot}
+                                                                    className={`${styles.timeSlot} ${newApt.time === slot ? styles.timeSlotSelected : ''}`}
+                                                                    onClick={() => {
+                                                                        setNewApt(prev => ({ ...prev, time: slot }))
+                                                                        setWizardStep(4)
+                                                                    }}
+                                                                >
+                                                                    {slot}
+                                                                </button>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </>
                                             )}
                                         </div>
@@ -587,6 +711,32 @@ export default function CalendarPage() {
                                                         </div>
                                                     ) : null
                                                 })()}
+                                            </div>
+
+                                            {/* Recurrence option */}
+                                            <div style={{ marginTop: 'var(--space-4)', padding: 'var(--space-3) var(--space-4)', background: 'var(--bg-primary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                                                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontSize: 'var(--font-size-sm)' }}>
+                                                    <input type="checkbox" checked={recurrence.enabled}
+                                                        onChange={e => setRecurrence(prev => ({ ...prev, enabled: e.target.checked }))} />
+                                                    Repetir turno
+                                                </label>
+                                                {recurrence.enabled && (
+                                                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-3)', flexWrap: 'wrap' }}>
+                                                        <select className="input" style={{ flex: 1, minWidth: 120 }}
+                                                            value={recurrence.type}
+                                                            onChange={e => setRecurrence(prev => ({ ...prev, type: e.target.value }))}>
+                                                            <option value="weekly">Semanal</option>
+                                                            <option value="biweekly">Quincenal</option>
+                                                            <option value="monthly">Mensual</option>
+                                                        </select>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                                                            <input className="input" type="number" min="2" max="12" style={{ width: 60 }}
+                                                                value={recurrence.count}
+                                                                onChange={e => setRecurrence(prev => ({ ...prev, count: parseInt(e.target.value) || 2 }))} />
+                                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>veces</span>
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     )}

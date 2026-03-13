@@ -63,7 +63,7 @@ function baseLayout(content, theme, businessName) {
                         <td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#fafafa;">
                             <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.6;">
                                 Este email fue enviado por ${businessName} a través de 
-                                <a href="https://GLOWUP-omega.vercel.app" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
+                                <a href="${process.env.NEXT_PUBLIC_APP_URL || '#'}" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
                                 Si no solicitaste este turno, podés ignorar este email.
                             </p>
                         </td>
@@ -77,7 +77,7 @@ function baseLayout(content, theme, businessName) {
 </html>`
 }
 
-export function confirmationEmail({ clientName, serviceName, date, time, duration, professional, businessName, businessType, businessPhone, appointmentUrl }) {
+export function confirmationEmail({ clientName, serviceName, date, time, duration, professional, businessName, businessType, businessPhone, appointmentUrl, cancelUrl }) {
     const theme = getTheme(businessType)
 
     const content = `
@@ -145,9 +145,20 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
             </tr>
         </table>` : ''}
         
+        ${cancelUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+            <tr>
+                <td align="center">
+                    <a href="${cancelUrl}" style="display:inline-block;color:${theme.accent};text-decoration:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #e2e8f0;">
+                        Cancelar turno
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+
         ${businessPhone ? `
         <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿Necesitás cambiar o cancelar? Contactanos al <strong style="color:#64748b;">${businessPhone}</strong>
+            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${businessPhone}</strong>
         </p>` : ''}
     `
 

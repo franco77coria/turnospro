@@ -1,6 +1,7 @@
 'use client'
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
+import NotificationBell from '@/components/NotificationBell'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
@@ -65,6 +66,9 @@ export default function DashboardLayout({ children }) {
         <div className={styles.dashboardLayout}>
             <Sidebar />
             <main className={styles.mainContent}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--space-2)' }}>
+                    <NotificationBell />
+                </div>
                 {children}
             </main>
             <MobileNav />

@@ -29,6 +29,14 @@ export default function OnboardingPage() {
         address: '',
     })
 
+    function slugify(text) {
+        return text.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-|-$/g, '')
+            .slice(0, 40)
+    }
+
     const handleSelectType = (type) => {
         setForm(prev => ({ ...prev, business_type: type }))
         setStep(2)
@@ -41,17 +49,22 @@ export default function OnboardingPage() {
         setLoading(true)
         try {
             const template = BUSINESS_TEMPLATES[form.business_type]
+            // Add unique IDs to each template service
+            const servicesWithIds = template.services.map(s => ({ ...s, id: crypto.randomUUID() }))
+            const slug = slugify(form.name) + '-' + Date.now().toString(36).slice(-4)
             await createBusiness({
                 name: form.name,
                 business_type: form.business_type,
                 phone: form.phone,
                 address: form.address,
-                services: template.services,
+                slug,
+                services: servicesWithIds,
                 roles: template.roles,
                 settings: {
                     work_hours: { start: '09:00', end: '20:00' },
                     work_days: [1, 2, 3, 4, 5, 6],
                     slot_duration: 30,
+                    min_cancel_hours: 2,
                 }
             })
             router.push('/dashboard')

@@ -36,6 +36,7 @@ export async function GET(request) {
             `)
             .eq('date', today)
             .eq('status', 'confirmed')
+            .is('reminder_sent', null)
 
         if (error) throw error
 
@@ -62,7 +63,7 @@ export async function GET(request) {
                     businessName: apt.businesses?.name || 'GLOWUP',
                     businessType: apt.businesses?.business_type || 'custom',
                     businessPhone: apt.businesses?.phone,
-                    appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
+                    appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
                 })
 
                 await resend.emails.send({
@@ -72,10 +73,10 @@ export async function GET(request) {
                     html,
                 })
 
-                // Mark reminder as sent via notes field
+                // Mark reminder as sent
                 await supabase
                     .from('appointments')
-                    .update({ notes: 'reminder_sent' })
+                    .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
                     .eq('id', apt.id)
 
                 sentCount++

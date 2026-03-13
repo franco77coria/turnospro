@@ -37,7 +37,7 @@ export async function sendAppointmentConfirmation({ appointment, client, busines
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
+            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
         }
     })
 }
@@ -61,7 +61,7 @@ export async function sendAppointmentReminder({ appointment, client, business, s
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `https://GLOWUP-omega.vercel.app/dashboard/appointments`,
+            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
         }
     })
 }

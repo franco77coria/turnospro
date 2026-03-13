@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { filterNavByRole } from '@/lib/permissions'
 import { BarChart3, CalendarDays, Clock, Wallet, Menu, X, Users, Tag, UserCircle, Settings, LogOut } from 'lucide-react'
 import styles from './MobileNav.module.css'
 
@@ -22,15 +23,19 @@ const MORE_ITEMS = [
 
 export default function MobileNav() {
     const pathname = usePathname()
-    const { signOut } = useAuth()
+    const { profile, signOut } = useAuth()
     const [showMore, setShowMore] = useState(false)
+
+    const userRole = profile?.role || 'Profesional'
+    const visibleMainItems = filterNavByRole(MAIN_ITEMS, userRole)
+    const visibleMoreItems = filterNavByRole(MORE_ITEMS, userRole)
 
     const isActive = (href) => {
         if (href === '/dashboard') return pathname === '/dashboard'
         return pathname.startsWith(href)
     }
 
-    const moreActive = MORE_ITEMS.some(item => isActive(item.href))
+    const moreActive = visibleMoreItems.some(item => isActive(item.href))
 
     return (
         <>
@@ -43,7 +48,7 @@ export default function MobileNav() {
                                 <X size={18} />
                             </button>
                         </div>
-                        {MORE_ITEMS.map(item => {
+                        {visibleMoreItems.map(item => {
                             const Icon = item.icon
                             return (
                                 <Link
@@ -65,7 +70,7 @@ export default function MobileNav() {
                 </div>
             )}
             <nav className={styles.mobileNav}>
-                {MAIN_ITEMS.map(item => {
+                {visibleMainItems.map(item => {
                     const Icon = item.icon
                     return (
                         <Link
