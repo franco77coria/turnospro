@@ -3,7 +3,9 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin, LogIn } from 'lucide-react'
+import { CalendarDays, Clock, User, Phone, Mail, Check, ArrowLeft, ArrowRight, MapPin, LogIn, Download } from 'lucide-react'
+import { googleCalendarUrl, generateICS, downloadICS } from '@/lib/calendar-export'
+import { BUSINESS_TEMPLATES } from '@/lib/data'
 import styles from './booking.module.css'
 import Link from 'next/link'
 
@@ -20,10 +22,23 @@ export default function BookingPage() {
     const [submitting, setSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
+    const [occupiedSlots, setOccupiedSlots] = useState([])
+    const [loadingSlots, setLoadingSlots] = useState(false)
 
     useEffect(() => {
         loadBusiness()
     }, [id])
+
+    // Auto-fill form from logged-in user
+    useEffect(() => {
+        if (user && !form.name && !form.email) {
+            setForm(prev => ({
+                ...prev,
+                name: user.user_metadata?.full_name || user.user_metadata?.name || prev.name,
+                email: user.email || prev.email,
+            }))
+        }
+    }, [user])
 
     async function loadBusiness() {
         if (!supabase) { setLoading(false); return }
@@ -36,21 +51,48 @@ export default function BookingPage() {
         setLoading(false)
     }
 
-    // Generate available time slots
+    // Load occupied slots when date changes
+    useEffect(() => {
+        if (!selectedDate || !business?.id || !supabase) return
+        setLoadingSlots(true)
+        setSelectedTime('')
+        supabase
+            .from('appointments')
+            .select('time, duration, team_member_id')
+            .eq('business_id', business.id)
+            .eq('date', selectedDate)
+            .not('status', 'in', '("cancelled","no_show")')
+            .then(({ data }) => {
+                setOccupiedSlots((data || []).map(apt => {
+                    const [h, m] = apt.time.split(':').map(Number)
+                    const startMin = h * 60 + m
+                    return { startMin, endMin: startMin + (apt.duration || 30) }
+                }))
+                setLoadingSlots(false)
+            })
+    }, [selectedDate, business?.id])
+
+    // Generate available time slots (filtered by occupied)
     function getTimeSlots() {
         if (!business?.settings) return []
         const { work_hours } = business.settings
         const start = parseInt(work_hours?.start?.split(':')[0] || 9)
         const end = parseInt(work_hours?.end?.split(':')[0] || 20)
         const duration = selectedService?.duration || 30
-        const slots = []
+        const allSlots = []
         for (let h = start; h < end; h++) {
-            slots.push(`${String(h).padStart(2, '0')}:00`)
+            allSlots.push(`${String(h).padStart(2, '0')}:00`)
             if (duration <= 30 && h < end) {
-                slots.push(`${String(h).padStart(2, '0')}:30`)
+                allSlots.push(`${String(h).padStart(2, '0')}:30`)
             }
         }
-        return slots
+        // Filter out occupied slots
+        return allSlots.filter(slot => {
+            const [sh, sm] = slot.split(':').map(Number)
+            const slotStart = sh * 60 + sm
+            const slotEnd = slotStart + duration
+            return !occupiedSlots.some(o => slotStart < o.endMin && slotEnd > o.startMin)
+        })
     }
 
     // Generate next 14 days
@@ -110,8 +152,26 @@ export default function BookingPage() {
                 clientId = newClient?.id
             }
 
+            // Server-side availability check
+            const checkRes = await fetch('/api/appointments/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: business.id,
+                    date: selectedDate,
+                    time: selectedTime,
+                    duration: selectedService.duration || 30,
+                }),
+            })
+            const checkData = await checkRes.json()
+            if (!checkData.available) {
+                setError('Este horario ya fue reservado. Elegí otro horario.')
+                setSubmitting(false)
+                return
+            }
+
             // Create appointment
-            await supabase.from('appointments').insert([{
+            const { data: createdAppointment } = await supabase.from('appointments').insert([{
                 business_id: business.id,
                 client_id: clientId,
                 service_name: selectedService.name,
@@ -120,7 +180,7 @@ export default function BookingPage() {
                 duration: selectedService.duration,
                 price: selectedService.price,
                 status: 'confirmed',
-            }])
+            }]).select('id').single()
 
             // Send confirmation email
             try {
@@ -139,12 +199,28 @@ export default function BookingPage() {
                             businessName: business.name,
                             businessType: business.business_type,
                             businessPhone: business.phone,
-                            appointmentUrl: `https://glowup-turnos.vercel.app/book/${id}`,
+                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${id}`,
+                            appointmentId: createdAppointment?.id,
                         }
                     })
                 })
             } catch (emailErr) {
                 console.error('Email error (non-critical):', emailErr)
+            }
+
+            // Create in-app notification for business owner
+            try {
+                if (business.owner_id) {
+                    await supabase.from('notifications').insert([{
+                        user_id: business.owner_id,
+                        business_id: business.id,
+                        type: 'appointment_booked',
+                        title: 'Nuevo turno reservado',
+                        message: `${form.name} reservó ${selectedService.name} para el ${new Date(selectedDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} a las ${selectedTime}.`,
+                    }])
+                }
+            } catch (notifErr) {
+                // non-critical
             }
 
             setSuccess(true)
@@ -244,7 +320,43 @@ export default function BookingPage() {
                             </div>
                         </div>
 
-                        <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 'var(--space-4)' }}
+                        <div style={{ display: 'flex', gap: 'var(--space-3)', marginTop: 'var(--space-4)', flexWrap: 'wrap' }}>
+                            <a
+                                href={googleCalendarUrl({
+                                    serviceName: selectedService.name,
+                                    date: selectedDate,
+                                    time: selectedTime,
+                                    duration: selectedService.duration,
+                                    businessName: business.name,
+                                    address: business.address,
+                                })}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-secondary"
+                                style={{ flex: 1, minWidth: 180, textAlign: 'center', textDecoration: 'none' }}
+                            >
+                                <CalendarDays size={14} /> Google Calendar
+                            </a>
+                            <button
+                                className="btn btn-secondary"
+                                style={{ flex: 1, minWidth: 180 }}
+                                onClick={() => {
+                                    const ics = generateICS({
+                                        serviceName: selectedService.name,
+                                        date: selectedDate,
+                                        time: selectedTime,
+                                        duration: selectedService.duration,
+                                        businessName: business.name,
+                                        address: business.address,
+                                    })
+                                    downloadICS(ics)
+                                }}
+                            >
+                                <Download size={14} /> Descargar .ics
+                            </button>
+                        </div>
+
+                        <button className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 'var(--space-3)' }}
                             onClick={() => { setSuccess(false); setStep(1); setSelectedService(null); setSelectedDate(''); setSelectedTime(''); setForm({ name: '', email: '', phone: '' }) }}>
                             Reservar otro turno
                         </button>
@@ -267,6 +379,11 @@ export default function BookingPage() {
                         {business.name?.[0]?.toUpperCase()}
                     </div>
                     <h1>{business.name}</h1>
+                    {business.business_type && (
+                        <span className="badge badge-accent" style={{ marginTop: 'var(--space-1)' }}>
+                            {BUSINESS_TEMPLATES[business.business_type]?.name || business.business_type}
+                        </span>
+                    )}
                     {business.address && (
                         <p className={styles.address}><MapPin size={14} /> {business.address}</p>
                     )}
@@ -338,17 +455,27 @@ export default function BookingPage() {
                         {selectedDate && (
                             <>
                                 <h3 className={styles.subLabel}>Hora</h3>
-                                <div className={styles.timeGrid}>
-                                    {slots.map(t => (
-                                        <button
-                                            key={t}
-                                            className={`${styles.timeBtn} ${selectedTime === t ? styles.selected : ''}`}
-                                            onClick={() => setSelectedTime(t)}
-                                        >
-                                            {t}
-                                        </button>
-                                    ))}
-                                </div>
+                                {loadingSlots ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
+                                        <div className="loading-spinner" />
+                                    </div>
+                                ) : slots.length === 0 ? (
+                                    <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: 'var(--space-4)' }}>
+                                        No hay horarios disponibles para esta fecha. Probá con otro día.
+                                    </p>
+                                ) : (
+                                    <div className={styles.timeGrid}>
+                                        {slots.map(t => (
+                                            <button
+                                                key={t}
+                                                className={`${styles.timeBtn} ${selectedTime === t ? styles.selected : ''}`}
+                                                onClick={() => setSelectedTime(t)}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
                             </>
                         )}
 
@@ -404,7 +531,7 @@ export default function BookingPage() {
 
                 {/* Footer */}
                 <div className={styles.footer}>
-                    Powered by <a href="https://glowup-turnos.vercel.app" target="_blank" rel="noopener">GLOWUP</a>
+                    Powered by <Link href="/explore">GLOWUP</Link>
                 </div>
             </div>
         </div>
