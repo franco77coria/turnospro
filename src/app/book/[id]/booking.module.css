@@ -59,7 +59,7 @@
 .progress {
     display: flex;
     justify-content: center;
-    gap: var(--space-6);
+    gap: var(--space-4);
     margin-bottom: var(--space-6);
 }
 
@@ -70,6 +70,7 @@
     font-size: var(--font-size-xs);
     color: var(--text-tertiary);
     font-weight: 500;
+    min-height: 44px;
 }
 
 .progressDot {
@@ -392,8 +393,20 @@
         display: none;
     }
 
+    .progress {
+        gap: var(--space-3);
+    }
+
     .stepContent {
         padding: var(--space-4);
+    }
+
+    .bookingPage {
+        padding: var(--space-3);
+    }
+
+    .container {
+        margin-top: var(--space-3);
     }
 
     .dateGrid {
@@ -402,5 +415,28 @@
 
     .dateBtn {
         flex-shrink: 0;
+        min-height: 44px;
+    }
+
+    .timeBtn {
+        min-height: 44px;
+    }
+
+    .serviceItem {
+        padding: var(--space-3);
+    }
+
+    .successCard {
+        padding: var(--space-5);
+    }
+}
+
+@media (max-width: 340px) {
+    .timeGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .bookingHeader h1 {
+        font-size: var(--font-size-lg);
     }
 }

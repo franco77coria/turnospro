@@ -123,9 +123,25 @@
 
     .headerActions input[type="date"] {
         flex: 1;
+        min-height: 44px;
+        font-size: 16px;
+    }
+
+    .header h1 {
+        font-size: var(--font-size-xl);
     }
 
     .tabsWrap .tabs {
         width: max-content;
+    }
+
+    .aptCardActions button {
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .statusActions button {
+        min-width: 44px;
+        min-height: 44px;
     }
 }

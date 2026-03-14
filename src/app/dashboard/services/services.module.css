@@ -114,9 +114,14 @@
 
     .serviceActions button {
         flex: 1;
+        min-height: 44px;
     }
 
     .formGrid {
         grid-template-columns: 1fr;
+    }
+
+    .header h1 {
+        font-size: var(--font-size-xl);
     }
 }

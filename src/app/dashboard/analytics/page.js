@@ -127,7 +127,7 @@ function AnalyticsContent() {
 
     return (
         <div style={{ maxWidth: 900 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
                 <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700 }}>Estadísticas</h1>
                 <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                     {[
@@ -148,7 +148,7 @@ function AnalyticsContent() {
             ) : stats && (
                 <>
                     {/* KPI Cards */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-3)', marginBottom: 'var(--space-6)' }}>
                         <StatCard icon={CalendarDays} label="Turnos" value={stats.totalApts} color="var(--accent)" />
                         <StatCard icon={TrendingUp} label="Tasa completados" value={`${stats.occupancyRate}%`} color="var(--success)" />
                         <StatCard icon={AlertTriangle} label="No asistieron" value={`${stats.noShowRate}%`} color="var(--warning)" subtitle={`${stats.noShow} turnos`} />
@@ -211,16 +211,16 @@ function AnalyticsContent() {
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                                     {stats.proStats.map(pro => (
-                                        <div key={pro.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--font-size-sm)' }}>
+                                        <div key={pro.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--font-size-sm)', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-xs)', fontWeight: 600 }}>
+                                                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-xs)', fontWeight: 600, flexShrink: 0 }}>
                                                     {pro.name[0]}
                                                 </div>
                                                 <span>{pro.name}</span>
                                             </div>
                                             <div style={{ display: 'flex', gap: 'var(--space-3)', color: 'var(--text-tertiary)' }}>
                                                 <span>{pro.count} turnos</span>
-                                                <span style={{ color: 'var(--success)' }}>{pro.completed} completados</span>
+                                                <span style={{ color: 'var(--success)' }}>{pro.completed} ok</span>
                                             </div>
                                         </div>
                                     ))}
@@ -231,7 +231,7 @@ function AnalyticsContent() {
 
                     {/* Summary footer */}
                     <div className="card" style={{ marginTop: 'var(--space-5)' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 'var(--space-3)', fontSize: 'var(--font-size-sm)' }}>
                             <div>
                                 <span style={{ color: 'var(--text-tertiary)' }}>Completados</span>
                                 <div style={{ fontWeight: 600, fontSize: 'var(--font-size-lg)' }}>{stats.completed}</div>
@@ -265,7 +265,7 @@ function StatCard({ icon: Icon, label, value, color, subtitle }) {
                 <Icon size={16} style={{ color }} />
                 <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>{label}</span>
             </div>
-            <span style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, color: 'var(--text-primary)' }}>{value}</span>
+            <span style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, color: 'var(--text-primary)', wordBreak: 'break-word' }}>{value}</span>
             {subtitle && <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>{subtitle}</span>}
         </div>
     )

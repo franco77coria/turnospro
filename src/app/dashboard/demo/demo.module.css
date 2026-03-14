@@ -147,9 +147,28 @@
         overflow-x: auto;
         flex-wrap: nowrap;
         padding-bottom: var(--space-2);
+        -webkit-overflow-scrolling: touch;
     }
 
     .rubroCard {
         flex-shrink: 0;
+        min-height: 44px;
+    }
+
+    .header h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .serviceRow {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .teamGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .previewHeader h2 {
+        font-size: var(--font-size-lg);
     }
 }

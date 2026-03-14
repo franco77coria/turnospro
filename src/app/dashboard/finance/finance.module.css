@@ -125,4 +125,24 @@
     .breakdownBar {
         display: none;
     }
+
+    .header h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .dateInput {
+        min-height: 44px;
+        font-size: 16px;
+        width: 100%;
+    }
+
+    .closureRow {
+        font-size: var(--font-size-base);
+    }
+}
+
+@media (max-width: 380px) {
+    .statsGrid {
+        grid-template-columns: 1fr;
+    }
 }

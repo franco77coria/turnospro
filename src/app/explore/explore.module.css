@@ -292,5 +292,35 @@
     .searchBtn {
         border-radius: var(--radius-lg);
         justify-content: center;
+        min-height: 48px;
+    }
+
+    .bizCard {
+        padding: var(--space-4);
+    }
+
+    .searchSection {
+        padding: var(--space-4) var(--space-3) var(--space-3);
+    }
+
+    .categoryPill {
+        min-height: 40px;
+    }
+}
+
+@media (max-width: 380px) {
+    .bizCard {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+
+    .bizAvatar {
+        width: 40px;
+        height: 40px;
+        font-size: var(--font-size-base);
+    }
+
+    .navInner {
+        padding: var(--space-2) var(--space-3);
     }
 }

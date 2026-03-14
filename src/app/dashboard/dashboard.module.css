@@ -157,4 +157,27 @@
     .contentGrid {
         grid-template-columns: 1fr;
     }
+
+    .header h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .appointmentItem {
+        min-height: 52px;
+        gap: var(--space-3);
+    }
+
+    .quickAction {
+        min-height: 48px;
+    }
+}
+
+@media (max-width: 380px) {
+    .statsGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .quickActions {
+        grid-template-columns: 1fr;
+    }
 }

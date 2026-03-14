@@ -248,8 +248,40 @@
     }
 
     .navBtns button {
-        min-width: 40px;
+        min-width: 44px;
+        min-height: 44px;
+    }
+
+    .mobileSlot {
+        min-height: 56px;
+    }
+
+    .datePill {
+        min-height: 44px;
+        min-width: 52px;
+    }
+
+    .proPill {
         min-height: 40px;
+    }
+
+    .timeSlot {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .wizardProgress {
+        padding: 0 var(--space-4) var(--space-3);
+    }
+
+    .clientItem {
+        min-height: 48px;
+    }
+
+    .serviceCard {
+        padding: var(--space-3);
     }
 }
 
@@ -569,5 +601,17 @@
 @media (max-width: 768px) {
     .timeGrid {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 380px) {
+    .timeGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .summaryRow {
+        padding: var(--space-2) var(--space-3);
+        flex-wrap: wrap;
+        gap: var(--space-1);
     }
 }

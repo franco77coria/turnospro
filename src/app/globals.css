@@ -702,10 +702,22 @@ ol {
   .modal {
     max-width: 100%;
     border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    max-height: 85vh;
+    max-height: 85dvh;
   }
 
-  /* Touch-friendly inputs */
+  .modal-header {
+    padding: var(--space-4);
+  }
+
+  .modal-body {
+    padding: var(--space-4);
+  }
+
+  .modal-footer {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* Touch-friendly inputs — min 44px */
   .input,
   .select {
     height: 48px;
@@ -713,16 +725,54 @@ ol {
   }
 
   .input-sm {
-    height: 40px;
+    height: 44px;
   }
 
-  /* Touch-friendly buttons */
+  /* Touch-friendly buttons — min 44px */
   .btn {
-    min-height: 40px;
+    min-height: 44px;
+    font-size: var(--font-size-base);
+  }
+
+  .btn-sm {
+    min-height: 38px;
   }
 
   .btn-lg {
     min-height: 48px;
+  }
+
+  /* Labels legible */
+  .label {
+    font-size: var(--font-size-base);
+  }
+
+  /* Cards less padding */
+  .card {
+    padding: var(--space-4);
+  }
+
+  /* Stat values responsive */
+  .stat-card .stat-value {
+    font-size: var(--font-size-xl);
+    word-break: break-word;
+  }
+
+  /* Tabs scrollable */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    width: 100%;
+  }
+
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tab {
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   .toast {
@@ -743,5 +793,41 @@ ol {
 
   .toast {
     bottom: var(--space-6);
+  }
+}
+
+/* Very small screens (< 380px) */
+@media (max-width: 380px) {
+  .stat-card .stat-value {
+    font-size: var(--font-size-lg);
+  }
+
+  .modal {
+    max-height: 90dvh;
+  }
+
+  .modal-body {
+    padding: var(--space-3);
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+
+  .btn {
+    font-size: var(--font-size-sm);
+    padding: var(--space-2) var(--space-3);
+  }
+
+  .card {
+    padding: var(--space-3);
+  }
+
+  /* Prevent horizontal overflow */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 }
