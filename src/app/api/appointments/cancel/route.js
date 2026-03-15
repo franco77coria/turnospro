@@ -19,10 +19,10 @@ export async function POST(request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
 
-        // Fetch appointment with business settings
+        // Fetch appointment with business settings and client info
         const { data: appointment, error: fetchErr } = await supabase
             .from('appointments')
-            .select('*, businesses:business_id (name, settings)')
+            .select('*, businesses:business_id (name, business_type, phone, settings, owner_id), clients:client_id (name, email)')
             .eq('id', appointmentId)
             .single()
 
@@ -58,20 +58,78 @@ export async function POST(request) {
 
         if (updateErr) throw updateErr
 
-        // Create notification for business owner
-        const { data: bizData } = await supabase
-            .from('businesses')
-            .select('owner_id')
-            .eq('id', appointment.business_id)
-            .single()
+        const formattedDate = new Date(appointment.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+        const formattedTime = appointment.time?.slice(0, 5)
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
 
-        if (bizData?.owner_id) {
+        // Send cancellation email to client
+        if (appointment.clients?.email) {
+            try {
+                await fetch(`${appUrl}/api/email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'cancellation',
+                        to: appointment.clients.email,
+                        data: {
+                            clientName: appointment.clients.name || 'Cliente',
+                            serviceName: appointment.service_name,
+                            date: formattedDate,
+                            time: formattedTime,
+                            businessName: appointment.businesses?.name || 'GLOWUP',
+                            businessType: appointment.businesses?.business_type || 'custom',
+                            businessPhone: appointment.businesses?.phone,
+                            bookUrl: `${appUrl}/book/${appointment.business_id}`,
+                        }
+                    })
+                })
+            } catch (e) {
+                console.error('Cancel email to client failed:', e)
+            }
+        }
+
+        // Send notification email to business owner + in-app notification
+        const ownerId = appointment.businesses?.owner_id
+        if (ownerId) {
+            // Get owner email
+            const { data: ownerProfile } = await supabase
+                .from('profiles')
+                .select('email')
+                .eq('id', ownerId)
+                .single()
+
+            if (ownerProfile?.email) {
+                try {
+                    await fetch(`${appUrl}/api/email`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            type: 'cancellation_notify',
+                            to: ownerProfile.email,
+                            data: {
+                                clientName: appointment.clients?.name || 'Cliente',
+                                clientEmail: appointment.clients?.email,
+                                serviceName: appointment.service_name,
+                                date: formattedDate,
+                                time: formattedTime,
+                                businessName: appointment.businesses?.name || 'GLOWUP',
+                                businessType: appointment.businesses?.business_type || 'custom',
+                                dashboardUrl: `${appUrl}/dashboard/appointments`,
+                            }
+                        })
+                    })
+                } catch (e) {
+                    console.error('Cancel notify email to business failed:', e)
+                }
+            }
+
+            // In-app notification
             await supabase.from('notifications').insert([{
-                user_id: bizData.owner_id,
+                user_id: ownerId,
                 business_id: appointment.business_id,
                 type: 'appointment_cancelled',
                 title: 'Turno cancelado',
-                message: `${appointment.service_name} del ${appointment.date} a las ${appointment.time} fue cancelado por el cliente.`,
+                message: `${appointment.clients?.name || 'Un cliente'} canceló ${appointment.service_name} del ${formattedDate} a las ${formattedTime}.`,
             }]).catch(() => {}) // non-critical
         }
 
@@ -90,3 +148,4 @@ export async function POST(request) {
         return NextResponse.json({ error: err.message }, { status: 500 })
     }
 }
+

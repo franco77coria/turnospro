@@ -20,11 +20,7 @@
     min-height: 60vh;
 }
 
-/* Header */
-.bookingHeader {
-    text-align: center;
-    margin-bottom: var(--space-6);
-}
+/* Header — see .bookingHeader below .favBtn */
 
 .businessLogo {
     width: 56px;
@@ -53,6 +49,36 @@
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
     margin-top: var(--space-1);
+}
+
+.favBtn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.favBtn:hover {
+    border-color: #EF4444;
+    background: #FEF2F2;
+}
+
+.bookingHeader {
+    text-align: center;
+    margin-bottom: var(--space-6);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 /* Progress */

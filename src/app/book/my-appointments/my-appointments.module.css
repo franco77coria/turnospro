@@ -1,0 +1,283 @@
+.page {
+    min-height: 100vh;
+    background: var(--bg-secondary);
+}
+
+.container {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--space-4) var(--space-4) var(--space-10);
+}
+
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-10);
+}
+
+/* ── Header ── */
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) 0;
+}
+
+.header h1 {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    margin: 0;
+}
+
+.header p {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+}
+
+.backBtn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.backBtn:hover {
+    background: var(--bg-hover);
+}
+
+/* ── Filters ── */
+
+.filters {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+    overflow-x: auto;
+    padding-bottom: var(--space-1);
+}
+
+.filterBtn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition);
+}
+
+.filterBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.filterBtn.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+/* ── Auth Card ── */
+
+.authCard {
+    text-align: center;
+    padding: var(--space-10);
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+}
+
+.authCard h2 {
+    margin: var(--space-3) 0 var(--space-4);
+    font-size: var(--font-size-lg);
+}
+
+/* ── Empty State ── */
+
+.empty {
+    text-align: center;
+    padding: var(--space-10) var(--space-4);
+    color: var(--text-tertiary);
+}
+
+.empty h3 {
+    margin: var(--space-3) 0 var(--space-1);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+}
+
+.empty p {
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-sm);
+}
+
+/* ── Appointment List ── */
+
+.appointmentList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.appointmentCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow var(--transition);
+}
+
+.appointmentCard:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.appointmentTop {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-4);
+}
+
+.dateBlock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 48px;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    background: var(--accent-light);
+}
+
+.dateDay {
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+}
+
+.dateMonth {
+    font-size: var(--font-size-xs);
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+}
+
+.appointmentInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.appointmentInfo h3 {
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    margin: 0 0 4px;
+}
+
+.appointmentMeta {
+    display: flex;
+    gap: var(--space-3);
+    font-size: var(--font-size-xs);
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.appointmentMeta span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.businessInfo {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    flex-wrap: wrap;
+}
+
+.address {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.statusBadge {
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* ── Actions ── */
+
+.appointmentActions {
+    display: flex;
+    gap: var(--space-2);
+    padding: 0 var(--space-4) var(--space-3);
+}
+
+.actionBtn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition);
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    text-decoration: none;
+}
+
+.actionBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.cancelBtn {
+    color: var(--danger, #DC2626);
+    border-color: transparent;
+    background: #FEF2F2;
+}
+
+.cancelBtn:hover {
+    color: white;
+    background: var(--danger, #DC2626);
+    border-color: var(--danger, #DC2626);
+}
+
+/* ── Responsive ── */
+
+@media (max-width: 480px) {
+    .appointmentTop {
+        flex-wrap: wrap;
+    }
+    .statusBadge {
+        width: 100%;
+        text-align: center;
+        margin-top: var(--space-2);
+    }
+}

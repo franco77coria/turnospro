@@ -104,6 +104,8 @@ export const PERMISSIONS = {
     MANAGE_TEAM: 'manage_team',
     EDIT_SERVICES: 'edit_services',
     EDIT_SETTINGS: 'edit_settings',
+    MANAGE_MARKETING: 'manage_marketing',
+    MANAGE_INVENTORY: 'manage_inventory',
 }
 
 export const ROLE_PERMISSIONS = {

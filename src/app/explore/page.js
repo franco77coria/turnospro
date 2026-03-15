@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, MapPin, Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, Store } from 'lucide-react'
+import { Search, MapPin, Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, Store, Star } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import styles from './explore.module.css'
 
@@ -146,23 +146,26 @@ function ExploreContent() {
                                     key={biz.id}
                                     href={biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`}
                                     className={styles.bizCard}
+                                    style={{ padding: 0 }}
                                 >
-                                    <div className={styles.bizAvatar}>
+                                    <div style={{ height: 160, background: 'linear-gradient(135deg, var(--accent) 0%, #4F46E5 100%)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 48, fontWeight: 800 }}>
                                         {(biz.name || '?')[0].toUpperCase()}
+                                        {biz.avg_rating > 0 && (
+                                            <div style={{ position: 'absolute', top: 12, right: 12, background: 'white', color: '#111', padding: '4px 8px', borderRadius: 'var(--radius-full)', fontSize: 'var(--font-size-xs)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                                                <Star size={12} fill="#F59E0B" color="#F59E0B" /> {Number(biz.avg_rating).toFixed(1)} <span style={{ color: 'var(--text-tertiary)', fontWeight: 500 }}>({biz.review_count})</span>
+                                            </div>
+                                        )}
                                     </div>
-                                    <div className={styles.bizInfo}>
-                                        <div className={styles.bizName}>{biz.name}</div>
-                                        <div className={styles.bizMeta}>
-                                            <span className="badge badge-accent">
-                                                {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
-                                            </span>
-                                            {biz.services_count > 0 && (
-                                                <span>{biz.services_count} servicio{biz.services_count !== 1 ? 's' : ''}</span>
-                                            )}
+                                    <div className={styles.bizInfo} style={{ padding: 'var(--space-4)' }}>
+                                        <div className={styles.bizName} style={{ fontSize: 'var(--font-size-lg)' }}>{biz.name}</div>
+                                        
+                                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 4, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type} • {biz.services_count || 0} servicios
                                         </div>
+
                                         {biz.address && (
-                                            <div className={styles.bizAddress}>
-                                                <MapPin size={12} />
+                                            <div className={styles.bizAddress} style={{ marginTop: 'var(--space-3)', color: 'var(--text-tertiary)' }}>
+                                                <MapPin size={14} />
                                                 {biz.address}
                                             </div>
                                         )}

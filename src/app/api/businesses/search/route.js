@@ -31,14 +31,52 @@ export async function GET(request) {
         const { data, error } = await query
         if (error) throw error
 
-        const businesses = (data || []).map(biz => ({
+        let businesses = (data || []).map(biz => ({
             id: biz.id,
             name: biz.name,
             business_type: biz.business_type,
             address: biz.address || '',
             slug: biz.slug,
             services_count: Array.isArray(biz.services) ? biz.services.length : 0,
+            avg_rating: 0,
+            review_count: 0
         }))
+
+        // Fetch ratings for these businesses
+        if (businesses.length > 0) {
+            const businessIds = businesses.map(b => b.id)
+            const { data: reviewsData } = await supabase
+                .from('reviews')
+                .select('business_id, rating')
+                .in('business_id', businessIds)
+
+            if (reviewsData && reviewsData.length > 0) {
+                // Group by business_id
+                const ratingsMap = {}
+                reviewsData.forEach(r => {
+                    if (!ratingsMap[r.business_id]) ratingsMap[r.business_id] = { sum: 0, count: 0 }
+                    ratingsMap[r.business_id].sum += r.rating
+                    ratingsMap[r.business_id].count += 1
+                })
+
+                businesses = businesses.map(biz => {
+                    const r = ratingsMap[biz.id]
+                    if (r) {
+                        return { 
+                            ...biz, 
+                            review_count: r.count, 
+                            avg_rating: Math.round((r.sum / r.count) * 10) / 10 
+                        }
+                    }
+                    return biz
+                })
+            }
+        }
+
+        // Sort by rating if not specifically a text search
+        if (!q.trim()) {
+            businesses.sort((a, b) => b.avg_rating - a.avg_rating)
+        }
 
         return NextResponse.json({ businesses })
     } catch (err) {

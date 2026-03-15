@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { PAYMENT_METHODS, EXPENSE_CATEGORIES } from '@/lib/data'
-import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X } from 'lucide-react'
+import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X, Download } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import styles from './finance.module.css'
@@ -95,6 +95,29 @@ function FinanceContent() {
         }
     }
 
+    function handleExportCSV() {
+        if (transactions.length === 0) return alert('No hay movimientos para exportar.')
+        
+        const headers = ['Fecha', 'Hora', 'Tipo', 'Monto', 'Concepto_Categoria', 'Metodo_de_Pago']
+        const rows = transactions.map(t => [
+            new Date(t.created_at).toLocaleDateString('es-AR'),
+            new Date(t.created_at).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }),
+            t.type === 'income' ? 'Ingreso' : 'Gasto',
+            t.amount,
+            t.concept || t.category || '',
+            PAYMENT_METHODS.find(p => p.id === t.payment_method)?.name || t.payment_method
+        ])
+        
+        const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n')
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `caja_${selectedDate}.csv`
+        a.click()
+        URL.revokeObjectURL(url)
+    }
+
     const paymentBreakdown = PAYMENT_METHODS.map(pm => ({
         ...pm,
         total: transactions.filter(t => t.payment_method === pm.id && t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -119,6 +142,9 @@ function FinanceContent() {
                         onChange={e => setSelectedDate(e.target.value)} />
                 </div>
                 <div className={styles.headerActions}>
+                    <button className="btn btn-ghost" onClick={handleExportCSV} title="Exportar a CSV">
+                        <Download size={16} /> Exportar
+                    </button>
                     <button className="btn btn-secondary" onClick={() => setShowClosureModal(true)}>
                         <ClipboardList size={16} /> Cierre de caja
                     </button>

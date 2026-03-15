@@ -256,3 +256,193 @@ export function welcomeEmail({ clientName, businessName, businessType, webUrl })
 
     return baseLayout(content, theme, businessName)
 }
+
+// ─── Notify business owner of a new booking ───
+export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, serviceName, date, time, duration, businessName, businessType, dashboardUrl }) {
+    const theme = getTheme(businessType)
+
+    const content = `
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
+            Nueva reserva
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
+            <strong>${clientName}</strong> reservó un turno en tu negocio.
+        </p>
+        
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+            <tr>
+                <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td style="padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
+                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${serviceName}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top:14px;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${date}</span>
+                                        </td>
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${time}</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                        ${duration ? `
+                        <tr>
+                            <td style="padding-top:14px;">
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Duración</span><br>
+                                <span style="font-size:14px;color:#475569;">${duration} minutos</span>
+                            </td>
+                        </tr>` : ''}
+                        <tr>
+                            <td style="padding-top:14px;border-top:1px solid #e2e8f0;margin-top:14px;">
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
+                                <span style="font-size:14px;color:#475569;">${clientName}</span><br>
+                                ${clientEmail ? `<span style="font-size:13px;color:#94a3b8;">${clientEmail}</span><br>` : ''}
+                                ${clientPhone ? `<span style="font-size:13px;color:#94a3b8;">${clientPhone}</span>` : ''}
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        ${dashboardUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+            <tr>
+                <td align="center">
+                    <a href="${dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                        Ver en el dashboard
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+    `
+
+    return baseLayout(content, theme, businessName)
+}
+
+// ─── Cancellation confirmation to client ───
+export function cancellationEmail({ clientName, serviceName, date, time, businessName, businessType, businessPhone, bookUrl }) {
+    const theme = getTheme(businessType)
+
+    const content = `
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
+            Turno cancelado
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
+            Hola <strong>${clientName}</strong>, tu turno fue cancelado correctamente.
+        </p>
+        
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
+            <tr>
+                <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td>
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio cancelado</span><br>
+                                <span style="font-size:16px;font-weight:600;color:#DC2626;text-decoration:line-through;">${serviceName}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top:14px;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
+                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${date}</span>
+                                        </td>
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
+                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${time}</span>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+        
+        ${bookUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+            <tr>
+                <td align="center">
+                    <a href="${bookUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                        Reservar otro turno
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+
+        ${businessPhone ? `
+        <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
+            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${businessPhone}</strong>
+        </p>` : ''}
+    `
+
+    return baseLayout(content, theme, businessName)
+}
+
+// ─── Notify business when client cancels ───
+export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, date, time, businessName, businessType, dashboardUrl }) {
+    const theme = getTheme(businessType)
+
+    const content = `
+        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#DC2626;letter-spacing:-0.02em;">
+            Turno cancelado
+        </h1>
+        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
+            <strong>${clientName}</strong> canceló su turno.
+        </p>
+        
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
+            <tr>
+                <td style="padding:20px 24px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td>
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
+                                <span style="font-size:16px;font-weight:600;color:#DC2626;">${serviceName}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top:14px;">
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha y hora</span><br>
+                                <span style="font-size:15px;font-weight:600;color:#1e293b;">${date} — ${time}</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding-top:14px;">
+                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
+                                <span style="font-size:14px;color:#475569;">${clientName} ${clientEmail ? `(${clientEmail})` : ''}</span>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+
+        ${dashboardUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+            <tr>
+                <td align="center">
+                    <a href="${dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                        Ver en el dashboard
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+    `
+
+    return baseLayout(content, theme, businessName)
+}

@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
-import { confirmationEmail, reminderEmail, welcomeEmail } from '@/lib/email-templates'
+import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
@@ -36,6 +36,21 @@ export async function POST(request) {
             case 'welcome':
                 html = welcomeEmail(data)
                 subject = `Bienvenido/a a ${data.businessName}`
+                break
+
+            case 'new_booking_notify':
+                html = newBookingNotifyEmail(data)
+                subject = `Nueva reserva — ${data.clientName} | ${data.serviceName}`
+                break
+
+            case 'cancellation':
+                html = cancellationEmail(data)
+                subject = `Turno cancelado — ${data.serviceName} | ${data.businessName}`
+                break
+
+            case 'cancellation_notify':
+                html = cancellationNotifyEmail(data)
+                subject = `Turno cancelado — ${data.clientName} canceló ${data.serviceName}`
                 break
 
             default:

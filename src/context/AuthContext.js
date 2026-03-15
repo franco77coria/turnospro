@@ -28,6 +28,14 @@ export function AuthProvider({ children }) {
 
             // Profile doesn't exist — create it
             if (profileError && profileError.code === 'PGRST116') {
+                // Determine role from metadata or localStorage fallback
+                let accountType = userMeta?.account_type
+                if (!accountType && typeof window !== 'undefined') {
+                    accountType = localStorage.getItem('pending_account_type')
+                    localStorage.removeItem('pending_account_type')
+                }
+                const role = accountType === 'business' ? 'Dueño' : 'user'
+
                 const { data: newProfile } = await supabase
                     .from('profiles')
                     .insert([{
@@ -35,7 +43,7 @@ export function AuthProvider({ children }) {
                         email: userEmail,
                         full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'Usuario',
                         avatar_url: userMeta?.avatar_url || null,
-                        role: 'Dueño',
+                        role,
                     }])
                     .select()
                     .single()
@@ -158,15 +166,24 @@ export function AuthProvider({ children }) {
         }
     }, [loadUserData])
 
-    const signInWithGoogle = async () => {
+    const signInWithGoogle = async (accountType) => {
         if (!supabase) throw new Error('Supabase no configurado')
+        // Save account type to localStorage as fallback
+        // (in case Supabase strips custom query params from redirectTo)
+        if (typeof window !== 'undefined' && accountType) {
+            localStorage.setItem('pending_account_type', accountType)
+        }
+        // Build redirectTo URL — include account_type so the callback route
+        // can read it and create the profile with the correct role
+        let callbackUrl = typeof window !== 'undefined'
+            ? `${window.location.origin}/auth/callback`
+            : undefined
+        if (callbackUrl && accountType) {
+            callbackUrl += `?account_type=${accountType}`
+        }
         const { error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
-            options: {
-                redirectTo: typeof window !== 'undefined'
-                    ? `${window.location.origin}/auth/callback`
-                    : undefined,
-            }
+            options: { redirectTo: callbackUrl },
         })
         if (error) throw error
     }

@@ -222,7 +222,7 @@ export default function RegisterPage() {
 
                             <button type="button" className={styles.googleBtn} onClick={async () => {
                                 try {
-                                    await signInWithGoogle()
+                                    await signInWithGoogle(accountType)
                                 } catch (err) {
                                     setError(err.message || 'Error con Google')
                                 }

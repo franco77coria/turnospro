@@ -2,7 +2,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
-import { Plus, Mail, Phone, X } from 'lucide-react'
+import { Plus, Mail, Phone, X, Link2, Check, UserPlus } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import styles from './team.module.css'
@@ -21,6 +21,7 @@ function TeamContent() {
     const [showModal, setShowModal] = useState(false)
     const [editMember, setEditMember] = useState(null)
     const [form, setForm] = useState({ name: '', email: '', phone: '', role: '' })
+    const [copiedToken, setCopiedToken] = useState(null)
 
     useEffect(() => {
         if (business?.id) loadTeam()
@@ -40,10 +41,16 @@ function TeamContent() {
         e.preventDefault()
         if (!supabase) return
         try {
+            const payload = { ...form }
+            
             if (editMember) {
-                await supabase.from('team_members').update(form).eq('id', editMember.id)
+                await supabase.from('team_members').update(payload).eq('id', editMember.id)
             } else {
-                await supabase.from('team_members').insert([{ ...form, business_id: business.id, active: true }])
+                // Generate a random token for the invite link
+                payload.invite_token = crypto.randomUUID()
+                payload.business_id = business.id
+                payload.active = true
+                await supabase.from('team_members').insert([payload])
             }
             setShowModal(false)
             setEditMember(null)
@@ -71,6 +78,14 @@ function TeamContent() {
     const roleBadgeColor = (role) => {
         const colors = { 'Dueño': 'accent', 'Admin': 'info', 'Recepcionista': 'neutral' }
         return colors[role] || 'accent'
+    }
+
+    const copyInviteLink = (member) => {
+        if (!member.invite_token) return
+        const link = `${window.location.origin}/invite/${member.invite_token}`
+        navigator.clipboard.writeText(link)
+        setCopiedToken(member.id)
+        setTimeout(() => setCopiedToken(null), 2000)
     }
 
     if (authLoading || !business?.id) {
@@ -120,7 +135,13 @@ function TeamContent() {
                         </div>
                         {member.email && <p className={styles.memberDetail}><Mail size={12} /> {member.email}</p>}
                         {member.phone && <p className={styles.memberDetail}><Phone size={12} /> {member.phone}</p>}
-                        <div className={styles.memberActions}>
+                        <div className={styles.memberActions} style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                            {member.invite_token && !member.user_id && (
+                                <button className="btn btn-ghost btn-sm" onClick={() => copyInviteLink(member)} title="Copiar enlace de invitación">
+                                    {copiedToken === member.id ? <Check size={14} color="var(--success)" /> : <UserPlus size={14} />}
+                                    <span style={{ marginLeft: 4 }}>{copiedToken === member.id ? 'Copiado' : 'Invitar'}</span>
+                                </button>
+                            )}
                             <button className="btn btn-ghost btn-sm" onClick={() => openEdit(member)}>Editar</button>
                         </div>
                     </div>

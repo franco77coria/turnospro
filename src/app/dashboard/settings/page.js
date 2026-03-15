@@ -2,7 +2,8 @@
 import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import { useState, useEffect } from 'react'
-import { Save, Trash2 } from 'lucide-react'
+import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download } from 'lucide-react'
+import { QRCodeSVG } from 'qrcode.react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 
@@ -17,19 +18,45 @@ export default function SettingsPage() {
 function SettingsContent() {
     const { business, updateBusiness, profile, loading: authLoading } = useAuth()
     const [form, setForm] = useState({
-        name: business?.name || '',
-        phone: business?.phone || '',
-        address: business?.address || '',
-        business_type: business?.business_type || '',
+        name: '',
+        phone: '',
+        address: '',
+        business_type: '',
+        description: '',
     })
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState('')
+    const [copied, setCopied] = useState(false)
+
+    // Work hours
     const [workHoursForm, setWorkHoursForm] = useState({
-        start: business?.settings?.work_hours?.start || '09:00',
-        end: business?.settings?.work_hours?.end || '20:00',
+        start: '09:00',
+        end: '20:00',
     })
-    const [minCancelHours, setMinCancelHours] = useState(business?.settings?.min_cancel_hours ?? 2)
+
+    // Work days (0=Sunday, 1=Monday, ..., 6=Saturday)
+    const [workDays, setWorkDays] = useState([1, 2, 3, 4, 5, 6])
+
+    // Cancellation policy
+    const [minCancelHours, setMinCancelHours] = useState(2)
+
+    // Buffer time between appointments (minutes)
+    const [bufferTime, setBufferTime] = useState(0)
+
+    // Deposit Configuration (percentage, 0 = no deposit)
+    const [depositPercentage, setDepositPercentage] = useState(0)
+
+    // Min advance booking (hours)
+    const [minAdvance, setMinAdvance] = useState(1)
+
+    // Max advance booking (days)
+    const [maxAdvance, setMaxAdvance] = useState(30)
+
+    // Closed dates (holidays/special days)
+    const [closedDates, setClosedDates] = useState([])
+    const [newClosedDate, setNewClosedDate] = useState('')
+    const [newClosedReason, setNewClosedReason] = useState('')
 
     useEffect(() => {
         if (business) {
@@ -38,9 +65,49 @@ function SettingsContent() {
                 phone: business.phone || '',
                 address: business.address || '',
                 business_type: business.business_type || '',
+                description: business.settings?.description || '',
             })
+            setWorkHoursForm({
+                start: business.settings?.work_hours?.start || '09:00',
+                end: business.settings?.work_hours?.end || '20:00',
+            })
+            setWorkDays(business.settings?.work_days || [1, 2, 3, 4, 5, 6])
+            setMinCancelHours(business.settings?.min_cancel_hours ?? 2)
+            setBufferTime(business.settings?.buffer_time ?? 0)
+            setDepositPercentage(business.settings?.deposit_percentage ?? 0)
+            setMinAdvance(business.settings?.min_advance_hours ?? 1)
+            setMaxAdvance(business.settings?.max_advance_days ?? 30)
+            setClosedDates(business.settings?.closed_dates || [])
         }
-    }, [business?.id, business?.name, business?.phone, business?.address, business?.business_type])
+    }, [business?.id, business?.name, business?.phone, business?.address, business?.business_type, business?.settings])
+
+    const toggleWorkDay = (day) => {
+        setWorkDays(prev =>
+            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day].sort()
+        )
+    }
+
+    const addClosedDate = () => {
+        if (!newClosedDate) return
+        const exists = closedDates.some(d => d.date === newClosedDate)
+        if (exists) return
+        setClosedDates(prev => [...prev, { date: newClosedDate, reason: newClosedReason || 'Cerrado' }])
+        setNewClosedDate('')
+        setNewClosedReason('')
+    }
+
+    const removeClosedDate = (index) => {
+        setClosedDates(prev => prev.filter((_, i) => i !== index))
+    }
+
+    const handleCopyLink = () => {
+        const url = business.slug
+            ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/s/${business.slug}`
+            : `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/${business.id}`
+        navigator.clipboard.writeText(url)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+    }
 
     async function handleSave(e) {
         e.preventDefault()
@@ -48,11 +115,20 @@ function SettingsContent() {
         setError('')
         try {
             await updateBusiness({
-                ...form,
+                name: form.name,
+                phone: form.phone,
+                address: form.address,
                 settings: {
                     ...business?.settings,
+                    description: form.description,
                     work_hours: workHoursForm,
+                    work_days: workDays,
                     min_cancel_hours: parseInt(minCancelHours) || 2,
+                    buffer_time: parseInt(bufferTime) || 0,
+                    deposit_percentage: parseInt(depositPercentage) || 0,
+                    min_advance_hours: parseInt(minAdvance) || 1,
+                    max_advance_days: parseInt(maxAdvance) || 30,
+                    closed_dates: closedDates,
                 }
             })
             setSaved(true)
@@ -64,11 +140,11 @@ function SettingsContent() {
         setSaving(false)
     }
 
-
+    const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 
     if (authLoading || !business?.id) {
         return (
-            <div style={{ maxWidth: 600 }}>
+            <div style={{ maxWidth: 640 }}>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
                     <div className="loading-spinner" />
                 </div>
@@ -77,10 +153,11 @@ function SettingsContent() {
     }
 
     return (
-        <div style={{ maxWidth: 600 }}>
+        <div style={{ maxWidth: 640 }}>
             <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)' }}>Configuración</h1>
 
             <form onSubmit={handleSave}>
+                {/* Business Info */}
                 <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
                     <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Datos del negocio</h3>
                     <div className="form-group">
@@ -94,6 +171,17 @@ function SettingsContent() {
                         </div>
                     </div>
                     <div className="form-group">
+                        <label className="label">Descripción</label>
+                        <textarea
+                            className="input"
+                            rows={3}
+                            placeholder="Describí tu negocio para tus clientes..."
+                            value={form.description}
+                            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                            style={{ resize: 'vertical', minHeight: 80 }}
+                        />
+                    </div>
+                    <div className="form-group">
                         <label className="label">Teléfono</label>
                         <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
                     </div>
@@ -103,8 +191,11 @@ function SettingsContent() {
                     </div>
                 </div>
 
+                {/* Work Schedule */}
                 <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Horario de atención</h3>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Clock size={18} /> Horario de atención
+                    </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div className="form-group">
                             <label className="label">Apertura</label>
@@ -117,10 +208,41 @@ function SettingsContent() {
                                 onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
                         </div>
                     </div>
+
+                    {/* Work Days */}
+                    <div className="form-group" style={{ marginTop: 'var(--space-3)' }}>
+                        <label className="label">Días de trabajo</label>
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                            {DAY_NAMES.map((name, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => toggleWorkDay(idx)}
+                                    style={{
+                                        padding: '8px 14px',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid ' + (workDays.includes(idx) ? 'var(--accent)' : 'var(--border)'),
+                                        background: workDays.includes(idx) ? 'var(--accent)' : 'var(--bg-primary)',
+                                        color: workDays.includes(idx) ? 'white' : 'var(--text-secondary)',
+                                        fontSize: 'var(--font-size-sm)',
+                                        fontWeight: 500,
+                                        cursor: 'pointer',
+                                        transition: 'all var(--transition)',
+                                    }}
+                                >
+                                    {name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
                 </div>
 
+                {/* Booking Settings */}
                 <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Turnos</h3>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Shield size={18} /> Políticas de turnos
+                    </h3>
+
                     <div className="form-group">
                         <label className="label">Horas mínimas para cancelar</label>
                         <input className="input" type="number" min="0" max="72" value={minCancelHours}
@@ -129,26 +251,181 @@ function SettingsContent() {
                             Los clientes no podrán cancelar con menos de {minCancelHours}h de anticipación
                         </span>
                     </div>
-                    {business?.id && (
+
+                    <div className="form-group">
+                        <label className="label">Tiempo buffer entre turnos (minutos)</label>
+                        <input className="input" type="number" min="0" max="60" step="5" value={bufferTime}
+                            onChange={e => setBufferTime(e.target.value)} />
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                            Descanso o preparación entre turno y turno
+                        </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                         <div className="form-group">
-                            <label className="label">Link de reservas</label>
-                            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
-                                <input className="input" value={
+                            <label className="label">Anticipación mínima (horas)</label>
+                            <input className="input" type="number" min="0" max="168" value={minAdvance}
+                                onChange={e => setMinAdvance(e.target.value)} />
+                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                No se puede reservar con menos de {minAdvance}h antes
+                            </span>
+                        </div>
+                        <div className="form-group">
+                            <label className="label">Anticipación máxima (días)</label>
+                            <input className="input" type="number" min="1" max="365" value={maxAdvance}
+                                onChange={e => setMaxAdvance(e.target.value)} />
+                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                Pueden reservar hasta {maxAdvance} días adelante
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="form-group" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--border)' }}>
+                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                            <Shield size={14} color="var(--accent)" /> Seña / Depósito Requerido (%)
+                        </label>
+                        <input className="input" type="number" min="0" max="100" value={depositPercentage}
+                            onChange={e => setDepositPercentage(e.target.value)} />
+                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                            Porcentaje que el cliente debe pagar por adelantado para confirmar el turno (0 = no requiere seña)
+                        </span>
+                    </div>
+                </div>
+
+                {/* Closed Dates (Holidays) */}
+                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Calendar size={18} /> Días cerrados / Feriados
+                    </h3>
+
+                    {closedDates.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                            {closedDates.map((cd, i) => {
+                                const dateObj = new Date(cd.date + 'T12:00:00')
+                                return (
+                                    <div key={i} style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: 'var(--space-2) var(--space-3)',
+                                        background: 'var(--bg-secondary)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: 'var(--font-size-sm)',
+                                    }}>
+                                        <span>
+                                            <strong>{dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+                                            {cd.reason && <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>— {cd.reason}</span>}
+                                        </span>
+                                        <button type="button" onClick={() => removeClosedDate(i)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger, #DC2626)', padding: 4 }}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                        <div className="form-group" style={{ flex: '1 1 140px' }}>
+                            <label className="label">Fecha</label>
+                            <input className="input" type="date" value={newClosedDate}
+                                onChange={e => setNewClosedDate(e.target.value)} />
+                        </div>
+                        <div className="form-group" style={{ flex: '2 1 200px' }}>
+                            <label className="label">Motivo (opcional)</label>
+                            <input className="input" placeholder="Ej: Feriado, Vacaciones..."
+                                value={newClosedReason} onChange={e => setNewClosedReason(e.target.value)} />
+                        </div>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={addClosedDate}
+                            style={{ height: 40, whiteSpace: 'nowrap' }}>
+                            <Plus size={14} /> Agregar
+                        </button>
+                    </div>
+                </div>
+
+                {/* Booking Link & QR Code */}
+                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Link2 size={18} /> Link de reservas y Código QR
+                    </h3>
+                    
+                    {/* Link */}
+                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                        <input className="input" value={
+                            business.slug
+                                ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
+                                : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
+                        } readOnly style={{ opacity: 0.8 }} />
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyLink}
+                            style={{ whiteSpace: 'nowrap', minWidth: 80 }}>
+                            {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
+                        </button>
+                    </div>
+
+                    {/* QR Code */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
+                        <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)' }}>
+                            <QRCodeSVG 
+                                value={
                                     business.slug
                                         ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
                                         : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
-                                } readOnly style={{ opacity: 0.8 }} />
-                                <button type="button" className="btn btn-secondary btn-sm" onClick={() => {
-                                    const url = business.slug
-                                        ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/s/${business.slug}`
-                                        : `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/${business.id}`
-                                    navigator.clipboard.writeText(url)
-                                }}>Copiar</button>
-                            </div>
+                                } 
+                                size={120} 
+                                level="M" 
+                                includeMargin={false}
+                            />
                         </div>
-                    )}
+                        <div>
+                            <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-1)' }}>Código QR de reservas</h4>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)', lineHeight: 1.4 }}>
+                                Imprimí este código para que tus clientes puedan escanear y acceder directamente a tu página de reservas.
+                            </p>
+                            <button type="button" className="btn btn-primary btn-sm" onClick={() => {
+                                const svg = document.getElementById('booking-qr-code').innerHTML;
+                                const blob = new Blob([svg], { type: 'image/svg+xml' });
+                                const url = URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = `qr-glowup-${business.name.toLowerCase().replace(/\s+/g, '-')}.svg`;
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                                URL.revokeObjectURL(url);
+                            }}>
+                                <Download size={14} /> Descargar QR
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
+                {/* Embeddable Widget */}
+                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Link2 size={18} /> Widget para tu sitio web
+                    </h3>
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
+                        Copiá y pegá este código HTML en tu página web (WordPress, Wix, etc.) para integrar el botón de reservas.
+                    </p>
+                    <div style={{ position: 'relative' }}>
+                        <textarea 
+                            className="input" 
+                            readOnly 
+                            rows={3}
+                            style={{ fontFamily: 'monospace', fontSize: '13px', backgroundColor: 'var(--bg-secondary)', resize: 'none' }}
+                            value={`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
+                        />
+                        <button type="button" className="btn btn-secondary btn-sm" 
+                            style={{ position: 'absolute', top: '10px', right: '10px' }}
+                            onClick={() => {
+                                navigator.clipboard.writeText(`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
+                                alert('Código copiado');
+                            }}>
+                            <Copy size={14} /> Copiar
+                        </button>
+                    </div>
+                </div>
+
+                {/* Account Info */}
                 <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
                     <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Mi cuenta</h3>
                     <div className="form-group">
@@ -168,7 +445,7 @@ function SettingsContent() {
                 )}
 
                 <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={saving}>
-                    {saving ? <div className="loading-spinner" /> : saved ? 'Guardado' : <><Save size={16} /> Guardar cambios</>}
+                    {saving ? <div className="loading-spinner" /> : saved ? '✓ Guardado' : <><Save size={16} /> Guardar cambios</>}
                 </button>
             </form>
 

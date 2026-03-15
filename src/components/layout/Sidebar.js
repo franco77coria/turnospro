@@ -4,21 +4,25 @@ import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
 import { filterNavByRole } from '@/lib/permissions'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart } from 'lucide-react'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart, Gift, Package, ShoppingCart, MapPin } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
     { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
     { href: '/dashboard/calendar', label: 'Calendario', icon: CalendarDays },
     { href: '/dashboard/appointments', label: 'Turnos', icon: Clock },
+    { href: '/dashboard/pos', label: 'Punto de Venta', icon: ShoppingCart },
     { href: '/dashboard/clients', label: 'Clientes', icon: Users },
     { href: '/dashboard/services', label: 'Servicios', icon: Tag },
+    { href: '/dashboard/inventory', label: 'Productos', icon: Package },
     { href: '/dashboard/team', label: 'Equipo', icon: UserCircle },
+    { href: '/dashboard/marketing', label: 'Marketing', icon: Gift },
     { href: '/dashboard/finance', label: 'Caja', icon: Wallet },
     { href: '/dashboard/analytics', label: 'Estadísticas', icon: PieChart },
 ]
 
 const BOTTOM_ITEMS = [
+    { href: '/dashboard/locations', label: 'Sucursales', icon: MapPin },
     { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ]
 

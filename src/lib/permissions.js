@@ -22,6 +22,10 @@ export const PAGE_PERMISSIONS = {
     '/dashboard/settings': PERMISSIONS.EDIT_SETTINGS,
     '/dashboard/analytics': PERMISSIONS.VIEW_REPORTS,
     '/dashboard/admin': 'superadmin',
+    '/dashboard/marketing': PERMISSIONS.MANAGE_MARKETING,
+    '/dashboard/inventory': PERMISSIONS.MANAGE_INVENTORY,
+    '/dashboard/pos': PERMISSIONS.VIEW_FINANCE,
+    '/dashboard/locations': PERMISSIONS.EDIT_SETTINGS,
 }
 
 /**

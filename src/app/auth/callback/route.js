@@ -6,6 +6,8 @@ export async function GET(request) {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
     const error = requestUrl.searchParams.get('error')
+    const accountType = requestUrl.searchParams.get('account_type') // 'user' | 'business' | null
+    const type = requestUrl.searchParams.get('type') // 'recovery' for password reset
     const origin = requestUrl.origin
 
     // If OAuth returned an error, redirect to login
@@ -24,16 +26,49 @@ export async function GET(request) {
                 return NextResponse.redirect(`${origin}/login?error=exchange`)
             }
 
-            // Check user role to decide redirect
+            // Password recovery flow — redirect to reset password page
+            if (type === 'recovery') {
+                return NextResponse.redirect(`${origin}/auth/reset-password`)
+            }
+
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
-                const { data: profile } = await supabase
+                // Check if profile already exists
+                const { data: profile, error: profileError } = await supabase
                     .from('profiles')
                     .select('role, business_id')
                     .eq('id', user.id)
                     .single()
 
-                // Client users go to /book, business users go to /dashboard
+                if (profileError && profileError.code === 'PGRST116') {
+                    // Profile doesn't exist — create it with the correct role
+                    const role = accountType === 'business' ? 'Dueño' : 'user'
+                    const { data: newProfile } = await supabase
+                        .from('profiles')
+                        .insert([{
+                            id: user.id,
+                            email: user.email,
+                            full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
+                            avatar_url: user.user_metadata?.avatar_url || null,
+                            role,
+                        }])
+                        .select('role, business_id')
+                        .single()
+
+                    // Also update user metadata so AuthContext loadUserData
+                    // knows the account type on subsequent loads
+                    await supabase.auth.updateUser({
+                        data: { account_type: accountType || 'user' }
+                    })
+
+                    // New user: route by role
+                    if (role === 'user') {
+                        return NextResponse.redirect(`${origin}/book`)
+                    }
+                    return NextResponse.redirect(`${origin}/dashboard`)
+                }
+
+                // Profile already exists — route based on existing role
                 if (profile && profile.role === 'user' && !profile.business_id) {
                     return NextResponse.redirect(`${origin}/book`)
                 }
