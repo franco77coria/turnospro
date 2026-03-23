@@ -6,6 +6,7 @@ import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Dow
 import { QRCodeSVG } from 'qrcode.react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
+import { useToast } from '@/components/Toast'
 
 export default function SettingsPage() {
     return (
@@ -16,6 +17,7 @@ export default function SettingsPage() {
 }
 
 function SettingsContent() {
+    const toast = useToast()
     const { business, updateBusiness, profile, loading: authLoading } = useAuth()
     const [form, setForm] = useState({
         name: '',
@@ -418,7 +420,7 @@ function SettingsContent() {
                             style={{ position: 'absolute', top: '10px', right: '10px' }}
                             onClick={() => {
                                 navigator.clipboard.writeText(`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
-                                alert('Código copiado');
+                                toast.success('Código copiado');
                             }}>
                             <Copy size={14} /> Copiar
                         </button>
@@ -454,7 +456,7 @@ function SettingsContent() {
                 <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                     Estas acciones son irreversibles.
                 </p>
-                <button className="btn btn-danger btn-sm" onClick={() => alert('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>
+                <button className="btn btn-danger btn-sm" onClick={() => toast.info('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>
             </div>
         </div>
     )

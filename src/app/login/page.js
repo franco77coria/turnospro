@@ -22,7 +22,7 @@ function LoginContent() {
     useEffect(() => {
         if (!loading && user) {
             const explicit = searchParams.get('redirect')
-            if (explicit) {
+            if (explicit && explicit.startsWith('/') && !explicit.startsWith('//')) {
                 router.replace(explicit)
             } else {
                 const isClient = profile?.role === 'user' && !profile?.business_id
@@ -64,7 +64,7 @@ function LoginContent() {
         }
         try {
             setError('')
-            await signInWithGoogle()
+            await signInWithGoogle('user')
         } catch (err) {
             console.error('Login error:', err)
             setError(err.message || 'Error al iniciar sesión')

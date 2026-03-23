@@ -28,13 +28,10 @@ export function AuthProvider({ children }) {
 
             // Profile doesn't exist — create it
             if (profileError && profileError.code === 'PGRST116') {
-                // Determine role from metadata or localStorage fallback
-                let accountType = userMeta?.account_type
-                if (!accountType && typeof window !== 'undefined') {
-                    accountType = localStorage.getItem('pending_account_type')
-                    localStorage.removeItem('pending_account_type')
-                }
-                const role = accountType === 'business' ? 'Dueño' : 'user'
+                // Always assign 'user' role on initial profile creation
+                // Business owner role is assigned via createBusiness() / onboarding flow
+                // DO NOT read account_type from localStorage or query params (manipulable)
+                const role = 'user'
 
                 const { data: newProfile } = await supabase
                     .from('profiles')

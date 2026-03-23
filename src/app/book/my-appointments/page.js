@@ -4,9 +4,11 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { CalendarDays, Clock, MapPin, Check, X, RotateCcw, ArrowLeft, Store, History } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/Toast'
 import styles from './my-appointments.module.css'
 
 export default function MyAppointmentsPage() {
+    const toast = useToast()
     const { user, loading: authLoading } = useAuth()
     const [appointments, setAppointments] = useState([])
     const [loading, setLoading] = useState(true)
@@ -71,7 +73,7 @@ export default function MyAppointmentsPage() {
         const hoursUntil = (appointmentDateTime - now) / (1000 * 60 * 60)
 
         if (hoursUntil < minHours) {
-            alert(`No podés cancelar con menos de ${minHours} horas de anticipación. Contactá al negocio directamente.`)
+            toast.error(`No podés cancelar con menos de ${minHours} horas de anticipación. Contactá al negocio directamente.`)
             return
         }
 
@@ -86,9 +88,10 @@ export default function MyAppointmentsPage() {
             setAppointments(prev => prev.map(a =>
                 a.id === appointmentId ? { ...a, status: 'cancelled' } : a
             ))
+            toast.success('Turno cancelado correctamente')
         } catch (err) {
             console.error('Cancel error:', err)
-            alert('Error al cancelar. Intentá de nuevo.')
+            toast.error('Error al cancelar. Intentá de nuevo.')
         }
         setCancelling(null)
     }

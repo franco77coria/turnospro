@@ -1,6 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { verifyCancelToken } from '@/lib/cancel-token'
+import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { sendEmail } from '@/lib/send-email'
 
 export async function POST(request) {
     try {
@@ -14,10 +15,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 })
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        )
+        const supabase = createSupabaseAdmin()
 
         // Fetch appointment with business settings and client info
         const { data: appointment, error: fetchErr } = await supabase
@@ -62,26 +60,22 @@ export async function POST(request) {
         const formattedTime = appointment.time?.slice(0, 5)
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
 
-        // Send cancellation email to client
+        // Send cancellation email to client (direct call, no internal fetch)
         if (appointment.clients?.email) {
             try {
-                await fetch(`${appUrl}/api/email`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'cancellation',
-                        to: appointment.clients.email,
-                        data: {
-                            clientName: appointment.clients.name || 'Cliente',
-                            serviceName: appointment.service_name,
-                            date: formattedDate,
-                            time: formattedTime,
-                            businessName: appointment.businesses?.name || 'GLOWUP',
-                            businessType: appointment.businesses?.business_type || 'custom',
-                            businessPhone: appointment.businesses?.phone,
-                            bookUrl: `${appUrl}/book/${appointment.business_id}`,
-                        }
-                    })
+                await sendEmail({
+                    type: 'cancellation',
+                    to: appointment.clients.email,
+                    data: {
+                        clientName: appointment.clients.name || 'Cliente',
+                        serviceName: appointment.service_name,
+                        date: formattedDate,
+                        time: formattedTime,
+                        businessName: appointment.businesses?.name || 'GLOWUP',
+                        businessType: appointment.businesses?.business_type || 'custom',
+                        businessPhone: appointment.businesses?.phone,
+                        bookUrl: `${appUrl}/book/${appointment.business_id}`,
+                    }
                 })
             } catch (e) {
                 console.error('Cancel email to client failed:', e)
@@ -100,23 +94,19 @@ export async function POST(request) {
 
             if (ownerProfile?.email) {
                 try {
-                    await fetch(`${appUrl}/api/email`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            type: 'cancellation_notify',
-                            to: ownerProfile.email,
-                            data: {
-                                clientName: appointment.clients?.name || 'Cliente',
-                                clientEmail: appointment.clients?.email,
-                                serviceName: appointment.service_name,
-                                date: formattedDate,
-                                time: formattedTime,
-                                businessName: appointment.businesses?.name || 'GLOWUP',
-                                businessType: appointment.businesses?.business_type || 'custom',
-                                dashboardUrl: `${appUrl}/dashboard/appointments`,
-                            }
-                        })
+                    await sendEmail({
+                        type: 'cancellation_notify',
+                        to: ownerProfile.email,
+                        data: {
+                            clientName: appointment.clients?.name || 'Cliente',
+                            clientEmail: appointment.clients?.email,
+                            serviceName: appointment.service_name,
+                            date: formattedDate,
+                            time: formattedTime,
+                            businessName: appointment.businesses?.name || 'GLOWUP',
+                            businessType: appointment.businesses?.business_type || 'custom',
+                            dashboardUrl: `${appUrl}/dashboard/appointments`,
+                        }
                     })
                 } catch (e) {
                     console.error('Cancel notify email to business failed:', e)
@@ -145,7 +135,6 @@ export async function POST(request) {
         })
     } catch (err) {
         console.error('Cancel appointment error:', err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }
-

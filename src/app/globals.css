@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Font loaded via next/font in layout.js for optimal performance */
 
 /* ============================================
    GLOWUP Design System — Minimalist Light
@@ -13,7 +13,7 @@
 
   --text-primary: #111827;
   --text-secondary: #6B7280;
-  --text-tertiary: #9CA3AF;
+  --text-tertiary: #737980; /* WCAG AA - 4.6:1 contrast vs white */
   --text-white: #FFFFFF;
 
   --accent: #6366F1;

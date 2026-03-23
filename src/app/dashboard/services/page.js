@@ -2,7 +2,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, Tag } from 'lucide-react'
+import { Plus, X, Tag, GripVertical } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import styles from './services.module.css'
@@ -16,28 +16,41 @@ export default function ServicesPage() {
 }
 
 function ServicesContent() {
-    const { business, updateBusiness } = useAuth()
+    const { business } = useAuth()
     const [services, setServices] = useState([])
     const [showModal, setShowModal] = useState(false)
-    const [editIdx, setEditIdx] = useState(-1)
-    const [form, setForm] = useState({ name: '', price: '', duration: '' })
+    const [editService, setEditService] = useState(null)
+    const [form, setForm] = useState({ name: '', price: '', duration: '', category: '', description: '' })
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const [loadingServices, setLoadingServices] = useState(true)
 
-    // Load services directly from DB (not from context) to avoid stale data
+    // Load services from the `services` table
     const loadServices = useCallback(async () => {
         if (!supabase || !business?.id) {
             setLoadingServices(false)
             return
         }
         try {
-            const { data } = await supabase
-                .from('businesses')
-                .select('services')
-                .eq('id', business.id)
-                .single()
-            setServices(Array.isArray(data?.services) ? data.services : [])
+            const { data, error: loadErr } = await supabase
+                .from('services')
+                .select('*')
+                .eq('business_id', business.id)
+                .order('sort_order', { ascending: true })
+                .order('created_at', { ascending: true })
+
+            if (loadErr) {
+                // Fallback to JSONB if services table doesn't exist yet
+                console.warn('Services table not ready, falling back to JSONB:', loadErr.message)
+                const { data: bizData } = await supabase
+                    .from('businesses')
+                    .select('services')
+                    .eq('id', business.id)
+                    .single()
+                setServices(Array.isArray(bizData?.services) ? bizData.services : [])
+            } else {
+                setServices(data || [])
+            }
         } catch (err) {
             console.error('Error loading services:', err)
         }
@@ -53,102 +66,72 @@ function ServicesContent() {
         setError('')
         setSaving(true)
         try {
-            // Read fresh services from DB before modifying
-            const { data: freshBiz } = await supabase
-                .from('businesses')
-                .select('services')
-                .eq('id', business.id)
-                .single()
-
-            const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
-
-            const editingService = editIdx >= 0 ? services[editIdx] : null
-            const newService = {
-                id: editingService?.id || crypto.randomUUID(),
+            const serviceData = {
                 name: form.name.trim(),
                 price: parseFloat(form.price),
-                duration: parseInt(form.duration)
+                duration: parseInt(form.duration),
+                category: form.category.trim() || null,
+                description: form.description.trim() || null,
+                business_id: business.id,
             }
 
-            let updated
-            if (editingService?.id) {
-                // Update by ID
-                updated = currentServices.map(s => s.id === editingService.id ? newService : s)
-            } else if (editIdx >= 0) {
-                updated = [...currentServices]
-                if (updated[editIdx]) {
-                    updated[editIdx] = newService
-                } else {
-                    updated.push(newService)
-                }
+            if (editService?.id) {
+                // Update existing
+                const { error: updateErr } = await supabase
+                    .from('services')
+                    .update(serviceData)
+                    .eq('id', editService.id)
+
+                if (updateErr) throw updateErr
             } else {
-                updated = [...currentServices, newService]
+                // Insert new
+                serviceData.sort_order = services.length
+                const { error: insertErr } = await supabase
+                    .from('services')
+                    .insert([serviceData])
+
+                if (insertErr) throw insertErr
             }
 
-            const { data: result, error: updateError } = await supabase
-                .from('businesses')
-                .update({ services: updated })
-                .eq('id', business.id)
-                .select()
-                .single()
-
-            if (updateError) throw updateError
-
-            setServices(result.services || updated)
             setShowModal(false)
-            setEditIdx(-1)
-            setForm({ name: '', price: '', duration: '' })
+            setEditService(null)
+            setForm({ name: '', price: '', duration: '', category: '', description: '' })
+            loadServices()
         } catch (err) {
             console.error('Error saving service:', err)
-            setError('Error al guardar. Intenta de nuevo.')
+            setError('Error al guardar. Intentá de nuevo.')
         }
         setSaving(false)
     }
 
-    async function handleDelete(idx) {
-        if (!confirm('¿Eliminar este servicio?')) return
+    async function handleDelete(service) {
+        if (!confirm(`¿Eliminar "${service.name}"?`)) return
         setError('')
         try {
-            // Read fresh services from DB before deleting
-            const { data: freshBiz } = await supabase
-                .from('businesses')
-                .select('services')
-                .eq('id', business.id)
-                .single()
-
-            const currentServices = Array.isArray(freshBiz?.services) ? freshBiz.services : []
-            const serviceToDelete = services[idx]
-
-            // Delete by ID (most reliable), fallback to name matching
-            let updated
-            if (serviceToDelete?.id) {
-                updated = currentServices.filter(s => s.id !== serviceToDelete.id)
-            } else if (serviceToDelete?.name) {
-                let found = false
-                updated = currentServices.filter(s => {
-                    if (!found && s.name === serviceToDelete.name) {
-                        found = true
-                        return false
-                    }
-                    return true
-                })
-            } else {
-                updated = currentServices.filter((_, i) => i !== idx)
+            if (service.id && typeof service.id === 'string' && service.id.includes('-')) {
+                // UUID = from services table
+                const { error: delErr } = await supabase
+                    .from('services')
+                    .delete()
+                    .eq('id', service.id)
+                if (delErr) throw delErr
             }
-
-            const { data: result, error: updateError } = await supabase
-                .from('businesses')
-                .update({ services: updated })
-                .eq('id', business.id)
-                .select()
-                .single()
-
-            if (updateError) throw updateError
-
-            setServices(result.services || updated)
+            loadServices()
         } catch (err) {
             console.error('Error deleting service:', err)
             setError('Error al eliminar.')
+        }
+    }
+
+    async function toggleActive(service) {
+        try {
+            await supabase
+                .from('services')
+                .update({ active: !service.active })
+                .eq('id', service.id)
+            loadServices()
+        } catch (err) {
+            console.error('Error toggling service:', err)
         }
     }
 
@@ -170,8 +153,8 @@ function ServicesContent() {
                     <p className={styles.subtitle}>{services.length} servicios configurados</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => {
-                    setEditIdx(-1)
-                    setForm({ name: '', price: '', duration: '' })
+                    setEditService(null)
+                    setForm({ name: '', price: '', duration: '', category: '', description: '' })
                     setError('')
                     setShowModal(true)
                 }}><Plus size={14} /> Agregar servicio</button>
@@ -180,23 +163,40 @@ function ServicesContent() {
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={styles.serviceList}>
-                {services.map((s, i) => (
-                    <div key={s.id || `${s.name}-${i}`} className={`card card-compact ${styles.serviceCard}`}>
+                {services.map((s) => (
+                    <div key={s.id || s.name} className={`card card-compact ${styles.serviceCard}`} style={{ opacity: s.active === false ? 0.5 : 1 }}>
                         <div className={styles.serviceInfo}>
                             <span className={styles.serviceName}>{s.name}</span>
-                            <span className={styles.serviceDuration}>{s.duration} min</span>
+                            <span className={styles.serviceDuration}>
+                                {s.duration} min
+                                {s.category && <> · <span style={{ color: 'var(--accent)' }}>{s.category}</span></>}
+                            </span>
                         </div>
                         <div className={styles.servicePrice}>
                             ${s.price?.toLocaleString()}
                         </div>
                         <div className={styles.serviceActions}>
+                            {s.active === false && (
+                                <span className="badge badge-neutral" style={{ marginRight: 'var(--space-2)' }}>Inactivo</span>
+                            )}
                             <button className="btn btn-ghost btn-sm" onClick={() => {
-                                setEditIdx(i)
-                                setForm({ name: s.name, price: s.price.toString(), duration: s.duration.toString() })
+                                setEditService(s)
+                                setForm({
+                                    name: s.name,
+                                    price: s.price?.toString() || '',
+                                    duration: s.duration?.toString() || '',
+                                    category: s.category || '',
+                                    description: s.description || '',
+                                })
                                 setError('')
                                 setShowModal(true)
                             }}>Editar</button>
-                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(i)}>Eliminar</button>
+                            {s.active !== false ? (
+                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--text-tertiary)' }} onClick={() => toggleActive(s)}>Desactivar</button>
+                            ) : (
+                                <button className="btn btn-ghost btn-sm" style={{ color: 'var(--success)' }} onClick={() => toggleActive(s)}>Activar</button>
+                            )}
+                            <button className="btn btn-ghost btn-sm" style={{ color: 'var(--danger)' }} onClick={() => handleDelete(s)}>Eliminar</button>
                         </div>
                     </div>
                 ))}
@@ -208,10 +208,10 @@ function ServicesContent() {
                         </div>
                         <p>No hay servicios configurados</p>
                         <p className={styles.emptyHint}>
-                            Agrega al menos un servicio para poder crear turnos
+                            Agregá al menos un servicio para poder crear turnos
                         </p>
                         <button className="btn btn-primary btn-sm" onClick={() => {
-                            setForm({ name: '', price: '', duration: '' })
+                            setForm({ name: '', price: '', duration: '', category: '', description: '' })
                             setError('')
                             setShowModal(true)
                         }}><Plus size={14} /> Agregar servicio</button>
@@ -223,7 +223,7 @@ function ServicesContent() {
                 <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setShowModal(false)}>
                     <div className="modal">
                         <div className="modal-header">
-                            <h3>{editIdx >= 0 ? 'Editar servicio' : 'Nuevo servicio'}</h3>
+                            <h3>{editService ? 'Editar servicio' : 'Nuevo servicio'}</h3>
                             <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}><X size={16} /></button>
                         </div>
                         <form onSubmit={handleSave}>
@@ -231,7 +231,7 @@ function ServicesContent() {
                                 {error && <div className={styles.error}>{error}</div>}
                                 <div className="form-group">
                                     <label className="label">Nombre *</label>
-                                    <input className="input" placeholder="Ej: Corte Clasico" value={form.name}
+                                    <input className="input" placeholder="Ej: Corte Clásico" value={form.name}
                                         onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
                                 </div>
                                 <div className={styles.formGrid}>
@@ -241,10 +241,20 @@ function ServicesContent() {
                                             onChange={e => setForm(p => ({ ...p, price: e.target.value }))} required min="0" />
                                     </div>
                                     <div className="form-group">
-                                        <label className="label">Duracion (min) *</label>
+                                        <label className="label">Duración (min) *</label>
                                         <input className="input" type="number" placeholder="30" value={form.duration}
                                             onChange={e => setForm(p => ({ ...p, duration: e.target.value }))} required min="1" />
                                     </div>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Categoría</label>
+                                    <input className="input" placeholder="Ej: Cortes, Coloración, Tratamientos" value={form.category}
+                                        onChange={e => setForm(p => ({ ...p, category: e.target.value }))} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Descripción</label>
+                                    <textarea className="input textarea" placeholder="Descripción opcional del servicio" value={form.description}
+                                        onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
                                 </div>
                             </div>
                             <div className="modal-footer">

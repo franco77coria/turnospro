@@ -81,6 +81,6 @@ export async function GET(request) {
         return NextResponse.json({ businesses })
     } catch (err) {
         console.error('Business search error:', err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

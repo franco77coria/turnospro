@@ -1,7 +1,71 @@
 // Helper to send emails from client/server components
+// Supports both server-side (direct Resend) and client-side (via /api/email)
 
+import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail } from '@/lib/email-templates'
+import { generateCancelToken } from '@/lib/cancel-token'
+
+/**
+ * Send an email. Works from both server and client contexts.
+ * Server-side: sends directly via Resend SDK (no fetch to self)
+ * Client-side: calls /api/email endpoint
+ */
 export async function sendEmail({ type, to, data }) {
     try {
+        // Detect if we're on the server (process.env.RESEND_API_KEY available)
+        const isServer = typeof window === 'undefined' && process.env.RESEND_API_KEY
+
+        if (isServer) {
+            // Server-side: send directly via Resend
+            const { Resend } = await import('resend')
+            const resend = new Resend(process.env.RESEND_API_KEY)
+
+            let html, subject
+            switch (type) {
+                case 'confirmation':
+                    if (data.appointmentId) {
+                        const cancelToken = await generateCancelToken(data.appointmentId)
+                        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+                        data.cancelUrl = `${appUrl}/cancel/${cancelToken}`
+                    }
+                    html = confirmationEmail(data)
+                    subject = `Turno confirmado — ${data.serviceName} | ${data.businessName}`
+                    break
+                case 'reminder':
+                    html = reminderEmail(data)
+                    subject = `Recordatorio de turno — ${data.hoursUntil <= 1 ? 'En menos de 1 hora' : `En ${data.hoursUntil} horas`} | ${data.businessName}`
+                    break
+                case 'welcome':
+                    html = welcomeEmail(data)
+                    subject = `Bienvenido/a a ${data.businessName}`
+                    break
+                case 'new_booking_notify':
+                    html = newBookingNotifyEmail(data)
+                    subject = `Nueva reserva — ${data.clientName} | ${data.serviceName}`
+                    break
+                case 'cancellation':
+                    html = cancellationEmail(data)
+                    subject = `Turno cancelado — ${data.serviceName} | ${data.businessName}`
+                    break
+                case 'cancellation_notify':
+                    html = cancellationNotifyEmail(data)
+                    subject = `Turno cancelado — ${data.clientName} canceló ${data.serviceName}`
+                    break
+                default:
+                    return { error: 'Tipo de email no válido' }
+            }
+
+            const { data: emailData, error } = await resend.emails.send({
+                from: `${data.businessName || 'GLOWUP'} <onboarding@resend.dev>`,
+                to: [to],
+                subject,
+                html,
+            })
+
+            if (error) throw new Error(error.message || 'Error enviando email')
+            return { success: true, id: emailData?.id }
+        }
+
+        // Client-side: use fetch to API route
         const res = await fetch('/api/email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -6,6 +6,7 @@ import { PAYMENT_METHODS, EXPENSE_CATEGORIES } from '@/lib/data'
 import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X, Download } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
+import { useToast } from '@/components/Toast'
 import styles from './finance.module.css'
 
 export default function FinancePage() {
@@ -17,6 +18,7 @@ export default function FinancePage() {
 }
 
 function FinanceContent() {
+    const toast = useToast()
     const { business, loading: authLoading } = useAuth()
     const [transactions, setTransactions] = useState([])
     const [filter, setFilter] = useState('all')
@@ -84,19 +86,19 @@ function FinanceContent() {
             }])
             if (error) {
                 console.error('Cash closure error:', error)
-                alert('Error al registrar cierre: ' + (error.message || 'tabla no encontrada'))
+                toast.error('Error al registrar cierre: ' + (error.message || 'tabla no encontrada'))
                 return
             }
             setShowClosureModal(false)
-            alert('Cierre de caja registrado correctamente')
+            toast.success('Cierre de caja registrado correctamente')
         } catch (err) {
             console.error('Error closing cash:', err)
-            alert('Error al registrar el cierre de caja')
+            toast.error('Error al registrar el cierre de caja')
         }
     }
 
     function handleExportCSV() {
-        if (transactions.length === 0) return alert('No hay movimientos para exportar.')
+        if (transactions.length === 0) return toast.info('No hay movimientos para exportar.')
         
         const headers = ['Fecha', 'Hora', 'Tipo', 'Monto', 'Concepto_Categoria', 'Metodo_de_Pago']
         const rows = transactions.map(t => [

@@ -1,12 +1,17 @@
+export const dynamic = 'force-dynamic'
+
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { cookies } from 'next/headers'
 
+// Use anon key for read operations (respects RLS)
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 )
 
-// GET reviews for a business
+// GET reviews for a business (public, no auth needed)
 export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const businessId = searchParams.get('business_id')
@@ -18,7 +23,7 @@ export async function GET(request) {
         .eq('business_id', businessId)
         .order('created_at', { ascending: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: 'Error al cargar reseñas' }, { status: 500 })
 
     // Calculate average
     const count = reviews?.length || 0
@@ -27,22 +32,36 @@ export async function GET(request) {
     return NextResponse.json({ reviews: reviews || [], average: Math.round(avg * 10) / 10, count })
 }
 
-// POST a new review
+// POST a new review (requires auth)
 export async function POST(request) {
     try {
-        const body = await request.json()
-        const { business_id, user_id, rating, comment } = body
+        // Verify authenticated user
+        const cookieStore = await cookies()
+        const authClient = createSupabaseServerClient(cookieStore)
+        const { data: { user } } = await authClient.auth.getUser()
+        if (!user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
 
-        if (!business_id || !user_id || !rating) {
-            return NextResponse.json({ error: 'Campos requeridos: business_id, user_id, rating' }, { status: 400 })
+        const body = await request.json()
+        const { business_id, rating, comment } = body
+        // Force user_id from authenticated user (prevent impersonation)
+        const user_id = user.id
+
+        if (!business_id || !rating) {
+            return NextResponse.json({ error: 'Campos requeridos: business_id, rating' }, { status: 400 })
         }
 
         if (rating < 1 || rating > 5) {
             return NextResponse.json({ error: 'Rating debe ser entre 1 y 5' }, { status: 400 })
         }
 
+        // Use admin client for write operations that need to bypass RLS
+        const { createSupabaseAdmin } = await import('@/lib/supabase-admin')
+        const adminSupabase = createSupabaseAdmin()
+
         // Check if user already reviewed this business
-        const { data: existing } = await supabase
+        const { data: existing } = await adminSupabase
             .from('reviews')
             .select('id')
             .eq('business_id', business_id)
@@ -51,7 +70,7 @@ export async function POST(request) {
 
         if (existing) {
             // Update existing review
-            const { data, error } = await supabase
+            const { data, error } = await adminSupabase
                 .from('reviews')
                 .update({ rating, comment, updated_at: new Date().toISOString() })
                 .eq('id', existing.id)
@@ -63,7 +82,7 @@ export async function POST(request) {
         }
 
         // Create new review
-        const { data, error } = await supabase
+        const { data, error } = await adminSupabase
             .from('reviews')
             .insert([{ business_id, user_id, rating, comment: comment || '' }])
             .select()
@@ -72,6 +91,7 @@ export async function POST(request) {
         if (error) throw error
         return NextResponse.json({ review: data, created: true })
     } catch (err) {
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        console.error('Review API error:', err)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

@@ -20,7 +20,7 @@ function TeamContent() {
     const [members, setMembers] = useState([])
     const [showModal, setShowModal] = useState(false)
     const [editMember, setEditMember] = useState(null)
-    const [form, setForm] = useState({ name: '', email: '', phone: '', role: '' })
+    const [form, setForm] = useState({ name: '', email: '', phone: '', role: '', commission_rate: '' })
     const [copiedToken, setCopiedToken] = useState(null)
 
     useEffect(() => {
@@ -54,7 +54,7 @@ function TeamContent() {
             }
             setShowModal(false)
             setEditMember(null)
-            setForm({ name: '', email: '', phone: '', role: '' })
+            setForm({ name: '', email: '', phone: '', role: '', commission_rate: '' })
             loadTeam()
         } catch (err) {
             console.error('Error saving team member:', err)
@@ -69,7 +69,7 @@ function TeamContent() {
 
     function openEdit(member) {
         setEditMember(member)
-        setForm({ name: member.name, email: member.email || '', phone: member.phone || '', role: member.role })
+        setForm({ name: member.name, email: member.email || '', phone: member.phone || '', role: member.role, commission_rate: member.commission_rate?.toString() || '' })
         setShowModal(true)
     }
 
@@ -107,7 +107,7 @@ function TeamContent() {
                 </div>
                 <button className="btn btn-primary" onClick={() => {
                     setEditMember(null)
-                    setForm({ name: '', email: '', phone: '', role: roles[2] || 'Profesional' })
+                    setForm({ name: '', email: '', phone: '', role: roles[2] || 'Profesional', commission_rate: '' })
                     setShowModal(true)
                 }}>
                     <Plus size={16} /> Agregar miembro
@@ -135,6 +135,7 @@ function TeamContent() {
                         </div>
                         {member.email && <p className={styles.memberDetail}><Mail size={12} /> {member.email}</p>}
                         {member.phone && <p className={styles.memberDetail}><Phone size={12} /> {member.phone}</p>}
+                        {member.commission_rate > 0 && <p className={styles.memberDetail} style={{ color: 'var(--success)' }}>Comisión: {member.commission_rate}%</p>}
                         <div className={styles.memberActions} style={{ display: 'flex', gap: 'var(--space-2)' }}>
                             {member.invite_token && !member.user_id && (
                                 <button className="btn btn-ghost btn-sm" onClick={() => copyInviteLink(member)} title="Copiar enlace de invitación">
@@ -153,7 +154,7 @@ function TeamContent() {
                             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>Sin miembros del equipo</h3>
                             <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-4)' }}>Agregá a tu equipo para asignarles turnos</p>
                             <button className="btn btn-primary" onClick={() => {
-                                setForm({ name: '', email: '', phone: '', role: roles[2] || 'Profesional' })
+                                setForm({ name: '', email: '', phone: '', role: roles[2] || 'Profesional', commission_rate: '' })
                                 setShowModal(true)
                             }}><Plus size={14} /> Agregar miembro</button>
                         </div>
@@ -188,6 +189,10 @@ function TeamContent() {
                                 <div className="form-group">
                                     <label className="label">Teléfono</label>
                                     <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Comisión (%)</label>
+                                    <input className="input" type="number" min="0" max="100" step="1" placeholder="Ej: 30" value={form.commission_rate} onChange={e => setForm(p => ({ ...p, commission_rate: e.target.value }))} />
                                 </div>
                             </div>
                             <div className="modal-footer">

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { Plus, Minus, Search, ShoppingCart, User, CreditCard, CheckCircle2, Package, Scissors, Trash2 } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS, PAYMENT_METHODS } from '@/lib/data'
+import { useToast } from '@/components/Toast'
 
 export default function POSPage() {
     return (
@@ -15,6 +16,7 @@ export default function POSPage() {
 }
 
 function POSContent() {
+    const toast = useToast()
     const { business } = useAuth()
     const [products, setProducts] = useState([])
     const [services, setServices] = useState([])
@@ -56,7 +58,7 @@ function POSContent() {
             if (existing) {
                 // If it's a product, check stock
                 if (type === 'product' && existing.qty >= item.stock) {
-                    alert('Stock insuficiente')
+                    toast.error('Stock insuficiente')
                     return prev
                 }
                 return prev.map(i => i.id === existing.id ? { ...i, qty: i.qty + 1 } : i)
@@ -75,7 +77,7 @@ function POSContent() {
                 const newQty = i.qty + delta
                 if (newQty < 1) return i
                 if (i.type === 'product' && newQty > item.stock) {
-                    alert('Stock insuficiente')
+                    toast.error('Stock insuficiente')
                     return i
                 }
                 return { ...i, qty: newQty }
@@ -124,7 +126,7 @@ function POSContent() {
 
         } catch (err) {
             console.error('POS Checkout Error:', err)
-            alert('Error al procesar la venta.')
+            toast.error('Error al procesar la venta.')
         }
         setSubmitting(false)
     }

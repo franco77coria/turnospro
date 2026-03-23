@@ -1,6 +1,14 @@
 // Email HTML templates for GLOWUP
 // Minimalist, professional, themed by business type
 
+/**
+ * Escape HTML special chars to prevent XSS in email content
+ */
+export function escapeHtml(str) {
+    return str?.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) || ''
+}
+
+
 const RUBRO_THEMES = {
     barberia: { accent: '#1E293B', name: 'Barbería', icon: '✂️' },
     peluqueria: { accent: '#7C3AED', name: 'Peluquería', icon: '💇' },

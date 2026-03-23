@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { Plus, MapPin, Building, X, Trash2 } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
+import { useToast } from '@/components/Toast'
 
 export default function LocationsPage() {
     return (
@@ -15,6 +16,7 @@ export default function LocationsPage() {
 }
 
 function LocationsContent() {
+    const toast = useToast()
     const { business, loading: authLoading } = useAuth()
     const [locations, setLocations] = useState([])
     const [loading, setLoading] = useState(true)
@@ -66,7 +68,7 @@ function LocationsContent() {
             loadLocations()
         } catch (err) {
             console.error('Error saving location:', err)
-            alert('Error al guardar sucursal')
+            toast.error('Error al guardar sucursal')
         }
         setSaving(false)
     }
@@ -78,7 +80,7 @@ function LocationsContent() {
             loadLocations()
         } catch (err) {
             console.error(err)
-            alert('Error al eliminar')
+            toast.error('Error al eliminar')
         }
     }
 

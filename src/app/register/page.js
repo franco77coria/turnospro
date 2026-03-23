@@ -61,16 +61,34 @@ export default function RegisterPage() {
             if (authError) throw authError
 
             if (authData.user) {
+                // Check if user was actually created (not a duplicate with unconfirmed email)
+                if (authData.user.identities?.length === 0) {
+                    throw new Error('already registered')
+                }
+
                 // Create profile — only use columns that exist in the schema
                 const { error: profileError } = await supabase.from('profiles').upsert([{
                     id: authData.user.id,
                     email: form.email,
                     full_name: form.fullName,
-                    role: accountType === 'business' ? 'Dueño' : 'user',
+                    role: 'user', // Always 'user' — business role assigned via onboarding flow
                 }])
                 if (profileError) {
                     console.error('Profile creation error:', profileError)
-                    // Profile creation failed but auth user was created - still show success
+                }
+
+                // For client accounts, auto-login immediately (no email confirmation needed)
+                if (accountType === 'user') {
+                    const { error: loginError } = await supabase.auth.signInWithPassword({
+                        email: form.email,
+                        password: form.password,
+                    })
+                    if (!loginError) {
+                        router.push('/book')
+                        return
+                    }
+                    // If auto-login fails (e.g. email confirmation required),
+                    // fall through to success screen with instructions
                 }
             }
 
@@ -108,8 +126,7 @@ export default function RegisterPage() {
                         <>
                             <h1>Cuenta creada</h1>
                             <p className={styles.successMsg}>
-                                Tu cuenta fue creada exitosamente. Revisá tu email para confirmar
-                                la cuenta y luego iniciá sesión.
+                                Tu cuenta fue creada exitosamente. Ya podés iniciar sesión.
                             </p>
                         </>
                     )}

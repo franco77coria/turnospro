@@ -1,16 +1,23 @@
-import { createClient } from '@supabase/supabase-js'
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { cookies } from 'next/headers'
 
-const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-)
-
-// GET user's favorites
+// GET user's favorites (requires auth)
 export async function GET(request) {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('user_id')
-    if (!userId) return NextResponse.json({ error: 'user_id requerido' }, { status: 400 })
+    // Verify authenticated user
+    const cookieStore = await cookies()
+    const authClient = createSupabaseServerClient(cookieStore)
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user) {
+        return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+
+    // Force user_id from auth (ignore query param to prevent data leaks)
+    const userId = user.id
+    const supabase = createSupabaseAdmin()
 
     const { data, error } = await supabase
         .from('favorites')
@@ -18,17 +25,29 @@ export async function GET(request) {
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (error) return NextResponse.json({ error: 'Error al cargar favoritos' }, { status: 500 })
     return NextResponse.json({ favorites: data || [] })
 }
 
-// POST toggle favorite
+// POST toggle favorite (requires auth)
 export async function POST(request) {
     try {
-        const { user_id, business_id } = await request.json()
-        if (!user_id || !business_id) {
-            return NextResponse.json({ error: 'user_id y business_id requeridos' }, { status: 400 })
+        // Verify authenticated user
+        const cookieStore = await cookies()
+        const authClient = createSupabaseServerClient(cookieStore)
+        const { data: { user } } = await authClient.auth.getUser()
+        if (!user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
+
+        const { business_id } = await request.json()
+        // Force user_id from auth (prevent impersonation)
+        const user_id = user.id
+        if (!business_id) {
+            return NextResponse.json({ error: 'business_id requerido' }, { status: 400 })
+        }
+
+        const supabase = createSupabaseAdmin()
 
         // Check if already favorited
         const { data: existing } = await supabase
@@ -48,6 +67,7 @@ export async function POST(request) {
         await supabase.from('favorites').insert([{ user_id, business_id }])
         return NextResponse.json({ favorited: true })
     } catch (err) {
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        console.error('Favorites API error:', err)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

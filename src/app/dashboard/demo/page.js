@@ -60,7 +60,7 @@ export default function DemoPage() {
                             <h2>{demo.name}</h2>
                             <span className="badge badge-accent">{RUBRO_LIST.find(r => r.key === selectedRubro)?.label}</span>
                         </div>
-                        <button className="btn btn-primary" onClick={() => alert('Estás en el Modo Demo (solo visualización). Para crear un turno real, andá a "Calendario" o "Turnos" en el menú lateral de tu negocio.')}>
+                        <button className="btn btn-primary" onClick={() => { /* Demo mode - button is visual only */ }}>
                             + Nuevo turno
                         </button>
                     </div>

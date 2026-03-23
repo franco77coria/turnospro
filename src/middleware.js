@@ -31,16 +31,44 @@ export async function middleware(request) {
     // Refresh the auth token — getUser() validates server-side
     const { data: { user } } = await supabase.auth.getUser()
 
+    const pathname = request.nextUrl.pathname
+
     // Protect dashboard routes — redirect to login if not authenticated
-    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    if (!user && pathname.startsWith('/dashboard')) {
         const loginUrl = new URL('/login', request.url)
         return NextResponse.redirect(loginUrl)
     }
 
+    // Protect admin routes — only superadmin can access
+    if (user && pathname.startsWith('/dashboard/admin')) {
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single()
+
+        if (profile?.role !== 'superadmin') {
+            return NextResponse.redirect(new URL('/dashboard', request.url))
+        }
+    }
+
     // Redirect authenticated users away from login/register
-    if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
-        const dashboardUrl = new URL('/dashboard', request.url)
-        return NextResponse.redirect(dashboardUrl)
+    if (user && (pathname === '/login' || pathname === '/register')) {
+        // Check profile role to redirect correctly
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role, business_id')
+            .eq('id', user.id)
+            .single()
+
+        // If profile doesn't exist yet (new user), default to /book
+        if (profileError || !profile) {
+            return NextResponse.redirect(new URL('/book', request.url))
+        }
+
+        const isClient = profile.role === 'user' && !profile.business_id
+        const redirectUrl = new URL(isClient ? '/book' : '/dashboard', request.url)
+        return NextResponse.redirect(redirectUrl)
     }
 
     return supabaseResponse

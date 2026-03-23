@@ -78,7 +78,7 @@ export default function OnboardingPage() {
         <div className={styles.onboarding}>
             <div className={styles.card}>
                 <div className={styles.header}>
-                    <span className={styles.logoMark}>T</span>
+                    <span className={styles.logoMark}>G</span>
                     <h1>{step === 1 ? '¿Cuál es tu rubro?' : 'Datos de tu negocio'}</h1>
                     <p>{step === 1 ? 'Elegí tu rubro para personalizar todo automáticamente.' : 'Completá la información básica para empezar.'}</p>
                 </div>

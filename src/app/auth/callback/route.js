@@ -69,8 +69,9 @@ export async function GET(request) {
                 }
 
                 // Profile already exists — route based on existing role
-                if (profile && profile.role === 'user' && !profile.business_id) {
-                    return NextResponse.redirect(`${origin}/book`)
+                if (profile) {
+                    const isClient = profile.role === 'user' && !profile.business_id
+                    return NextResponse.redirect(`${origin}${isClient ? '/book' : '/dashboard'}`)
                 }
             }
         } catch (err) {
@@ -79,6 +80,6 @@ export async function GET(request) {
         }
     }
 
-    // Default: business users go to dashboard
-    return NextResponse.redirect(`${origin}/dashboard`)
+    // Default: redirect to book (safe default for unknown users)
+    return NextResponse.redirect(`${origin}/book`)
 }

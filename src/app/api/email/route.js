@@ -2,16 +2,35 @@ import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
 import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
+import { cookies } from 'next/headers'
+import { applyRateLimit } from '@/lib/rate-limit'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request) {
     try {
+        // Rate limit: max 10 emails per minute per IP
+        const rateLimited = applyRateLimit(request, { prefix: 'email', limit: 10, windowMs: 60000 })
+        if (rateLimited) return rateLimited
+
         const body = await request.json()
         const { type, to, data } = body
 
         if (!to || !type || !data) {
             return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+        }
+
+        // Auth check: confirmation emails from booking are allowed without auth
+        // (guest users can book), but other types require authentication
+        const publicTypes = ['confirmation']
+        if (!publicTypes.includes(type)) {
+            const cookieStore = await cookies()
+            const supabase = createSupabaseServerClient(cookieStore)
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) {
+                return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+            }
         }
 
         let html, subject
@@ -68,12 +87,12 @@ export async function POST(request) {
 
         if (error) {
             console.error('Resend error:', JSON.stringify(error))
-            return NextResponse.json({ error: error.message || 'Error enviando email' }, { status: 500 })
+            return NextResponse.json({ error: 'Error enviando email' }, { status: 500 })
         }
 
         return NextResponse.json({ success: true, id: emailData?.id })
     } catch (err) {
         console.error('Email API error:', err)
-        return NextResponse.json({ error: err.message || 'Error interno' }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

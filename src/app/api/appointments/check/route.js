@@ -1,18 +1,22 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { createSupabaseAdmin } from '@/lib/supabase-admin'
 
 export async function POST(request) {
     try {
-        const { business_id, date, time, duration, team_member_id } = await request.json()
+        const { business_id, date, time, duration, team_member_id, buffer_time } = await request.json()
 
         if (!business_id || !date || !time) {
             return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
         }
 
+        // Use anon-level query — this is a public availability check, no RLS bypass needed
+        const { createClient } = await import('@supabase/supabase-js')
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
+
+        const bufferMinutes = buffer_time || 0
 
         // Parse time to minutes
         const [h, m] = time.split(':').map(Number)
@@ -34,12 +38,12 @@ export async function POST(request) {
         const { data: appointments, error } = await query
         if (error) throw error
 
-        // Check for overlap
+        // Check for overlap (including buffer time between appointments)
         const conflict = (appointments || []).find(apt => {
             const [ah, am] = apt.time.split(':').map(Number)
             const aptStart = ah * 60 + am
-            const aptEnd = aptStart + (apt.duration || 30)
-            return slotStart < aptEnd && slotEnd > aptStart
+            const aptEnd = aptStart + (apt.duration || 30) + bufferMinutes
+            return slotStart < aptEnd && (slotEnd + bufferMinutes) > aptStart
         })
 
         return NextResponse.json({
@@ -48,6 +52,6 @@ export async function POST(request) {
         })
     } catch (err) {
         console.error('Availability check error:', err)
-        return NextResponse.json({ error: err.message }, { status: 500 })
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
     }
 }

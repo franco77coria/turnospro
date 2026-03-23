@@ -46,8 +46,11 @@ export default function DashboardLayout({ children }) {
                 console.error('Auto-create business error:', err)
                 creatingBusinessRef.current = false
             })
+        } else if (profile?.role === 'user') {
+            // Client users don't belong in dashboard
+            router.replace('/book')
         } else if (!profile?.business_id) {
-            // Non-superadmin without business → onboarding
+            // Business user without business → onboarding
             router.replace('/onboarding')
         }
     }, [user, business, profile, loading, router, createBusiness])
