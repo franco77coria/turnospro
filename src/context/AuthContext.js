@@ -145,13 +145,17 @@ export function AuthProvider({ children }) {
             if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
 
             const sessionUser = session?.user || null
-            setUser(sessionUser)
 
             if (event === 'SIGNED_IN' && sessionUser && initialLoadDone) {
+                setLoading(true)
+                setUser(sessionUser)
                 await loadUserData(sessionUser.id, sessionUser.email, sessionUser.user_metadata)
             } else if (event === 'SIGNED_OUT') {
+                setUser(null)
                 setProfile(null)
                 setBusiness(null)
+            } else if (!sessionUser) {
+                setUser(null)
             }
 
             setLoading(false)
