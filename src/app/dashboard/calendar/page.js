@@ -125,14 +125,23 @@ export default function CalendarPage() {
             if (clientId) {
                 clientData = clients.find(c => c.id === clientId)
             } else if (newApt.client_name) {
-                const { data: newClient, error: clientError } = await supabase
-                    .from('clients')
-                    .insert([{ business_id: business.id, name: newApt.client_name }])
-                    .select('id, name, email, phone')
-                    .single()
-                if (clientError) throw clientError
-                clientId = newClient?.id
-                clientData = newClient
+                // Check if client already exists by name in this business
+                const existing = clients.find(c =>
+                    c.name?.toLowerCase().trim() === newApt.client_name.toLowerCase().trim()
+                )
+                if (existing) {
+                    clientId = existing.id
+                    clientData = existing
+                } else {
+                    const { data: newClient, error: clientError } = await supabase
+                        .from('clients')
+                        .insert([{ business_id: business.id, name: newApt.client_name }])
+                        .select('id, name, email, phone')
+                        .single()
+                    if (clientError) throw clientError
+                    clientId = newClient?.id
+                    clientData = newClient
+                }
             }
 
             const selectedService = services.find(s => s.name === newApt.service_name)

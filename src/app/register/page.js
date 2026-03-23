@@ -4,7 +4,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { User, Store, ArrowLeft, ArrowRight } from 'lucide-react'
+import { User, Store, ArrowLeft, ArrowRight, Phone } from 'lucide-react'
+import { validateInternationalPhone } from '@/lib/phone-validation'
 import styles from './register.module.css'
 
 export default function RegisterPage() {
@@ -15,11 +16,13 @@ export default function RegisterPage() {
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
+    const [phoneError, setPhoneError] = useState('')
     const [form, setForm] = useState({
         email: '',
         password: '',
         confirmPassword: '',
         fullName: '',
+        phone: '',
         businessName: '',
         businessPhone: '',
     })
@@ -41,6 +44,13 @@ export default function RegisterPage() {
             setError('La contraseña debe tener al menos 6 caracteres')
             return
         }
+
+        const phoneResult = validateInternationalPhone(form.phone)
+        if (!phoneResult.valid) {
+            setPhoneError(phoneResult.error)
+            return
+        }
+        setPhoneError('')
 
         setLoading(true)
         try {
@@ -71,6 +81,7 @@ export default function RegisterPage() {
                     id: authData.user.id,
                     email: form.email,
                     full_name: form.fullName,
+                    phone: phoneResult.formatted,
                     role: 'user', // Always 'user' — business role assigned via onboarding flow
                 }])
                 if (profileError) {
@@ -190,6 +201,13 @@ export default function RegisterPage() {
                                 <label className="label">Nombre completo *</label>
                                 <input className="input" placeholder="Tu nombre" value={form.fullName}
                                     onChange={e => setForm(p => ({ ...p, fullName: e.target.value }))} required />
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label"><Phone size={14} /> Teléfono celular *</label>
+                                <input className="input" placeholder="+54 11 1234-5678" value={form.phone}
+                                    onChange={e => { setForm(p => ({ ...p, phone: e.target.value })); setPhoneError('') }} required />
+                                {phoneError && <p style={{ color: 'var(--danger)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>{phoneError}</p>}
                             </div>
 
                             <div className="form-group">

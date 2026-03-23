@@ -1,0 +1,77 @@
+.profileCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.profileHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.profileName {
+    font-weight: 600;
+    font-size: var(--font-size-base);
+}
+
+.profileContact {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.profileStats {
+    display: flex;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    min-width: 60px;
+}
+
+.statValue {
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+}
+
+.statLabel {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+}
+
+.preferences {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.prefLabel {
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-right: var(--space-1);
+}
+
+.cancelWarning {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--warning);
+    font-weight: 500;
+}

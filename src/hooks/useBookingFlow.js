@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
+import { validateInternationalPhone } from '@/lib/phone-validation'
 
 export function useBookingFlow() {
     const { id } = useParams()
@@ -26,6 +27,8 @@ export function useBookingFlow() {
     const [couponCode, setCouponCode] = useState('')
     const [appliedCoupon, setAppliedCoupon] = useState(null)
     const [couponError, setCouponError] = useState('')
+    const [closureDates, setClosureDates] = useState([])
+    const [teamAbsences, setTeamAbsences] = useState([])
 
     useEffect(() => {
         loadBusiness()
@@ -58,6 +61,23 @@ export function useBookingFlow() {
                 .eq('business_id', data.id)
                 .eq('active', true)
             setTeamMembers(members || [])
+
+            // Load business closures
+            const { data: closures } = await supabase
+                .from('business_closures')
+                .select('date')
+                .eq('business_id', data.id)
+                .gte('date', new Date().toISOString().split('T')[0])
+            setClosureDates((closures || []).map(c => c.date))
+
+            // Load team absences
+            const { data: absences } = await supabase
+                .from('team_absences')
+                .select('team_member_id, start_date, end_date')
+                .eq('business_id', data.id)
+                .gte('end_date', new Date().toISOString().split('T')[0])
+            setTeamAbsences(absences || [])
+
             // Load services from services table (fallback to JSONB)
             const { data: svcData, error: svcErr } = await supabase
                 .from('services')
@@ -143,12 +163,14 @@ export function useBookingFlow() {
         })
     }
 
-    // Generate available dates (respecting max advance, work days, and closed dates)
+    // Generate available dates (respecting max advance, work days, closed dates, and absences)
     function getAvailableDates() {
         const dates = []
         const workDays = business?.settings?.work_days || [1, 2, 3, 4, 5, 6]
         const maxDays = business?.settings?.max_advance_days || 30
-        const closedDates = (business?.settings?.closed_dates || []).map(cd => cd.date)
+        // Merge JSONB closed_dates with business_closures table
+        const settingsClosedDates = (business?.settings?.closed_dates || []).map(cd => cd.date)
+        const allClosedDates = [...new Set([...settingsClosedDates, ...closureDates])]
 
         for (let i = 0; i <= maxDays; i++) {
             const d = new Date()
@@ -158,8 +180,17 @@ export function useBookingFlow() {
             // Skip non-work days
             if (!workDays.includes(d.getDay())) continue
 
-            // Skip closed dates (holidays)
-            if (closedDates.includes(dateStr)) continue
+            // Skip closed dates (holidays + business_closures)
+            if (allClosedDates.includes(dateStr)) continue
+
+            // If a professional is selected, skip dates where they are absent
+            if (selectedProfessional?.id) {
+                const isAbsent = teamAbsences.some(a =>
+                    a.team_member_id === selectedProfessional.id &&
+                    dateStr >= a.start_date && dateStr <= a.end_date
+                )
+                if (isAbsent) continue
+            }
 
             dates.push({
                 value: dateStr,
@@ -221,6 +252,16 @@ export function useBookingFlow() {
     async function handleBook(e) {
         e.preventDefault()
         setError('')
+
+        // Validate phone before booking
+        const phoneResult = validateInternationalPhone(form.phone)
+        if (!phoneResult.valid) {
+            setError(phoneResult.error)
+            return
+        }
+        // Use formatted phone
+        form.phone = phoneResult.formatted
+
         setSubmitting(true)
 
         try {

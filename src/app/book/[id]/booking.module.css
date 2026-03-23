@@ -113,9 +113,15 @@
     transition: all var(--transition);
 }
 
+.progressDone .progressDot {
+    background: var(--success);
+    color: white;
+}
+
 .progressActive .progressDot {
     background: var(--accent);
     color: white;
+    box-shadow: 0 0 0 3px var(--accent-light);
 }
 
 .progressActive {
@@ -126,9 +132,10 @@
 .stepContent {
     background: var(--bg-primary);
     border: 1px solid var(--border);
+    border-top: 3px solid var(--accent);
     border-radius: var(--radius-xl);
     padding: var(--space-6);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-premium);
     animation: fadeInUp 250ms ease;
 }
 
@@ -176,17 +183,23 @@
     border-radius: var(--radius-md);
     background: var(--bg-primary);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
     text-align: left;
 }
 
 .serviceItem:hover {
     border-color: var(--accent-subtle);
+    box-shadow: var(--shadow-sm);
+}
+
+.serviceItem:active {
+    transform: scale(0.98);
 }
 
 .serviceItem.selected {
     border-color: var(--accent);
     background: var(--accent-light);
+    box-shadow: var(--shadow-glow);
 }
 
 .serviceName {
@@ -235,18 +248,24 @@
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
     text-transform: capitalize;
 }
 
 .dateBtn:hover {
     border-color: var(--accent-subtle);
+    box-shadow: var(--shadow-sm);
+}
+
+.dateBtn:active {
+    transform: scale(0.95);
 }
 
 .dateBtn.selected {
     border-color: var(--accent);
     background: var(--accent);
     color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* Times */
@@ -265,17 +284,23 @@
     font-weight: 500;
     color: var(--text-secondary);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .timeBtn:hover {
     border-color: var(--accent-subtle);
+    box-shadow: var(--shadow-sm);
+}
+
+.timeBtn:active {
+    transform: scale(0.95);
 }
 
 .timeBtn.selected {
     border-color: var(--accent);
     background: var(--accent);
     color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
 /* Form */
@@ -296,6 +321,7 @@
     justify-content: space-between;
     padding: var(--space-3) var(--space-4);
     background: var(--accent-light);
+    border-left: 3px solid var(--accent);
     border-radius: var(--radius-md);
     font-size: var(--font-size-sm);
     font-weight: 600;
@@ -310,7 +336,8 @@
     border-radius: var(--radius-xl);
     padding: var(--space-8);
     text-align: center;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-premium);
+    animation: scaleIn 300ms ease;
 }
 
 .successIcon {
@@ -323,6 +350,7 @@
     align-items: center;
     justify-content: center;
     margin: 0 auto var(--space-4);
+    animation: checkmarkPop 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .successCard h1 {
@@ -429,6 +457,7 @@
 
     .bookingPage {
         padding: var(--space-3);
+        padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
     }
 
     .container {

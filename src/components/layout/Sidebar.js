@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
 import { filterNavByRole } from '@/lib/permissions'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart, Gift, Package, ShoppingCart, MapPin } from 'lucide-react'
+import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart, Gift, Package, ShoppingCart, MapPin, BellRing } from 'lucide-react'
 import styles from './Sidebar.module.css'
 
 const NAV_ITEMS = [
@@ -19,6 +19,7 @@ const NAV_ITEMS = [
     { href: '/dashboard/marketing', label: 'Marketing', icon: Gift },
     { href: '/dashboard/finance', label: 'Caja', icon: Wallet },
     { href: '/dashboard/analytics', label: 'Estadísticas', icon: PieChart },
+    { href: '/dashboard/waitlist', label: 'Lista de espera', icon: BellRing },
 ]
 
 const BOTTOM_ITEMS = [

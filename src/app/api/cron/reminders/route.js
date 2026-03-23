@@ -37,8 +37,8 @@ export async function GET(request) {
             .from('appointments')
             .select(`
                 *,
-                businesses:business_id (name, business_type, phone),
-                clients:client_id (name, email, phone)
+                businesses:business_id (name, business_type, phone, settings),
+                clients:client_id (name, email, phone, monthly_cancellations, last_cancellation_month)
             `)
             .in('date', [today, tomorrow])
             .eq('status', 'confirmed')
@@ -86,6 +86,42 @@ export async function GET(request) {
 
             const date = new Date(apt.date)
             const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+            // Smart confirmation: if client has 2+ cancellations this month, request CONFIRMO via WhatsApp
+            const currentMonth = argentinaNow.toISOString().slice(0, 7)
+            const monthlyCancels = apt.clients.last_cancellation_month === currentMonth
+                ? (apt.clients.monthly_cancellations || 0)
+                : 0
+
+            if (monthlyCancels >= 2 && apt.clients.phone) {
+                try {
+                    const { sendWhatsAppText } = await import('@/lib/whatsapp')
+                    const phoneNumberId = apt.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID
+                    const deadline = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours to confirm
+
+                    await sendWhatsAppText({
+                        to: apt.clients.phone,
+                        phoneNumberId,
+                        text: `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)}.\n\nPor favor respondé CONFIRMO para confirmar tu turno. Si no confirmás en las próximas 2 horas, el turno podría ser liberado.`
+                    })
+
+                    // Set confirmation flags
+                    await supabase
+                        .from('appointments')
+                        .update({
+                            confirmation_required: true,
+                            confirmation_deadline: deadline.toISOString(),
+                            reminder_sent: true,
+                            reminder_sent_at: new Date().toISOString(),
+                        })
+                        .eq('id', apt.id)
+
+                    return { sent: true, id: apt.id, type: 'confirmation_request' }
+                } catch (e) {
+                    console.error('Smart confirmation WhatsApp error:', e)
+                    // Fall through to normal email reminder
+                }
+            }
 
             const html = reminderEmail({
                 clientName: apt.clients.name || 'Cliente',

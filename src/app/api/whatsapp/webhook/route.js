@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { notifyWaitlist } from '@/lib/waitlist'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,12 +65,47 @@ export async function POST(request) {
               .update({ status: 'cancelled' })
               .eq('id', appointment.id)
 
+            // Track monthly cancellations
+            try {
+              const currentMonth = new Date().toISOString().slice(0, 7)
+              const { data: clientInfo } = await supabase
+                .from('clients')
+                .select('monthly_cancellations, last_cancellation_month')
+                .eq('id', client.id)
+                .single()
+              if (clientInfo) {
+                const count = clientInfo.last_cancellation_month === currentMonth
+                  ? (clientInfo.monthly_cancellations || 0) + 1
+                  : 1
+                await supabase.from('clients')
+                  .update({ monthly_cancellations: count, last_cancellation_month: currentMonth })
+                  .eq('id', client.id)
+              }
+            } catch (_) {}
+
             // Send confirmation of cancellation
             const { sendWhatsAppText } = await import('@/lib/whatsapp')
             await sendWhatsAppText({
               to: from,
               phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
               text: `Tu turno de ${appointment.service_name} del ${appointment.date} a las ${appointment.time} fue cancelado exitosamente.`
+            }).catch(() => {})
+
+            // Notify waitlist
+            const { data: biz } = await supabase
+              .from('businesses')
+              .select('name, slug, settings')
+              .eq('id', appointment.business_id)
+              .single()
+
+            await notifyWaitlist(supabase, {
+              businessId: appointment.business_id,
+              date: appointment.date,
+              teamMemberId: appointment.team_member_id,
+              serviceName: appointment.service_name,
+              businessName: biz?.name,
+              businessSlug: biz?.slug,
+              phoneNumberId: biz?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID,
             }).catch(() => {})
           }
         }
@@ -85,12 +121,25 @@ export async function POST(request) {
           .single()
 
         if (client) {
+          // Clear confirmation flags and confirm appointment
           await supabase
             .from('appointments')
-            .update({ status: 'confirmed' })
+            .update({
+              status: 'confirmed',
+              confirmation_required: false,
+              confirmation_deadline: null,
+            })
             .eq('client_id', client.id)
-            .eq('status', 'pending')
+            .in('status', ['pending', 'confirmed'])
             .gte('date', today)
+
+          // Send confirmation ack
+          const { sendWhatsAppText } = await import('@/lib/whatsapp')
+          await sendWhatsAppText({
+            to: from,
+            phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+            text: 'Tu turno fue confirmado exitosamente. ¡Te esperamos!'
+          }).catch(() => {})
         }
       }
     }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { isBusinessClosed, isTeamMemberAbsent } from '@/lib/availability'
 
 export async function POST(request) {
     try {
@@ -15,6 +15,20 @@ export async function POST(request) {
             process.env.NEXT_PUBLIC_SUPABASE_URL,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
+
+        // Check if business is closed on this date
+        const closed = await isBusinessClosed(supabase, business_id, date)
+        if (closed) {
+            return NextResponse.json({ available: false, reason: 'El negocio está cerrado en esta fecha' })
+        }
+
+        // Check if team member is absent
+        if (team_member_id) {
+            const absent = await isTeamMemberAbsent(supabase, team_member_id, business_id, date)
+            if (absent) {
+                return NextResponse.json({ available: false, reason: 'El profesional no está disponible en esta fecha' })
+            }
+        }
 
         const bufferMinutes = buffer_time || 0
 

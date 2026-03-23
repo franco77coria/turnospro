@@ -50,12 +50,15 @@ function AnalyticsContent() {
             .gte('date', startStr)
             .lte('date', endStr)
 
-        // Fetch transactions
+        // Fetch transactions (extend to 6 months for monthly chart)
+        const sixMonthsAgo = new Date()
+        sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+        const txnStartDate = startDate < sixMonthsAgo ? startDate : sixMonthsAgo
         const { data: transactions } = await supabase
             .from('transactions')
             .select('type, amount, created_at')
             .eq('business_id', business.id)
-            .gte('created_at', startDate.toISOString())
+            .gte('created_at', txnStartDate.toISOString())
 
         // Fetch team members
         const { data: team } = await supabase
@@ -110,11 +113,44 @@ function AnalyticsContent() {
             revenueByDay.push({ label: dayLabel, value: dayIncome })
         }
 
+        // Revenue by service (from completed appointments)
+        const serviceRevenue = {}
+        apts.filter(a => a.status === 'completed' && a.price).forEach(a => {
+            if (!serviceRevenue[a.service_name]) serviceRevenue[a.service_name] = 0
+            serviceRevenue[a.service_name] += a.price
+        })
+        const topServicesByRevenue = Object.entries(serviceRevenue)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+
+        // Appointments by day of week
+        const dayOfWeekCount = [0, 0, 0, 0, 0, 0, 0] // Sun-Sat
+        apts.forEach(a => {
+            const d = new Date(a.date + 'T12:00:00')
+            dayOfWeekCount[d.getDay()]++
+        })
+        const dayNames = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab']
+        const busiestDay = dayOfWeekCount.map((count, i) => ({ label: dayNames[i], value: count }))
+
+        // Monthly revenue (last 6 months)
+        const monthlyRevenue = []
+        for (let i = 5; i >= 0; i--) {
+            const d = new Date()
+            d.setMonth(d.getMonth() - i)
+            const monthStr = d.toISOString().slice(0, 7) // "2026-03"
+            const monthLabel = d.toLocaleDateString('es-AR', { month: 'short' })
+            const monthIncome = txns
+                .filter(t => t.type === 'income' && t.created_at?.startsWith(monthStr))
+                .reduce((sum, t) => sum + (t.amount || 0), 0)
+            monthlyRevenue.push({ label: monthLabel, value: monthIncome })
+        }
+
         setStats({
             totalApts, completed, cancelled, noShow,
             occupancyRate, noShowRate, cancelRate,
             totalIncome, totalExpenses,
             topServices, proStats, revenueByDay,
+            topServicesByRevenue, busiestDay, monthlyRevenue,
         })
         setLoading(false)
     }
@@ -175,6 +211,83 @@ function AnalyticsContent() {
                                 </div>
                             ))}
                         </div>
+                    </div>
+
+                    {/* Monthly Revenue (6 months) */}
+                    {stats.monthlyRevenue && (
+                        <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Ingresos mensuales</h3>
+                            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-2)', height: 150 }}>
+                                {stats.monthlyRevenue.map((d, i) => {
+                                    const maxVal = Math.max(...stats.monthlyRevenue.map(m => m.value), 1)
+                                    return (
+                                        <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
+                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                                {d.value > 0 ? `$${(d.value / 1000).toFixed(0)}k` : ''}
+                                            </span>
+                                            <div style={{
+                                                width: '100%', maxWidth: 48,
+                                                height: `${Math.max((d.value / maxVal) * 120, 4)}px`,
+                                                background: d.value > 0 ? 'var(--success)' : 'var(--bg-tertiary)',
+                                                borderRadius: 'var(--radius-sm)',
+                                                transition: 'height 0.3s ease',
+                                            }} />
+                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', textTransform: 'capitalize' }}>{d.label}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-5)', marginBottom: 'var(--space-5)' }}>
+                        {/* Busiest Day of Week */}
+                        {stats.busiestDay && (
+                            <div className="card">
+                                <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Dia mas activo</h3>
+                                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--space-1)', height: 100 }}>
+                                    {stats.busiestDay.map((d, i) => {
+                                        const maxVal = Math.max(...stats.busiestDay.map(m => m.value), 1)
+                                        const isMax = d.value === maxVal && d.value > 0
+                                        return (
+                                            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                                <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{d.value || ''}</span>
+                                                <div style={{
+                                                    width: '100%', maxWidth: 32,
+                                                    height: `${Math.max((d.value / maxVal) * 70, 3)}px`,
+                                                    background: isMax ? 'var(--accent)' : 'var(--accent-subtle)',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                }} />
+                                                <span style={{ fontSize: 10, color: isMax ? 'var(--accent)' : 'var(--text-tertiary)', fontWeight: isMax ? 600 : 400 }}>{d.label}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Revenue by Service */}
+                        {stats.topServicesByRevenue?.length > 0 && (
+                            <div className="card">
+                                <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Ingresos por servicio</h3>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                    {stats.topServicesByRevenue.map(([name, revenue]) => {
+                                        const maxRev = stats.topServicesByRevenue[0]?.[1] || 1
+                                        return (
+                                            <div key={name}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-1)', fontSize: 'var(--font-size-sm)' }}>
+                                                    <span>{name}</span>
+                                                    <span style={{ color: 'var(--success)', fontWeight: 600 }}>${revenue.toLocaleString()}</span>
+                                                </div>
+                                                <div style={{ height: 6, background: 'var(--bg-tertiary)', borderRadius: 3 }}>
+                                                    <div style={{ height: '100%', width: `${(revenue / maxRev) * 100}%`, background: 'var(--success)', borderRadius: 3 }} />
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-5)' }}>

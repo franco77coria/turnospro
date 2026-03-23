@@ -45,13 +45,13 @@ export async function GET(request) {
                     const role = accountType === 'business' ? 'Dueño' : 'user'
                     const { data: newProfile } = await supabase
                         .from('profiles')
-                        .insert([{
+                        .upsert([{
                             id: user.id,
                             email: user.email,
                             full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
                             avatar_url: user.user_metadata?.avatar_url || null,
                             role,
-                        }])
+                        }], { onConflict: 'id' })
                         .select('role, business_id')
                         .single()
 

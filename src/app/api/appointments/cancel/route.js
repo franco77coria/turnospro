@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { verifyCancelToken } from '@/lib/cancel-token'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/send-email'
+import { notifyWaitlist } from '@/lib/waitlist'
 
 export async function POST(request) {
     try {
@@ -55,6 +56,31 @@ export async function POST(request) {
             .eq('id', appointmentId)
 
         if (updateErr) throw updateErr
+
+        // Track monthly cancellations for CRM
+        if (appointment.client_id) {
+            try {
+                const currentMonth = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+                const { data: clientData } = await supabase
+                    .from('clients')
+                    .select('monthly_cancellations, last_cancellation_month')
+                    .eq('id', appointment.client_id)
+                    .single()
+
+                if (clientData) {
+                    const count = clientData.last_cancellation_month === currentMonth
+                        ? (clientData.monthly_cancellations || 0) + 1
+                        : 1 // reset if new month
+
+                    await supabase
+                        .from('clients')
+                        .update({ monthly_cancellations: count, last_cancellation_month: currentMonth })
+                        .eq('id', appointment.client_id)
+                }
+            } catch (e) {
+                console.error('Cancellation tracking error (non-critical):', e)
+            }
+        }
 
         const formattedDate = new Date(appointment.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
         const formattedTime = appointment.time?.slice(0, 5)
@@ -121,6 +147,21 @@ export async function POST(request) {
                 title: 'Turno cancelado',
                 message: `${appointment.clients?.name || 'Un cliente'} canceló ${appointment.service_name} del ${formattedDate} a las ${formattedTime}.`,
             }]).catch(() => {}) // non-critical
+        }
+
+        // Notify waitlist entries for this date
+        try {
+            await notifyWaitlist(supabase, {
+                businessId: appointment.business_id,
+                date: appointment.date,
+                teamMemberId: appointment.team_member_id,
+                serviceName: appointment.service_name,
+                businessName: appointment.businesses?.name,
+                businessSlug: appointment.businesses?.slug,
+                phoneNumberId: appointment.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID,
+            })
+        } catch (e) {
+            console.error('Waitlist notify error (non-critical):', e)
         }
 
         return NextResponse.json({

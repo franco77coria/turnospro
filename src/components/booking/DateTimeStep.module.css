@@ -1,0 +1,343 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    border-radius: var(--radius-lg);
+    background: var(--bg-primary);
+    border-top: 3px solid var(--accent);
+    box-shadow: var(--shadow-premium, var(--shadow-md));
+}
+
+.backBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    padding: 0;
+    font-family: inherit;
+    align-self: flex-start;
+}
+
+.backBtn:hover {
+    color: var(--accent);
+}
+
+.title {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin: 0;
+}
+
+/* ── Date strip (horizontal scroll calendar) ── */
+
+.dateSection {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.scrollBtn {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 150ms ease;
+}
+
+.scrollBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-light);
+}
+
+.dateStrip {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex: 1;
+    padding: var(--space-1) 0;
+}
+
+.dateStrip::-webkit-scrollbar {
+    display: none;
+}
+
+.dateCard {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 62px;
+    height: 76px;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--border);
+    background: var(--bg-primary);
+    cursor: pointer;
+    transition: all 200ms ease;
+    scroll-snap-align: center;
+    gap: 2px;
+    position: relative;
+}
+
+.dateCard:hover {
+    border-color: var(--accent-subtle);
+    background: var(--bg-secondary);
+}
+
+.dateSelected {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    transform: scale(1.05);
+}
+
+.dateSelected .dateDayName,
+.dateSelected .dateMonth {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.dateSelected .dateDayNum {
+    color: white;
+}
+
+.dateToday::after {
+    content: '';
+    position: absolute;
+    bottom: 4px;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.dateSelected.dateToday::after {
+    background: white;
+}
+
+.dateDayName {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dateDayNum {
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--text-primary);
+}
+
+.dateMonth {
+    font-size: 0.65rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: capitalize;
+}
+
+/* Selected date label */
+.selectedLabel {
+    text-align: center;
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    text-transform: capitalize;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* ── Time slots ── */
+
+.timeSection {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-6);
+}
+
+.emptySlots {
+    text-align: center;
+    padding: var(--space-4);
+    color: var(--text-tertiary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.emptySlots p {
+    margin: 0;
+}
+
+.waitlistBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 150ms ease;
+}
+
+.waitlistBtn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Time groups (Morning / Afternoon / Evening) */
+
+.timeGroups {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.timeGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.groupHeader {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.groupCount {
+    font-size: var(--font-size-xs);
+    font-weight: 400;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 1px 6px;
+    border-radius: 99px;
+}
+
+.timeGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.timeChip {
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full, 99px);
+    border: 1.5px solid var(--border);
+    background: var(--bg-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    font-family: inherit;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 180ms ease;
+    min-width: 64px;
+    text-align: center;
+}
+
+.timeChip:hover {
+    border-color: var(--accent-subtle);
+    background: var(--accent-light);
+    color: var(--accent);
+}
+
+.timeChip:active {
+    transform: scale(0.96);
+}
+
+.timeSelected {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.25);
+}
+
+.timeSelected:hover {
+    background: var(--accent);
+    color: white;
+}
+
+/* Continue button */
+.continueBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    border: none;
+    background: var(--accent);
+    color: white;
+    font-size: var(--font-size-base);
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 200ms ease;
+    margin-top: var(--space-2);
+}
+
+.continueBtn:hover {
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+.continueBtn:active {
+    transform: scale(0.98);
+}
+
+/* ── Mobile adjustments ── */
+
+@media (max-width: 480px) {
+    .container {
+        padding: var(--space-4);
+    }
+
+    .scrollBtn {
+        display: none;
+    }
+
+    .dateCard {
+        width: 56px;
+        height: 68px;
+    }
+
+    .dateDayNum {
+        font-size: 1.1rem;
+    }
+
+    .timeChip {
+        padding: var(--space-2);
+        min-width: 58px;
+        font-size: var(--font-size-xs);
+    }
+}

@@ -110,9 +110,12 @@ export default function ConfirmStep({
                                 onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required />
                         </div>
                         <div className="form-group">
-                            <label className="label"><Phone size={14} /> Telefono</label>
+                            <label className="label"><Phone size={14} /> Teléfono celular *</label>
                             <input className="input" placeholder="+54 11 1234-5678" value={form.phone}
-                                onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+                                onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required />
+                            <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
+                                Con código de país (ej: +54 para Argentina)
+                            </p>
                         </div>
 
                         <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={submitting}>

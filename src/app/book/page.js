@@ -3,12 +3,12 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { MapPin, CalendarDays, ArrowRight, Store, History, Heart } from 'lucide-react'
+import { MapPin, CalendarDays, ArrowRight, Store, History, Heart, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import styles from './book.module.css'
 
 export default function BookListPage() {
-    const { user, loading: authLoading } = useAuth()
+    const { user, loading: authLoading, signOut } = useAuth()
     const router = useRouter()
     const [businesses, setBusinesses] = useState([])
     const [loading, setLoading] = useState(true)
@@ -70,13 +70,18 @@ export default function BookListPage() {
                         <span className={styles.logoText}>GLOWUP</span>
                     </Link>
                     {user && (
-                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
                             <Link href="/book/favorites" className={styles.myApptsLink}>
                                 <Heart size={14} /> Favoritos
                             </Link>
                             <Link href="/book/my-appointments" className={styles.myApptsLink}>
                                 <History size={14} /> Mis turnos
                             </Link>
+                            <button onClick={async () => { await signOut(); window.location.href = '/login' }}
+                                className={styles.myApptsLink}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-tertiary)' }}>
+                                <LogOut size={14} /> Salir
+                            </button>
                         </div>
                     )}
                 </div>

@@ -3,11 +3,13 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
-import { Check, X as XIcon, Plus } from 'lucide-react'
+import { Check, X as XIcon, Plus, User } from 'lucide-react'
+import ClientProfileCard from '@/components/ClientProfileCard'
 import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
     const { business, loading: authLoading } = useAuth()
+    const [selectedClientId, setSelectedClientId] = useState(null)
     const [appointments, setAppointments] = useState([])
     const [filter, setFilter] = useState('all')
     const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0])
@@ -38,6 +40,28 @@ export default function AppointmentsPage() {
         if (!supabase) return
         await supabase.from('appointments').update({ status }).eq('id', id)
 
+        if (status === 'cancelled') {
+            const apt = appointments.find(a => a.id === id)
+            if (apt?.client_id) {
+                try {
+                    const currentMonth = new Date().toISOString().slice(0, 7)
+                    const { data: clientInfo } = await supabase
+                        .from('clients')
+                        .select('monthly_cancellations, last_cancellation_month')
+                        .eq('id', apt.client_id)
+                        .single()
+                    if (clientInfo) {
+                        const count = clientInfo.last_cancellation_month === currentMonth
+                            ? (clientInfo.monthly_cancellations || 0) + 1
+                            : 1
+                        await supabase.from('clients')
+                            .update({ monthly_cancellations: count, last_cancellation_month: currentMonth })
+                            .eq('id', apt.client_id)
+                    }
+                } catch (_) {}
+            }
+        }
+
         if (status === 'completed') {
             const apt = appointments.find(a => a.id === id)
             if (apt) {
@@ -62,6 +86,23 @@ export default function AppointmentsPage() {
                         amount: price,
                         payment_method: 'cash',
                     }])
+                }
+
+                // Request review from client (non-blocking)
+                if (apt.clients?.email) {
+                    fetch('/api/reviews/request', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            appointment_id: id,
+                            client_email: apt.clients.email,
+                            client_name: apt.clients.name,
+                            service_name: apt.service_name,
+                            business_id: business.id,
+                            business_name: business.name,
+                            business_type: business.business_type,
+                        }),
+                    }).catch(() => {})
                 }
             }
         }
@@ -141,7 +182,12 @@ export default function AppointmentsPage() {
                             ) : appointments.map(apt => (
                                 <tr key={apt.id}>
                                     <td style={{ fontWeight: 600 }}>{apt.time?.slice(0, 5)}</td>
-                                    <td>{apt.clients?.name || '—'}</td>
+                                    <td>
+                                        <span style={{ cursor: apt.client_id ? 'pointer' : 'default', textDecoration: apt.client_id ? 'underline' : 'none' }}
+                                            onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
+                                            {apt.clients?.name || '—'}
+                                        </span>
+                                    </td>
                                     <td>{apt.service_name}</td>
                                     <td className="hide-mobile">{apt.team_members?.name || '—'}</td>
                                     <td>{statusBadge(apt.status)}</td>
@@ -163,7 +209,10 @@ export default function AppointmentsPage() {
                             <span className={styles.aptCardHour}>{apt.time?.slice(0, 5)}</span>
                         </div>
                         <div className={styles.aptCardBody}>
-                            <span className={styles.aptCardClient}>{apt.clients?.name || 'Cliente'}</span>
+                            <span className={styles.aptCardClient} style={{ cursor: apt.client_id ? 'pointer' : 'default', textDecoration: apt.client_id ? 'underline' : 'none' }}
+                                onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
+                                {apt.clients?.name || 'Cliente'}
+                            </span>
                             <span className={styles.aptCardService}>{apt.service_name}</span>
                             <div className={styles.aptCardMeta}>
                                 {statusBadge(apt.status)}
@@ -178,6 +227,20 @@ export default function AppointmentsPage() {
                     </div>
                 ))}
             </div>
+
+            {selectedClientId && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setSelectedClientId(null)}>
+                    <div className="modal" style={{ maxWidth: 400 }}>
+                        <div className="modal-header">
+                            <h3><User size={16} /> Perfil del cliente</h3>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setSelectedClientId(null)}><XIcon size={16} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <ClientProfileCard clientId={selectedClientId} businessId={business.id} />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

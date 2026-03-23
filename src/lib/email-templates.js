@@ -454,3 +454,36 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
 
     return baseLayout(content, theme, businessName)
 }
+
+export function reviewRequestEmail({ clientName, serviceName, businessName, businessType, reviewUrl }) {
+    const theme = getTheme(businessType)
+
+    const content = `
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="font-size:20px;font-weight:700;color:#1e293b;padding-bottom:8px;">
+                    ¿Como fue tu experiencia?
+                </td>
+            </tr>
+            <tr>
+                <td style="font-size:14px;color:#64748b;line-height:1.6;padding-bottom:20px;">
+                    Hola ${escapeHtml(clientName)}, gracias por visitarnos.
+                    Tu opinion nos ayuda a mejorar. Dejanos una resena sobre tu ${escapeHtml(serviceName || 'turno')}.
+                </td>
+            </tr>
+        </table>
+
+        ${reviewUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+            <tr>
+                <td align="center">
+                    <a href="${reviewUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
+                        Dejar mi resena
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+    `
+
+    return baseLayout(content, theme, businessName)
+}

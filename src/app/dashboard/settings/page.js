@@ -2,7 +2,8 @@
 import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import { useState, useEffect } from 'react'
-import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download } from 'lucide-react'
+import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download, UserX } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 import { QRCodeSVG } from 'qrcode.react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
@@ -60,6 +61,22 @@ function SettingsContent() {
     const [newClosedDate, setNewClosedDate] = useState('')
     const [newClosedReason, setNewClosedReason] = useState('')
 
+    // Team absences
+    const [teamMembers, setTeamMembers] = useState([])
+    const [teamAbsences, setTeamAbsences] = useState([])
+    const [newAbsence, setNewAbsence] = useState({ team_member_id: '', start_date: '', end_date: '', reason: '' })
+
+    // Load team members and absences
+    useEffect(() => {
+        if (!business?.id || !supabase) return
+        supabase.from('team_members').select('id, name').eq('business_id', business.id).eq('active', true)
+            .then(({ data }) => setTeamMembers(data || []))
+        supabase.from('team_absences').select('*').eq('business_id', business.id)
+            .gte('end_date', new Date().toISOString().split('T')[0])
+            .order('start_date')
+            .then(({ data }) => setTeamAbsences(data || []))
+    }, [business?.id])
+
     useEffect(() => {
         if (business) {
             setForm({
@@ -100,6 +117,32 @@ function SettingsContent() {
 
     const removeClosedDate = (index) => {
         setClosedDates(prev => prev.filter((_, i) => i !== index))
+    }
+
+    const addTeamAbsence = async () => {
+        if (!newAbsence.team_member_id || !newAbsence.start_date || !newAbsence.end_date) return
+        if (!supabase) return
+        const { data, error } = await supabase.from('team_absences').insert([{
+            team_member_id: newAbsence.team_member_id,
+            business_id: business.id,
+            start_date: newAbsence.start_date,
+            end_date: newAbsence.end_date,
+            reason: newAbsence.reason || 'Ausencia',
+        }]).select().single()
+        if (!error && data) {
+            setTeamAbsences(prev => [...prev, data])
+            setNewAbsence({ team_member_id: '', start_date: '', end_date: '', reason: '' })
+            toast.success('Ausencia registrada')
+        } else {
+            toast.error('Error al registrar ausencia')
+        }
+    }
+
+    const removeTeamAbsence = async (id) => {
+        if (!supabase) return
+        await supabase.from('team_absences').delete().eq('id', id)
+        setTeamAbsences(prev => prev.filter(a => a.id !== id))
+        toast.success('Ausencia eliminada')
     }
 
     const handleCopyLink = () => {
@@ -342,6 +385,87 @@ function SettingsContent() {
                             <Plus size={14} /> Agregar
                         </button>
                     </div>
+                </div>
+
+                {/* Team Absences */}
+                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <UserX size={18} /> Ausencias del equipo
+                    </h3>
+                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
+                        Registra vacaciones o ausencias de tu equipo. Esos dias no apareceran disponibles para reservas.
+                    </p>
+
+                    {teamAbsences.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                            {teamAbsences.map(abs => {
+                                const member = teamMembers.find(m => m.id === abs.team_member_id)
+                                const start = new Date(abs.start_date + 'T12:00:00')
+                                const end = new Date(abs.end_date + 'T12:00:00')
+                                return (
+                                    <div key={abs.id} style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: 'var(--space-2) var(--space-3)',
+                                        background: 'var(--warning-light)',
+                                        borderRadius: 'var(--radius-md)',
+                                        fontSize: 'var(--font-size-sm)',
+                                    }}>
+                                        <span>
+                                            <strong>{member?.name || 'Profesional'}</strong>
+                                            <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>
+                                                {start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} — {end.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                            </span>
+                                            {abs.reason && abs.reason !== 'Ausencia' && (
+                                                <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>({abs.reason})</span>
+                                            )}
+                                        </span>
+                                        <button type="button" onClick={() => removeTeamAbsence(abs.id)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4 }}>
+                                            <X size={14} />
+                                        </button>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
+
+                    {teamMembers.length > 0 ? (
+                        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                            <div className="form-group" style={{ flex: '1 1 160px' }}>
+                                <label className="label">Profesional</label>
+                                <select className="select" value={newAbsence.team_member_id}
+                                    onChange={e => setNewAbsence(p => ({ ...p, team_member_id: e.target.value }))}>
+                                    <option value="">Seleccionar...</option>
+                                    {teamMembers.map(m => (
+                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                                <label className="label">Desde</label>
+                                <input className="input" type="date" value={newAbsence.start_date}
+                                    onChange={e => setNewAbsence(p => ({ ...p, start_date: e.target.value }))} />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 130px' }}>
+                                <label className="label">Hasta</label>
+                                <input className="input" type="date" value={newAbsence.end_date}
+                                    onChange={e => setNewAbsence(p => ({ ...p, end_date: e.target.value }))} />
+                            </div>
+                            <div className="form-group" style={{ flex: '1 1 140px' }}>
+                                <label className="label">Motivo</label>
+                                <input className="input" placeholder="Vacaciones..." value={newAbsence.reason}
+                                    onChange={e => setNewAbsence(p => ({ ...p, reason: e.target.value }))} />
+                            </div>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={addTeamAbsence}
+                                style={{ height: 40, whiteSpace: 'nowrap' }}>
+                                <Plus size={14} /> Agregar
+                            </button>
+                        </div>
+                    ) : (
+                        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>
+                            No hay miembros del equipo. Agrega profesionales en la seccion Equipo.
+                        </p>
+                    )}
                 </div>
 
                 {/* Booking Link & QR Code */}

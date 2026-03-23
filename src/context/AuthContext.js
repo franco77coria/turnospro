@@ -35,13 +35,13 @@ export function AuthProvider({ children }) {
 
                 const { data: newProfile } = await supabase
                     .from('profiles')
-                    .insert([{
+                    .upsert([{
                         id: userId,
                         email: userEmail,
                         full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'Usuario',
                         avatar_url: userMeta?.avatar_url || null,
                         role,
-                    }])
+                    }], { onConflict: 'id', ignoreDuplicates: true })
                     .select()
                     .single()
                 currentProfile = newProfile

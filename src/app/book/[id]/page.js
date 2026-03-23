@@ -1,5 +1,6 @@
 'use client'
-import { Heart, MapPin, Phone } from 'lucide-react'
+import { Heart, MapPin, Phone, LogOut } from 'lucide-react'
+import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import Reviews from '@/components/Reviews'
 import Link from 'next/link'
@@ -14,6 +15,7 @@ import BookingSuccess from '@/components/booking/BookingSuccess'
 
 export default function BookingPage() {
     const b = useBookingFlow()
+    const { signOut } = useAuth()
     const biz = b.business
     const hasTm = b.teamMembers.length > 0
 
@@ -64,14 +66,23 @@ export default function BookingPage() {
 
                 {b.step === 3 && <DateTimeStep dates={b.dates} slots={b.slots} selectedDate={b.selectedDate} selectedTime={b.selectedTime}
                     loadingSlots={b.loadingSlots} hasTeamMembers={hasTm} onSelectDate={b.setSelectedDate} onSelectTime={b.setSelectedTime}
-                    onContinue={() => b.setStep(4)} onBack={() => b.setStep(hasTm ? 2 : 1)} />}
+                    onContinue={() => b.setStep(4)} onBack={() => b.setStep(hasTm ? 2 : 1)}
+                    businessId={biz.id} teamMemberId={b.selectedProfessional?.id} serviceName={b.selectedService?.name} />}
 
                 {b.step === 4 && <ConfirmStep id={b.id} user={b.user} selectedService={b.selectedService}
                     selectedDate={b.selectedDate} selectedTime={b.selectedTime} form={b.form} setForm={b.setForm} submitting={b.submitting}
                     appliedCoupon={b.appliedCoupon} setAppliedCoupon={b.setAppliedCoupon} couponCode={b.couponCode} setCouponCode={b.setCouponCode}
                     couponError={b.couponError} handleApplyCoupon={b.handleApplyCoupon} handleBook={b.handleBook} onBack={() => b.setStep(3)} />}
 
-                <div className={styles.footer}>Powered by <Link href="/explore">GLOWUP</Link></div>
+                <div className={styles.footer}>
+                    Powered by <Link href="/explore">GLOWUP</Link>
+                    {b.user && (
+                        <> — <button onClick={async () => { await signOut(); window.location.href = '/login' }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-tertiary)', fontSize: 'inherit', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <LogOut size={12} /> Cambiar cuenta
+                        </button></>
+                    )}
+                </div>
             </div>
         </div>
     )
