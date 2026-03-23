@@ -73,6 +73,7 @@
 
 .heroContent {
     max-width: 640px;
+    width: 100%;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
@@ -465,6 +466,8 @@
         -webkit-overflow-scrolling: touch;
         scrollbar-width: none;
         padding-bottom: var(--space-1);
+        width: 100%;
+        max-width: 100%;
     }
 
     .categoryPills::-webkit-scrollbar {

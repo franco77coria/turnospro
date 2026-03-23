@@ -221,7 +221,7 @@
     border-color: var(--text-tertiary);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .typeGrid {
         grid-template-columns: 1fr;
     }
