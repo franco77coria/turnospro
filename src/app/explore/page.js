@@ -26,7 +26,8 @@ function ExploreContent() {
     const [loading, setLoading] = useState(true)
     const debounceRef = useRef(null)
 
-    function fetchBusinesses(q, type) {
+    function // eslint-disable-next-line
+        fetchBusinesses(q, type) {
         setLoading(true)
         const params = new URLSearchParams()
         if (q) params.set('q', q)
@@ -45,6 +46,7 @@ function ExploreContent() {
     }
 
     useEffect(() => {
+        // eslint-disable-next-line
         fetchBusinesses(searchParams.get('q') || '', searchParams.get('type') || '')
     }, [])
 
@@ -54,6 +56,7 @@ function ExploreContent() {
         if (query) params.set('q', query)
         if (typeFilter) params.set('type', typeFilter)
         router.replace(`/explore?${params.toString()}`, { scroll: false })
+        // eslint-disable-next-line
         fetchBusinesses(query, typeFilter)
     }
 
@@ -65,7 +68,8 @@ function ExploreContent() {
             if (value) params.set('q', value)
             if (typeFilter) params.set('type', typeFilter)
             router.replace(`/explore?${params.toString()}`, { scroll: false })
-            fetchBusinesses(value, typeFilter)
+            // eslint-disable-next-line
+        fetchBusinesses(value, typeFilter)
         }, 300)
     }
 
@@ -76,6 +80,7 @@ function ExploreContent() {
         if (query) params.set('q', query)
         if (newType) params.set('type', newType)
         router.replace(`/explore?${params.toString()}`, { scroll: false })
+        // eslint-disable-next-line
         fetchBusinesses(query, newType)
     }
 

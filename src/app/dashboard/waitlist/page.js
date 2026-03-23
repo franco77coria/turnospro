@@ -22,11 +22,6 @@ function WaitlistContent() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('pending') // pending | notified | all
 
-    useEffect(() => {
-        if (!business?.id || !supabase) return
-        loadEntries()
-    }, [business?.id, filter])
-
     async function loadEntries() {
         setLoading(true)
         let query = supabase
@@ -42,6 +37,11 @@ function WaitlistContent() {
         setEntries(data || [])
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (!business?.id || !supabase) return
+        loadEntries()
+    }, [business?.id, filter])
 
     async function deleteEntry(id) {
         await supabase.from('waitlist').delete().eq('id', id)

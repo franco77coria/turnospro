@@ -8,10 +8,6 @@ export default function ClientProfileCard({ clientId, businessId }) {
     const [client, setClient] = useState(null)
     const [stats, setStats] = useState({ total: 0, completed: 0, cancelled: 0 })
 
-    useEffect(() => {
-        if (clientId && businessId) loadProfile()
-    }, [clientId, businessId])
-
     async function loadProfile() {
         if (!supabase) return
 
@@ -32,6 +28,10 @@ export default function ClientProfileCard({ clientId, businessId }) {
             })
         }
     }
+
+    useEffect(() => {
+        if (clientId && businessId) loadProfile()
+    }, [clientId, businessId])
 
     if (!client) return null
 

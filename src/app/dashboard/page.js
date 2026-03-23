@@ -13,21 +13,6 @@ export default function DashboardPage() {
     const [today, setToday] = useState('')
     const [greeting, setGreeting] = useState('')
 
-    useEffect(() => {
-        const now = new Date()
-        const year = now.getFullYear()
-        const month = String(now.getMonth() + 1).padStart(2, '0')
-        const day = String(now.getDate()).padStart(2, '0')
-        setToday(`${year}-${month}-${day}`)
-        const h = now.getHours()
-        setGreeting(h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches')
-    }, [])
-
-    useEffect(() => {
-        if (!business?.id || !today) return
-        loadDashboardData()
-    }, [business?.id, today])
-
     async function loadDashboardData() {
         if (!supabase) return
         try {
@@ -82,6 +67,21 @@ export default function DashboardPage() {
             console.error('Dashboard data error:', err)
         }
     }
+
+    useEffect(() => {
+        if (!business?.id || !today) return
+        loadDashboardData()
+    }, [business?.id, today])
+
+    useEffect(() => {
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = String(now.getMonth() + 1).padStart(2, '0')
+        const day = String(now.getDate()).padStart(2, '0')
+        setToday(`${year}-${month}-${day}`)
+        const h = now.getHours()
+        setGreeting(h < 12 ? 'Buenos días' : h < 18 ? 'Buenas tardes' : 'Buenas noches')
+    }, [])
 
     const statusBadge = (status) => {
         const s = Object.values(APPOINTMENT_STATUS).find(a => a.id === status)
@@ -144,14 +144,14 @@ export default function DashboardPage() {
                 <div className="card">
                     <div className={styles.cardHeader}>
                         <h3>Próximos turnos</h3>
-                        <a href="/dashboard/appointments" className={styles.viewAll}>Ver todos</a>
+                        <Link href="/dashboard/appointments" className={styles.viewAll}>Ver todos</Link>
                     </div>
 
                     {upcomingAppointments.length === 0 ? (
                         <div className={styles.emptyMsg}>
                             <div className={styles.emptyIcon}><Clock size={24} /></div>
                             <p>No hay turnos proximos</p>
-                            <a href="/dashboard/calendar" className="btn btn-primary btn-sm">+ Nuevo turno</a>
+                            <Link href="/dashboard/calendar" className="btn btn-primary btn-sm">+ Nuevo turno</Link>
                         </div>
                     ) : (
                         <div className={styles.appointmentList}>
@@ -177,24 +177,24 @@ export default function DashboardPage() {
                         <h3>Acciones rápidas</h3>
                     </div>
                     <div className={styles.quickActions}>
-                        <a href="/dashboard/calendar" className={styles.quickAction}>
+                        <Link href="/dashboard/calendar" className={styles.quickAction}>
                             <CalendarDays size={16} /> Nuevo turno
-                        </a>
-                        <a href="/dashboard/clients" className={styles.quickAction}>
+                        </Link>
+                        <Link href="/dashboard/clients" className={styles.quickAction}>
                             <UserPlus size={16} /> Agregar cliente
-                        </a>
-                        <a href="/dashboard/finance" className={styles.quickAction}>
+                        </Link>
+                        <Link href="/dashboard/finance" className={styles.quickAction}>
                             <Receipt size={16} /> Registrar gasto
-                        </a>
-                        <a href="/dashboard/team" className={styles.quickAction}>
+                        </Link>
+                        <Link href="/dashboard/team" className={styles.quickAction}>
                             <UsersRound size={16} /> Ver equipo
-                        </a>
-                        <a href="/dashboard/services" className={styles.quickAction}>
+                        </Link>
+                        <Link href="/dashboard/services" className={styles.quickAction}>
                             <Tag size={16} /> Editar servicios
-                        </a>
-                        <a href="/dashboard/settings" className={styles.quickAction}>
+                        </Link>
+                        <Link href="/dashboard/settings" className={styles.quickAction}>
                             <Settings size={16} /> Configuración
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

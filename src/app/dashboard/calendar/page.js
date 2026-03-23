@@ -499,7 +499,7 @@ export default function CalendarPage() {
                                     <strong>No tenés servicios configurados.</strong><br />
                                     Para crear un turno necesitás tener al menos un servicio.
                                 </p>
-                                <a href="/dashboard/services" className="btn btn-primary" style={{ display: 'inline-flex' }}>Ir a Servicios</a>
+                                <Link href="/dashboard/services" className="btn btn-primary" style={{ display: 'inline-flex' }}>Ir a Servicios</Link>
                             </div>
                         ) : (
                             <>

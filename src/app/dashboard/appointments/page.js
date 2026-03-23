@@ -15,10 +15,6 @@ export default function AppointmentsPage() {
     const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0])
     const [loadingApts, setLoadingApts] = useState(true)
 
-    useEffect(() => {
-        if (business?.id) loadAppointments()
-    }, [business?.id, dateFilter, filter])
-
     async function loadAppointments() {
         if (!supabase) return
         let query = supabase
@@ -35,6 +31,10 @@ export default function AppointmentsPage() {
         setAppointments(data || [])
         setLoadingApts(false)
     }
+
+    useEffect(() => {
+        if (business?.id) loadAppointments()
+    }, [business?.id, dateFilter, filter])
 
     async function updateStatus(id, status) {
         if (!supabase) return
@@ -149,7 +149,7 @@ export default function AppointmentsPage() {
                 <div className={styles.headerActions}>
                     <input type="date" className="input input-sm" style={{ width: 160 }} value={dateFilter}
                         onChange={e => setDateFilter(e.target.value)} />
-                    <a href="/dashboard/calendar" className="btn btn-primary"><Plus size={16} /> Nuevo turno</a>
+                    <Link href="/dashboard/calendar" className="btn btn-primary"><Plus size={16} /> Nuevo turno</Link>
                 </div>
             </div>
 

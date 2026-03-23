@@ -11,11 +11,6 @@ export default function FavoritesPage() {
     const [favorites, setFavorites] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        if (user) fetchFavorites()
-        else setLoading(false)
-    }, [user])
-
     async function fetchFavorites() {
         try {
             const res = await fetch(`/api/favorites?user_id=${user.id}`)
@@ -26,6 +21,11 @@ export default function FavoritesPage() {
         }
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (user) fetchFavorites()
+        else setLoading(false)
+    }, [user])
 
     async function toggleFavorite(businessId) {
         try {

@@ -23,10 +23,6 @@ function TeamContent() {
     const [form, setForm] = useState({ name: '', email: '', phone: '', role: '', commission_rate: '' })
     const [copiedToken, setCopiedToken] = useState(null)
 
-    useEffect(() => {
-        if (business?.id) loadTeam()
-    }, [business?.id])
-
     async function loadTeam() {
         if (!supabase) return
         const { data } = await supabase
@@ -36,6 +32,10 @@ function TeamContent() {
             .order('created_at')
         setMembers(data || [])
     }
+
+    useEffect(() => {
+        if (business?.id) loadTeam()
+    }, [business?.id])
 
     async function handleSave(e) {
         e.preventDefault()

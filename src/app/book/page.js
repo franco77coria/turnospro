@@ -13,10 +13,6 @@ export default function BookListPage() {
     const [businesses, setBusinesses] = useState([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        loadBusinesses()
-    }, [])
-
     async function loadBusinesses() {
         if (!supabase) { setLoading(false); return }
         const { data } = await supabase
@@ -26,6 +22,10 @@ export default function BookListPage() {
         setBusinesses(data || [])
         setLoading(false)
     }
+
+    useEffect(() => {
+        loadBusinesses()
+    }, [])
 
     if (authLoading || loading) {
         return (

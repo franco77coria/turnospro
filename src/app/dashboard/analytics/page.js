@@ -20,11 +20,6 @@ function AnalyticsContent() {
     const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        if (!business?.id || !supabase) return
-        loadStats()
-    }, [business?.id, period])
-
     async function loadStats() {
         setLoading(true)
         const now = new Date()
@@ -154,6 +149,11 @@ function AnalyticsContent() {
         })
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (!business?.id || !supabase) return
+        loadStats()
+    }, [business?.id, period])
 
     if (authLoading || !business?.id) {
         return <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}><div className="loading-spinner" /></div>

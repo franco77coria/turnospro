@@ -29,10 +29,6 @@ function FinanceContent() {
     const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const [selectedDate, setSelectedDate] = useState(localToday)
 
-    useEffect(() => {
-        if (business?.id) loadTransactions()
-    }, [business?.id, selectedDate])
-
     async function loadTransactions() {
         if (!supabase) return
         const { data } = await supabase
@@ -44,6 +40,10 @@ function FinanceContent() {
             .order('created_at', { ascending: false })
         setTransactions(data || [])
     }
+
+    useEffect(() => {
+        if (business?.id) loadTransactions()
+    }, [business?.id, selectedDate])
 
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
     const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)

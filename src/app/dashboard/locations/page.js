@@ -25,10 +25,6 @@ function LocationsContent() {
     const [form, setForm] = useState({ name: '', address: '', phone: '', active: true, is_primary: false })
     const [saving, setSaving] = useState(false)
 
-    useEffect(() => {
-        if (business) loadLocations()
-    }, [business])
-
     async function loadLocations() {
         if (!supabase) return
         setLoading(true)
@@ -45,6 +41,10 @@ function LocationsContent() {
         }
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (business) loadLocations()
+    }, [business])
 
     async function handleSave(e) {
         e.preventDefault()

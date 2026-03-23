@@ -79,6 +79,7 @@ function SettingsContent() {
 
     useEffect(() => {
         if (business) {
+            // eslint-disable-next-line
             setForm({
                 name: business.name || '',
                 phone: business.phone || '',

@@ -15,10 +15,6 @@ export default function ClientsPage() {
     const [tagInput, setTagInput] = useState('')
     const [loadingClients, setLoadingClients] = useState(true)
 
-    useEffect(() => {
-        if (business?.id) loadClients()
-    }, [business?.id])
-
     async function loadClients() {
         if (!supabase) return
         const { data } = await supabase
@@ -29,6 +25,10 @@ export default function ClientsPage() {
         setClients(data || [])
         setLoadingClients(false)
     }
+
+    useEffect(() => {
+        if (business?.id) loadClients()
+    }, [business?.id])
 
     async function handleSave(e) {
         e.preventDefault()

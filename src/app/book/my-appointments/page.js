@@ -15,10 +15,6 @@ export default function MyAppointmentsPage() {
     const [filter, setFilter] = useState('upcoming') // 'upcoming' | 'past' | 'cancelled'
     const [cancelling, setCancelling] = useState(null)
 
-    useEffect(() => {
-        if (user) loadAppointments()
-    }, [user])
-
     async function loadAppointments() {
         if (!supabase || !user) { setLoading(false); return }
 
@@ -61,6 +57,10 @@ export default function MyAppointmentsPage() {
         setAppointments(enriched)
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (user) loadAppointments()
+    }, [user])
 
     async function handleCancel(appointmentId, businessSettings) {
         const minHours = businessSettings?.min_cancel_hours ?? 2

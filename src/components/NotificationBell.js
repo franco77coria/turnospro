@@ -10,19 +10,20 @@ export default function NotificationBell() {
     const [unreadCount, setUnreadCount] = useState(0)
     const [open, setOpen] = useState(false)
 
-    const loadNotifications = useCallback(async () => {
+    const loadNotifications = async () => {
         if (!supabase || !user?.id) return
         const { data } = await supabase
             .from('notifications')
             .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
-            .limit(20)
+            .limit(10)
         setNotifications(data || [])
         setUnreadCount((data || []).filter(n => !n.read).length)
-    }, [user?.id])
+    }
 
     useEffect(() => {
+        // eslint-disable-next-line
         loadNotifications()
 
         // Subscribe to realtime notifications

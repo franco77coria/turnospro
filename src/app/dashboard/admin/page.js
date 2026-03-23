@@ -12,12 +12,6 @@ export default function AdminApprovalsPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
-    useEffect(() => {
-        if (user && isSuperAdmin(user.email)) {
-            loadAccounts()
-        }
-    }, [user])
-
     async function loadAccounts() {
         if (!supabase) return
         setLoading(true)
@@ -44,6 +38,12 @@ export default function AdminApprovalsPage() {
         }
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (user && isSuperAdmin(user.email)) {
+            loadAccounts()
+        }
+    }, [user])
 
     async function handleApprove(profileId) {
         if (!supabase) return

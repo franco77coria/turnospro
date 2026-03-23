@@ -14,10 +14,6 @@ export default function Reviews({ businessId }) {
     const [form, setForm] = useState({ rating: 5, comment: '' })
     const [submitting, setSubmitting] = useState(false)
 
-    useEffect(() => {
-        if (businessId) fetchReviews()
-    }, [businessId])
-
     async function fetchReviews() {
         try {
             const res = await fetch(`/api/reviews?business_id=${businessId}`)
@@ -30,6 +26,10 @@ export default function Reviews({ businessId }) {
         }
         setLoading(false)
     }
+
+    useEffect(() => {
+        if (businessId) fetchReviews()
+    }, [businessId])
 
     async function handleSubmit(e) {
         e.preventDefault()
