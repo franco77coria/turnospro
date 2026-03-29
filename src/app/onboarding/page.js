@@ -18,13 +18,13 @@ const RUBRO_ICONS = {
 }
 
 export default function OnboardingPage() {
-    const { user, profile, loading, createBusiness } = useAuth()
+    const { user, profile, loading: authLoading, createBusiness } = useAuth()
     const router = useRouter()
     const [step, setStep] = useState(1)
 
     // Protect: only users without a business can access onboarding
     useEffect(() => {
-        if (loading) return
+        if (authLoading) return
         if (!user) {
             router.replace('/login')
             return
@@ -39,7 +39,7 @@ export default function OnboardingPage() {
             // Already has a business — skip onboarding
             router.replace('/dashboard')
         }
-    }, [user, profile, loading, router])
+    }, [user, profile, authLoading, router])
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
         name: '',
