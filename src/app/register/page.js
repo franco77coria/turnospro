@@ -76,31 +76,29 @@ export default function RegisterPage() {
                     throw new Error('already registered')
                 }
 
-                // Create profile — only use columns that exist in the schema
+                // Create profile — business users get 'pending_business' until they complete onboarding
                 const { error: profileError } = await supabase.from('profiles').upsert([{
                     id: authData.user.id,
                     email: form.email,
                     full_name: form.fullName,
                     phone: phoneResult.formatted,
-                    role: 'user', // Always 'user' — business role assigned via onboarding flow
+                    role: accountType === 'business' ? 'pending_business' : 'user',
                 }])
                 if (profileError) {
                     console.error('Profile creation error:', profileError)
                 }
 
-                // For client accounts, auto-login immediately (no email confirmation needed)
-                if (accountType === 'user') {
-                    const { error: loginError } = await supabase.auth.signInWithPassword({
-                        email: form.email,
-                        password: form.password,
-                    })
-                    if (!loginError) {
-                        router.push('/book')
-                        return
-                    }
-                    // If auto-login fails (e.g. email confirmation required),
-                    // fall through to success screen with instructions
+                // Auto-login for both account types
+                const { error: loginError } = await supabase.auth.signInWithPassword({
+                    email: form.email,
+                    password: form.password,
+                })
+                if (!loginError) {
+                    router.push(accountType === 'business' ? '/onboarding' : '/book')
+                    return
                 }
+                // If auto-login fails (e.g. email confirmation required),
+                // fall through to success screen with instructions
             }
 
             setSuccess(true)
@@ -124,13 +122,9 @@ export default function RegisterPage() {
                     </div>
                     {accountType === 'business' ? (
                         <>
-                            <h1>Solicitud enviada</h1>
+                            <h1>Cuenta creada</h1>
                             <p className={styles.successMsg}>
-                                Tu cuenta de negocio fue creada. Un administrador revisará tu solicitud
-                                y la aprobará a la brevedad. Te notificaremos por email.
-                            </p>
-                            <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginTop: 'var(--space-2)' }}>
-                                Negocio: <strong>{form.businessName}</strong>
+                                Tu cuenta de negocio fue creada. Iniciá sesión para configurar tu negocio.
                             </p>
                         </>
                     ) : (

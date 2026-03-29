@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
@@ -18,9 +18,28 @@ const RUBRO_ICONS = {
 }
 
 export default function OnboardingPage() {
-    const { user, createBusiness } = useAuth()
+    const { user, profile, loading, createBusiness } = useAuth()
     const router = useRouter()
     const [step, setStep] = useState(1)
+
+    // Protect: only users without a business can access onboarding
+    useEffect(() => {
+        if (loading) return
+        if (!user) {
+            router.replace('/login')
+            return
+        }
+        if (!profile) return
+        if (profile.role === 'user') {
+            // Regular clients have no business to set up
+            router.replace('/book')
+            return
+        }
+        if (profile.business_id) {
+            // Already has a business — skip onboarding
+            router.replace('/dashboard')
+        }
+    }, [user, profile, loading, router])
     const [loading, setLoading] = useState(false)
     const [form, setForm] = useState({
         name: '',

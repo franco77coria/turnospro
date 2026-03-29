@@ -24,6 +24,9 @@ export default function DashboardLayout({ children }) {
     useEffect(() => {
         if (loading || !user || business || creatingBusinessRef.current) return
 
+        // Wait for profile to load before making routing decisions
+        if (!profile) return
+
         if (isSuperAdmin(user.email)) {
             creatingBusinessRef.current = true
             createBusiness({
@@ -46,11 +49,11 @@ export default function DashboardLayout({ children }) {
                 console.error('Auto-create business error:', err)
                 creatingBusinessRef.current = false
             })
-        } else if (profile?.role === 'user') {
+        } else if (profile.role === 'user') {
             // Client users don't belong in dashboard
             router.replace('/book')
-        } else if (!profile?.business_id) {
-            // Business user without business → onboarding
+        } else if (!profile.business_id) {
+            // Business user without business (pending_business) → onboarding
             router.replace('/onboarding')
         }
     }, [user, business, profile, loading, router, createBusiness])
