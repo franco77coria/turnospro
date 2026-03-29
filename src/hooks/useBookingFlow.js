@@ -106,7 +106,7 @@ export function useBookingFlow() {
             .select('time, duration, team_member_id')
             .eq('business_id', business.id)
             .eq('date', selectedDate)
-            .not('status', 'in', '("cancelled","no_show")')
+            .not('status', 'in', '(cancelled,no_show)')
         // Filter by professional if one is selected
         if (tmId) query = query.eq('team_member_id', tmId)
         query.then(({ data }) => {
