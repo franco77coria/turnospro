@@ -481,10 +481,24 @@
 
     .serviceItem {
         padding: var(--space-3);
+        min-height: 56px;
     }
 
     .successCard {
         padding: var(--space-5);
+    }
+
+    .backBtn {
+        min-height: 36px;
+        padding: var(--space-2) 0;
+    }
+
+    .timeBtn {
+        font-size: var(--font-size-sm);
+    }
+
+    .progress {
+        padding: 0 var(--space-2);
     }
 }
 
@@ -495,5 +509,14 @@
 
     .bookingHeader h1 {
         font-size: var(--font-size-lg);
+    }
+
+    .bookingSummary {
+        flex-direction: column;
+        gap: var(--space-1);
+    }
+
+    .stepContent {
+        padding: var(--space-3);
     }
 }

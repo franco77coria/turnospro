@@ -192,3 +192,44 @@
     color: var(--text-tertiary);
     flex-shrink: 0;
 }
+
+@media (max-width: 480px) {
+    .bookPage {
+        padding: var(--space-3);
+        padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+        align-items: flex-start;
+    }
+
+    .header {
+        padding: var(--space-3) 0 var(--space-2);
+        gap: var(--space-2);
+    }
+
+    .myApptsLink {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--font-size-xs);
+        gap: 4px;
+    }
+
+    .pageHeader {
+        margin-bottom: var(--space-4);
+    }
+
+    .pageHeader h1 {
+        font-size: var(--font-size-xl);
+    }
+
+    .businessCard {
+        padding: var(--space-3);
+        gap: var(--space-3);
+    }
+
+    .bizAvatar {
+        width: 42px;
+        height: 42px;
+    }
+
+    .authCard {
+        padding: var(--space-6) var(--space-4);
+    }
+}
