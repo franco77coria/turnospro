@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { CalendarDays, Users, DollarSign, CheckCircle, Clock, UserPlus, Receipt, UsersRound, Tag, Settings, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
 import styles from './dashboard.module.css'
 
 export default function DashboardPage() {

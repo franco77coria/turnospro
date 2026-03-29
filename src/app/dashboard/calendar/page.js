@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { sendAppointmentConfirmation } from '@/lib/send-email'
 import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, User, Check, ArrowRight, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import styles from './calendar.module.css'
 
 const HOURS = Array.from({ length: 56 }, (_, i) => {
@@ -538,7 +539,7 @@ export default function CalendarPage() {
                                                             <Plus size={16} />
                                                         </div>
                                                         <div className={styles.clientInfo}>
-                                                            <span className={styles.clientName}>Crear "{clientSearch}"</span>
+                                                            <span className={styles.clientName}>Crear &ldquo;{clientSearch}&rdquo;</span>
                                                             <span className={styles.clientDetail}>Nuevo cliente</span>
                                                         </div>
                                                     </button>

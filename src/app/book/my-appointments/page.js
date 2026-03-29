@@ -238,7 +238,7 @@ export default function MyAppointmentsPage() {
                                             )}
                                             {apt.notes && (
                                                 <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', marginTop: 4, fontStyle: 'italic' }}>
-                                                    "{apt.notes}"
+                                                    &ldquo;{apt.notes}&rdquo;
                                                 </p>
                                             )}
                                         </div>

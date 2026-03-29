@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Check, X as XIcon, Plus, User } from 'lucide-react'
+import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
 import styles from './appointments.module.css'
 
