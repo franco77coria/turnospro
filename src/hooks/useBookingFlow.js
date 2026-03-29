@@ -121,16 +121,17 @@ export function useBookingFlow() {
 
     // Generate available time slots (filtered by occupied + buffer + min advance)
     function getTimeSlots() {
-        if (!business?.settings) return []
-        const { work_hours } = business.settings
+        if (!business) return []
+        const settings = business.settings || {}
+        const { work_hours } = settings
         const [startH, startM] = (work_hours?.start || '09:00').split(':').map(Number)
         const [endH, endM] = (work_hours?.end || '20:00').split(':').map(Number)
         const startMin = startH * 60 + (startM || 0)
         const endMin = endH * 60 + (endM || 0)
         const duration = selectedService?.duration || 30
-        const bufferTime = business.settings?.buffer_time || 0
-        const minAdvanceHours = business.settings?.min_advance_hours || 1
-        const slotInterval = business.settings?.slot_duration || (duration <= 30 ? 30 : 60)
+        const bufferTime = settings.buffer_time || 0
+        const minAdvanceHours = settings.min_advance_hours || 1
+        const slotInterval = settings.slot_duration || (duration <= 30 ? 30 : 60)
 
         const allSlots = []
         for (let m = startMin; m + duration <= endMin; m += slotInterval) {

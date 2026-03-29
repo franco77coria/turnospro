@@ -1,6 +1,80 @@
+import { useState } from 'react'
 import { ArrowLeft, CalendarDays, User, Mail, Phone, LogIn, Tag } from 'lucide-react'
 import Link from 'next/link'
 import styles from '@/app/book/[id]/booking.module.css'
+
+const COUNTRIES = [
+    { code: '+54', label: 'Argentina 🇦🇷', placeholder: '11 1234-5678' },
+    { code: '+598', label: 'Uruguay 🇺🇾', placeholder: '9 123 456' },
+    { code: '+55', label: 'Brasil 🇧🇷', placeholder: '11 9 1234-5678' },
+    { code: '+56', label: 'Chile 🇨🇱', placeholder: '9 1234 5678' },
+    { code: '+595', label: 'Paraguay 🇵🇾', placeholder: '981 123 456' },
+    { code: '+591', label: 'Bolivia 🇧🇴', placeholder: '7 123 4567' },
+    { code: '+57', label: 'Colombia 🇨🇴', placeholder: '300 123 4567' },
+    { code: '+52', label: 'México 🇲🇽', placeholder: '55 1234 5678' },
+    { code: '+34', label: 'España 🇪🇸', placeholder: '612 345 678' },
+    { code: '+1', label: 'USA/Canadá 🇺🇸', placeholder: '555 123 4567' },
+]
+
+function PhoneInput({ value, onChange }) {
+    // Parse existing value to extract country code
+    const detectCountry = (phone) => {
+        if (!phone) return COUNTRIES[0]
+        // Try longest codes first to avoid +1 matching +55 etc.
+        const sorted = [...COUNTRIES].sort((a, b) => b.code.length - a.code.length)
+        return sorted.find(c => phone.startsWith(c.code)) || COUNTRIES[0]
+    }
+
+    const detected = detectCountry(value)
+    const [countryCode, setCountryCode] = useState(detected.code)
+    const [localPhone, setLocalPhone] = useState(
+        value && value.startsWith(detected.code) ? value.slice(detected.code.length) : ''
+    )
+
+    const selectedCountry = COUNTRIES.find(c => c.code === countryCode) || COUNTRIES[0]
+
+    const handleCountryChange = (newCode) => {
+        setCountryCode(newCode)
+        const digits = localPhone.replace(/\D/g, '')
+        onChange(newCode + digits)
+    }
+
+    const handleLocalChange = (raw) => {
+        setLocalPhone(raw)
+        const digits = raw.replace(/\D/g, '')
+        onChange(countryCode + digits)
+    }
+
+    return (
+        <div>
+            <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                <select
+                    value={countryCode}
+                    onChange={e => handleCountryChange(e.target.value)}
+                    className="input"
+                    style={{ width: 'auto', flexShrink: 0, cursor: 'pointer' }}
+                >
+                    {COUNTRIES.map(c => (
+                        <option key={c.code} value={c.code}>{c.label} ({c.code})</option>
+                    ))}
+                </select>
+                <input
+                    className="input"
+                    placeholder={selectedCountry.placeholder}
+                    value={localPhone}
+                    onChange={e => handleLocalChange(e.target.value)}
+                    inputMode="tel"
+                    style={{ flex: 1 }}
+                />
+            </div>
+            {localPhone && (
+                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
+                    Número completo: {countryCode}{localPhone.replace(/\D/g, '')}
+                </p>
+            )}
+        </div>
+    )
+}
 
 export default function ConfirmStep({
     id,
@@ -111,11 +185,10 @@ export default function ConfirmStep({
                         </div>
                         <div className="form-group">
                             <label className="label"><Phone size={14} /> Teléfono celular *</label>
-                            <input className="input" placeholder="+54 11 1234-5678" value={form.phone}
-                                onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} required />
-                            <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', marginTop: 'var(--space-1)' }}>
-                                Con código de país (ej: +54 para Argentina)
-                            </p>
+                            <PhoneInput
+                                value={form.phone}
+                                onChange={phone => setForm(p => ({ ...p, phone }))}
+                            />
                         </div>
 
                         <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={submitting}>
