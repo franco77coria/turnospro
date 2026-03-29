@@ -1,5 +1,6 @@
 'use client'
-import { Heart, MapPin, Phone, LogOut } from 'lucide-react'
+import { useState } from 'react'
+import { Heart, MapPin, Phone, LogOut, ChevronDown, ChevronUp } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import Reviews from '@/components/Reviews'
@@ -18,6 +19,7 @@ export default function BookingPage() {
     const { signOut } = useAuth()
     const biz = b.business
     const hasTm = b.teamMembers.length > 0
+    const [expanded, setExpanded] = useState(false)
 
     if (b.loading) return <div className={styles.bookingPage}><div className={styles.loadingWrap}><div className="loading-spinner" /></div></div>
 
@@ -36,23 +38,51 @@ export default function BookingPage() {
         <div className={styles.bookingPage}>
             <div className={styles.container}>
                 <div className={styles.bookingHeader}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', width: '100%' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }}>
-                            <div className={styles.businessLogo}>{biz.name?.[0]?.toUpperCase()}</div>
-                            <h1>{biz.name}</h1>
+                    {/* Fila compacta siempre visible */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 'var(--space-2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', flex: 1, minWidth: 0 }}>
+                            <div className={styles.businessLogo} style={{ width: 40, height: 40, fontSize: 'var(--font-size-base)', marginBottom: 0, flexShrink: 0 }}>
+                                {biz.name?.[0]?.toUpperCase()}
+                            </div>
+                            <div style={{ minWidth: 0 }}>
+                                <h1 style={{ fontSize: 'var(--font-size-lg)', margin: 0, textAlign: 'left' }}>{biz.name}</h1>
+                                {biz.business_type && (
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', fontWeight: 500 }}>
+                                        {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
+                                    </span>
+                                )}
+                            </div>
                         </div>
-                        {b.user && (
-                            <button onClick={b.toggleFavorite} className={styles.favBtn}
-                                title={b.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
-                                <Heart size={20} fill={b.isFavorite ? '#EF4444' : 'none'} color={b.isFavorite ? '#EF4444' : 'var(--text-tertiary)'} />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexShrink: 0 }}>
+                            {b.user && (
+                                <button onClick={b.toggleFavorite} className={styles.favBtn} style={{ position: 'static' }}
+                                    title={b.isFavorite ? 'Quitar de favoritos' : 'Agregar a favoritos'}>
+                                    <Heart size={18} fill={b.isFavorite ? '#EF4444' : 'none'} color={b.isFavorite ? '#EF4444' : 'var(--text-tertiary)'} />
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setExpanded(v => !v)}
+                                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-tertiary)' }}
+                                title={expanded ? 'Ocultar info' : 'Ver más info'}
+                            >
+                                {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                             </button>
-                        )}
+                        </div>
                     </div>
-                    {biz.business_type && <span className="badge badge-accent" style={{ marginTop: 'var(--space-1)' }}>{BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}</span>}
-                    {biz.address && <p className={styles.address}><MapPin size={14} /> {biz.address}</p>}
-                    {biz.phone && <p className={styles.address}><Phone size={14} /> {biz.phone}</p>}
-                    {biz.settings?.description && <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 'var(--space-2)', textAlign: 'center', maxWidth: 480 }}>{biz.settings.description}</p>}
-                    <Reviews businessId={biz.id} />
+
+                    {/* Info expandible */}
+                    {expanded && (
+                        <div style={{ width: '100%', marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border-light)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-1)' }}>
+                            {biz.address && <p className={styles.address}><MapPin size={14} /> {biz.address}</p>}
+                            {biz.phone && <p className={styles.address}><Phone size={14} /> {biz.phone}</p>}
+                            {biz.settings?.description && (
+                                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 'var(--space-2)', textAlign: 'center', maxWidth: 480 }}>
+                                    {biz.settings.description}
+                                </p>
+                            )}
+                            <Reviews businessId={biz.id} />
+                        </div>
+                    )}
                 </div>
 
                 <ProgressStepper step={b.step} teamMembers={b.teamMembers} />

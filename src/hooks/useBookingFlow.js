@@ -17,7 +17,7 @@ export function useBookingFlow() {
     const [servicesList, setServicesList] = useState([])
     const [selectedDate, setSelectedDate] = useState('')
     const [selectedTime, setSelectedTime] = useState('')
-    const [form, setForm] = useState({ name: '', email: '', phone: '' })
+    const [form, setForm] = useState({ name: '', email: '', phone: '', note: '' })
     const [submitting, setSubmitting] = useState(false)
     const [success, setSuccess] = useState(false)
     const [error, setError] = useState('')
@@ -334,6 +334,7 @@ export function useBookingFlow() {
                 duration: selectedService.duration,
                 price: finalPrice,
                 status: 'confirmed',
+                notes: form.note?.trim() || null,
             }]).select('id').single()
 
             if (insertError) throw insertError
@@ -465,7 +466,7 @@ export function useBookingFlow() {
         setSelectedService(null)
         setSelectedDate('')
         setSelectedTime('')
-        setForm({ name: '', email: '', phone: '' })
+        setForm({ name: '', email: '', phone: '', note: '' })
         setAppliedCoupon(null)
         setCouponCode('')
         setCouponError('')

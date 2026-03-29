@@ -2,9 +2,32 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { MapPin, CalendarDays, ArrowRight, Store, History, Heart, LogOut, Search, X } from 'lucide-react'
+import { MapPin, CalendarDays, ArrowRight, Store, History, Heart, LogOut, Search, X, DollarSign } from 'lucide-react'
 import Link from 'next/link'
 import styles from './book.module.css'
+
+function getMinPrice(services) {
+    if (!Array.isArray(services) || services.length === 0) return null
+    const prices = services.map(s => s.price).filter(p => typeof p === 'number' && p > 0)
+    return prices.length > 0 ? Math.min(...prices) : null
+}
+
+function SkeletonCard() {
+    return (
+        <div style={{
+            background: 'var(--bg-primary)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
+            display: 'flex', gap: 'var(--space-3)', alignItems: 'center',
+        }}>
+            <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ height: 14, width: '55%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ height: 11, width: '35%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+                <div style={{ height: 11, width: '65%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+            </div>
+        </div>
+    )
+}
 
 const RUBRO_LABELS = {
     barberia: 'Barbería',
@@ -49,7 +72,7 @@ export default function BookListPage() {
         return matchesSearch && matchesRubro
     })
 
-    if (authLoading || loading) {
+    if (authLoading) {
         return (
             <div className={styles.bookPage}>
                 <div className={styles.loadingWrap}>
@@ -172,7 +195,11 @@ export default function BookListPage() {
                     </div>
                 )}
 
-                {filtered.length === 0 ? (
+                {loading ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                        {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+                    </div>
+                ) : filtered.length === 0 ? (
                     <div className={styles.emptyState}>
                         <Store size={32} />
                         <p>{search || selectedRubro ? 'No se encontraron negocios con ese filtro' : 'No hay negocios disponibles todavía'}</p>
@@ -201,9 +228,16 @@ export default function BookListPage() {
                                             <MapPin size={12} /> {biz.address}
                                         </span>
                                     )}
-                                    <span className={styles.bizServices}>
-                                        <CalendarDays size={12} /> {biz.services?.length || 0} servicios
-                                    </span>
+                                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span className={styles.bizServices}>
+                                            <CalendarDays size={12} /> {biz.services?.length || 0} servicios
+                                        </span>
+                                        {getMinPrice(biz.services) !== null && (
+                                            <span className={styles.bizServices}>
+                                                <DollarSign size={12} /> Desde ${getMinPrice(biz.services).toLocaleString()}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                                 <ArrowRight size={18} className={styles.bizArrow} />
                             </Link>

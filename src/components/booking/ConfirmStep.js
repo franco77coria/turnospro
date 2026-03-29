@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowLeft, CalendarDays, User, Mail, Phone, LogIn, Tag } from 'lucide-react'
+import { ArrowLeft, CalendarDays, User, Mail, Phone, LogIn, Tag, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
 import styles from '@/app/book/[id]/booking.module.css'
 
@@ -188,6 +188,17 @@ export default function ConfirmStep({
                             <PhoneInput
                                 value={form.phone}
                                 onChange={phone => setForm(p => ({ ...p, phone }))}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="label"><MessageSquare size={14} /> Nota para el negocio <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(opcional)</span></label>
+                            <textarea
+                                className="input"
+                                placeholder="Ej: quiero el corte al ras, es mi primera vez, tengo alergia a..."
+                                value={form.note || ''}
+                                onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
+                                rows={2}
+                                style={{ resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }}
                             />
                         </div>
 
