@@ -114,19 +114,21 @@
     min-width: 300px;
     max-width: 340px;
     background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    border: 1px solid rgba(0, 0, 0, 0.04);
+    border-radius: var(--radius-xl);
     padding: var(--space-3);
     text-decoration: none;
     color: inherit;
     transition: all var(--transition);
     scroll-snap-align: start;
     flex-shrink: 0;
+    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
 }
 
 .rebookCard:hover {
     border-color: var(--accent-subtle);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 8px 30px -5px rgba(99, 102, 241, 0.15);
+    transform: translateY(-2px);
 }
 
 .rebookCard:active {
@@ -136,13 +138,14 @@
 .rebookThumb {
     width: 80px;
     height: 80px;
-    border-radius: var(--radius-md);
+    border-radius: var(--radius-lg);
     overflow: hidden;
     flex-shrink: 0;
     background: linear-gradient(135deg, var(--accent) 0%, #4F46E5 100%);
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .rebookThumb img {
@@ -209,13 +212,14 @@
 .bizThumb {
     width: 100%;
     height: 160px;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-xl);
     overflow: hidden;
     background: linear-gradient(135deg, var(--accent) 0%, #818CF8 50%, #C084FC 100%);
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: var(--space-2);
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .bizThumb img {

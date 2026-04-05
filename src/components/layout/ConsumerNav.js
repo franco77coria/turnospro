@@ -4,41 +4,48 @@ import { usePathname } from 'next/navigation'
 import { Home, Search, CalendarDays, User } from 'lucide-react'
 import styles from './ConsumerNav.module.css'
 
-const TABS = [
-    { href: '/book', label: 'Inicio', icon: Home, exact: true },
-    { href: '/explore', label: 'Buscar', icon: Search },
-    { href: '/book/my-appointments', label: 'Citas', icon: CalendarDays },
-    { href: '/book/profile', label: 'Perfil', icon: User },
+const NAV_ITEMS = [
+    { label: 'Inicio', icon: Home, href: '/book' },
+    { label: 'Buscar', icon: Search, href: '/explore' },
+    { label: 'Citas', icon: CalendarDays, href: '/book/my-appointments' },
+    { label: 'Perfil', icon: User, href: '/book/profile' },
 ]
 
 export default function ConsumerNav() {
     const pathname = usePathname()
 
-    const isActive = (tab) => {
-        if (tab.exact) return pathname === tab.href
-        return pathname.startsWith(tab.href)
-    }
+    // Determine active index for the sliding active indicator
+    const activeIndex = NAV_ITEMS.findIndex(item => pathname?.startsWith(item.href))
+    // Fallback: If no match, index is -1
+    const safeActiveIndex = activeIndex === -1 ? 0 : activeIndex
 
     return (
-        <nav className={styles.nav}>
-            <div className={styles.inner}>
-                {TABS.map(tab => {
-                    const Icon = tab.icon
-                    const active = isActive(tab)
+        <div className={styles.islandWrapper}>
+            <nav className={styles.navIsland}>
+                <div 
+                    className={styles.activePill} 
+                    style={{ transform: `translateX(${safeActiveIndex * 100}%)` }} 
+                />
+                
+                {NAV_ITEMS.map((item, index) => {
+                    const Icon = item.icon
+                    const isActive = pathname?.startsWith(item.href)
+
                     return (
                         <Link
-                            key={tab.href}
-                            href={tab.href}
-                            className={`${styles.tab} ${active ? styles.active : ''}`}
+                            key={item.href}
+                            href={item.href}
+                            className={`${styles.navItem} ${isActive ? styles.active : ''}`}
+                            aria-label={item.label}
                         >
-                            <div className={`${styles.iconWrap} ${active ? styles.iconActive : ''}`}>
-                                <Icon size={22} strokeWidth={active ? 2.5 : 1.8} />
+                            <div className={styles.iconWrapper}>
+                                <Icon size={24} strokeWidth={isActive ? 2.5 : 2} />
                             </div>
-                            <span className={styles.label}>{tab.label}</span>
+                            <span className={styles.label}>{item.label}</span>
                         </Link>
                     )
                 })}
-            </div>
-        </nav>
+            </nav>
+        </div>
     )
 }

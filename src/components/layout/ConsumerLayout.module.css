@@ -12,6 +12,6 @@
 /* Add bottom padding for nav on mobile */
 @media (max-width: 768px) {
     .withNav {
-        padding-bottom: calc(var(--consumer-nav-height) + env(safe-area-inset-bottom, 0px));
+        padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px));
     }
 }
