@@ -97,55 +97,55 @@ export default function BookListPage() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        loadData()
-    }, [user])
+        async function loadData() {
+            if (!supabase) { setLoading(false); return }
 
-    async function loadData() {
-        if (!supabase) { setLoading(false); return }
+            // Load businesses
+            const { data: bizData } = await supabase
+                .from('businesses')
+                .select('id, name, slug, business_type, address, phone, services, cover_image_url, logo_url, avg_rating, total_reviews')
+                .order('avg_rating', { ascending: false })
+                .limit(20)
 
-        // Load businesses
-        const { data: bizData } = await supabase
-            .from('businesses')
-            .select('id, name, slug, business_type, address, phone, services, cover_image_url, logo_url, avg_rating, total_reviews')
-            .order('avg_rating', { ascending: false })
-            .limit(20)
+            setBusinesses(bizData || [])
 
-        setBusinesses(bizData || [])
+            // Load recent appointments if logged in
+            if (user) {
+                const { data: clientRecords } = await supabase
+                    .from('clients')
+                    .select('id, business_id')
+                    .eq('email', user.email)
 
-        // Load recent appointments if logged in
-        if (user) {
-            const { data: clientRecords } = await supabase
-                .from('clients')
-                .select('id, business_id')
-                .eq('email', user.email)
+                if (clientRecords?.length) {
+                    const clientIds = clientRecords.map(c => c.id)
+                    const businessIds = [...new Set(clientRecords.map(c => c.business_id))]
 
-            if (clientRecords?.length) {
-                const clientIds = clientRecords.map(c => c.id)
-                const businessIds = [...new Set(clientRecords.map(c => c.business_id))]
+                    const { data: appts } = await supabase
+                        .from('appointments')
+                        .select('id, business_id, service_name, date, time, price, status')
+                        .in('client_id', clientIds)
+                        .in('status', ['completed', 'confirmed'])
+                        .order('date', { ascending: false })
+                        .limit(5)
 
-                const { data: appts } = await supabase
-                    .from('appointments')
-                    .select('id, business_id, service_name, date, time, price, status')
-                    .in('client_id', clientIds)
-                    .in('status', ['completed', 'confirmed'])
-                    .order('date', { ascending: false })
-                    .limit(5)
+                    if (appts?.length) {
+                        const { data: apptBizData } = await supabase
+                            .from('businesses')
+                            .select('id, name, slug, cover_image_url, logo_url, business_type')
+                            .in('id', businessIds)
 
-                if (appts?.length) {
-                    const { data: apptBizData } = await supabase
-                        .from('businesses')
-                        .select('id, name, slug, cover_image_url, logo_url, business_type')
-                        .in('id', businessIds)
-
-                    const bizMap = {}
-                    apptBizData?.forEach(b => { bizMap[b.id] = b })
-                    setRecentAppts(appts.map(a => ({ ...a, business: bizMap[a.business_id] || null })))
+                        const bizMap = {}
+                        apptBizData?.forEach(b => { bizMap[b.id] = b })
+                        setRecentAppts(appts.map(a => ({ ...a, business: bizMap[a.business_id] || null })))
+                    }
                 }
             }
+
+            setLoading(false)
         }
 
-        setLoading(false)
-    }
+        loadData()
+    }, [user])
 
     const greeting = profile?.full_name
         ? `Hola, ${profile.full_name.split(' ')[0]}`
