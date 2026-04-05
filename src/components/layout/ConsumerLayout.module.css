@@ -1,0 +1,17 @@
+.layout {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg-primary);
+}
+
+.content {
+    min-height: 100vh;
+    min-height: 100dvh;
+}
+
+/* Add bottom padding for nav on mobile */
+@media (max-width: 768px) {
+    .withNav {
+        padding-bottom: calc(var(--consumer-nav-height) + env(safe-area-inset-bottom, 0px));
+    }
+}

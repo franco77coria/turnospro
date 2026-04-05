@@ -1,12 +1,17 @@
+/* ============================================
+   My Appointments — "Historial" (Booksy-style)
+   ============================================ */
+
 .page {
     min-height: 100vh;
-    background: var(--bg-secondary);
+    min-height: 100dvh;
+    background: var(--bg-primary);
 }
 
 .container {
-    max-width: 720px;
+    max-width: 520px;
     margin: 0 auto;
-    padding: var(--space-4) var(--space-4) var(--space-10);
+    padding: 0 var(--space-4) var(--space-6);
 }
 
 .loadingWrap {
@@ -16,90 +21,93 @@
 }
 
 /* ── Header ── */
-
 .header {
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-4) 0;
+    padding: var(--space-6) 0 var(--space-4);
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 10;
 }
 
 .header h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    margin: 0;
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    letter-spacing: -0.03em;
 }
 
-.header p {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    margin: 2px 0 0;
-}
-
-.backBtn {
+.searchBtn {
     width: 44px;
     height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-md);
-    border: 1px solid var(--border);
-    background: var(--bg-primary);
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
     color: var(--text-primary);
     text-decoration: none;
     transition: all var(--transition);
-    flex-shrink: 0;
 }
 
-.backBtn:hover {
-    background: var(--bg-hover);
+.searchBtn:hover {
+    background: var(--bg-tertiary);
 }
 
-/* ── Filters ── */
-
+/* ── Filters/Tabs ── */
 .filters {
     display: flex;
     gap: var(--space-2);
-    margin-bottom: var(--space-5);
+    margin-bottom: var(--space-6);
     overflow-x: auto;
     padding-bottom: var(--space-1);
+    scrollbar-width: none;
+}
+
+.filters::-webkit-scrollbar {
+    display: none;
 }
 
 .filterBtn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: var(--space-2) var(--space-3);
+    padding: var(--space-2) var(--space-4);
     border-radius: var(--radius-full);
-    border: 1px solid var(--border);
-    background: var(--bg-primary);
+    border: none;
+    background: none;
     color: var(--text-secondary);
     font-size: var(--font-size-sm);
     font-weight: 500;
     cursor: pointer;
     white-space: nowrap;
     transition: all var(--transition);
+    font-family: inherit;
+    min-height: 36px;
 }
 
 .filterBtn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+    color: var(--text-primary);
 }
 
 .filterBtn.active {
-    background: var(--accent);
-    color: white;
-    border-color: var(--accent);
+    background: var(--text-primary);
+    color: var(--bg-primary);
+    font-weight: 600;
+}
+
+.listTitle {
+    font-size: var(--font-size-lg);
+    font-weight: 700;
+    margin-bottom: var(--space-4);
 }
 
 /* ── Auth Card ── */
-
 .authCard {
     text-align: center;
     padding: var(--space-10);
     background: var(--bg-primary);
     border-radius: var(--radius-xl);
     border: 1px solid var(--border);
+    margin-top: var(--space-8);
 }
 
 .authCard h2 {
@@ -108,7 +116,6 @@
 }
 
 /* ── Empty State ── */
-
 .empty {
     text-align: center;
     padding: var(--space-10) var(--space-4);
@@ -127,7 +134,6 @@
 }
 
 /* ── Appointment List ── */
-
 .appointmentList {
     display: flex;
     flex-direction: column;
@@ -136,174 +142,155 @@
 
 .appointmentCard {
     background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    transition: box-shadow var(--transition);
+    border-bottom: 1px solid var(--border-light);
+    transition: background var(--transition);
 }
 
-.appointmentCard:hover {
-    box-shadow: var(--shadow-sm);
+.appointmentCard:last-child {
+    border-bottom: none;
 }
 
-.appointmentTop {
+.countdownBanner {
+    background: var(--accent);
+    color: white;
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    padding: 4px var(--space-4);
     display: flex;
-    align-items: flex-start;
-    gap: var(--space-3);
-    padding: var(--space-4);
+    align-items: center;
+    gap: var(--space-1);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 
-.dateBlock {
+.appointmentRow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0;
+}
+
+.aptThumb {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent) 0%, #818CF8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+}
+
+.aptThumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.aptInfo {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    min-width: 48px;
-    padding: var(--space-2);
-    border-radius: var(--radius-md);
-    background: var(--accent-light);
-}
-
-.dateDay {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    color: var(--accent);
-    line-height: 1;
-}
-
-.dateMonth {
-    font-size: var(--font-size-xs);
-    text-transform: uppercase;
-    color: var(--accent);
-    font-weight: 600;
-    letter-spacing: 0.05em;
-}
-
-.appointmentInfo {
-    flex: 1;
+    gap: 1px;
     min-width: 0;
 }
 
-.appointmentInfo h3 {
+.aptBizName {
+    font-weight: 700;
     font-size: var(--font-size-base);
-    font-weight: 600;
-    margin: 0 0 4px;
-}
-
-.appointmentMeta {
-    display: flex;
-    gap: var(--space-3);
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    margin-bottom: 6px;
-}
-
-.appointmentMeta span {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.businessInfo {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
-    flex-wrap: wrap;
-}
-
-.address {
-    max-width: 200px;
+    color: var(--text-primary);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.statusBadge {
-    padding: 3px 10px;
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: 600;
-    white-space: nowrap;
+.aptDate {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.aptMeta {
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+}
+
+.aptAction {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
     flex-shrink: 0;
 }
 
-/* ── Actions ── */
-
-.appointmentActions {
-    display: flex;
-    gap: var(--space-2);
-    padding: 0 var(--space-4) var(--space-3);
-}
-
-.actionBtn {
+.rebookBtn {
+    padding: var(--space-2) var(--space-3);
+    border: 1.5px solid var(--text-primary);
+    border-radius: var(--radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--text-primary);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all var(--transition);
+    text-align: center;
+    min-height: 36px;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 10px 14px;
-    border-radius: var(--radius-sm);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--transition);
-    border: 1px solid var(--border);
-    background: var(--bg-primary);
-    color: var(--text-secondary);
-    text-decoration: none;
-    min-height: 44px;
+    justify-content: center;
 }
 
-.actionBtn:hover {
-    border-color: var(--accent);
-    color: var(--accent);
+.rebookBtn:hover {
+    background: var(--text-primary);
+    color: var(--bg-primary);
 }
 
 .cancelBtn {
-    color: var(--danger, #DC2626);
-    border-color: transparent;
-    background: #FEF2F2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--space-1) var(--space-3);
+    border: none;
+    border-radius: var(--radius-full);
+    background: none;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 30px;
+    transition: all var(--transition);
 }
 
 .cancelBtn:hover {
-    color: white;
-    background: var(--danger, #DC2626);
-    border-color: var(--danger, #DC2626);
+    color: var(--danger);
+    background: var(--danger-light);
 }
 
 /* ── Responsive ── */
-
 @media (max-width: 480px) {
     .container {
-        padding: var(--space-3) var(--space-3) calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
-    }
-
-    .appointmentTop {
-        flex-wrap: wrap;
-        padding: var(--space-3);
-    }
-
-    .statusBadge {
-        width: 100%;
-        text-align: center;
-        margin-top: var(--space-2);
-    }
-
-    .appointmentActions {
-        padding: 0 var(--space-3) var(--space-3);
-        gap: var(--space-2);
-    }
-
-    .actionBtn {
-        flex: 1;
-        justify-content: center;
+        padding: 0 var(--space-3) var(--space-6);
     }
 
     .header h1 {
-        font-size: var(--font-size-lg);
+        font-size: var(--font-size-2xl);
+    }
+
+    .rebookBtn {
+        font-size: 11px;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .aptThumb {
+        width: 44px;
+        height: 44px;
     }
 
     .filterBtn {
         font-size: var(--font-size-xs);
-        padding: var(--space-2) var(--space-2);
+        padding: var(--space-2) var(--space-3);
     }
 }

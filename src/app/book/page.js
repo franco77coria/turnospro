@@ -2,249 +2,226 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { MapPin, CalendarDays, ArrowRight, Store, History, Heart, LogOut, Search, X, DollarSign } from 'lucide-react'
+import { Search, Star, MapPin, Store, ChevronRight, CalendarDays, Clock } from 'lucide-react'
 import Link from 'next/link'
+import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './book.module.css'
 
-function getMinPrice(services) {
-    if (!Array.isArray(services) || services.length === 0) return null
-    const prices = services.map(s => s.price).filter(p => typeof p === 'number' && p > 0)
-    return prices.length > 0 ? Math.min(...prices) : null
+const RUBRO_LABELS = {
+    barberia: 'Barbería', peluqueria: 'Peluquería', unas: 'Uñas',
+    lash: 'Lash', spa: 'Spa', consultorio: 'Consultorio',
+    veterinaria: 'Veterinaria', custom: 'Otro',
 }
 
-function SkeletonCard() {
+function BizCardSmall({ biz, className = '' }) {
+    const href = biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`
     return (
-        <div style={{
-            background: 'var(--bg-primary)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)', padding: 'var(--space-4)',
-            display: 'flex', gap: 'var(--space-3)', alignItems: 'center',
-        }}>
-            <div style={{ width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'var(--bg-tertiary)', flexShrink: 0, animation: 'pulse 1.5s ease-in-out infinite' }} />
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ height: 14, width: '55%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                <div style={{ height: 11, width: '35%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
-                <div style={{ height: 11, width: '65%', background: 'var(--bg-tertiary)', borderRadius: 4, animation: 'pulse 1.5s ease-in-out infinite' }} />
+        <Link href={href} className={`${styles.bizCardSmall} ${className}`}>
+            <div className={styles.bizThumb}>
+                {biz.cover_image_url || biz.logo_url ? (
+                    <img src={biz.cover_image_url || biz.logo_url} alt={biz.name} />
+                ) : (
+                    <span className={styles.bizInitial}>{(biz.name || '?')[0].toUpperCase()}</span>
+                )}
             </div>
-        </div>
+            <div className={styles.bizMeta}>
+                <span className={styles.bizName}>{biz.name}</span>
+                {biz.avg_rating > 0 && (
+                    <span className={styles.bizRating}>
+                        <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                        {Number(biz.avg_rating).toFixed(1)}
+                        <span className={styles.bizReviewCount}>({biz.total_reviews})</span>
+                    </span>
+                )}
+                {biz.address && (
+                    <span className={styles.bizAddr}>
+                        {biz.address.length > 30 ? biz.address.slice(0, 30) + '...' : biz.address}
+                    </span>
+                )}
+                <span className={styles.bizType}>{RUBRO_LABELS[biz.business_type] || biz.business_type}</span>
+            </div>
+        </Link>
     )
 }
 
-const RUBRO_LABELS = {
-    barberia: 'Barbería',
-    peluqueria: 'Peluquería',
-    unas: 'Uñas',
-    lash: 'Lash',
-    spa: 'Spa',
-    consultorio: 'Consultorio',
-    veterinaria: 'Veterinaria',
-    custom: 'Otro',
+function RebookCard({ apt }) {
+    const biz = apt.business
+    if (!biz) return null
+    const href = biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.business_id || apt.business_id}`
+    const dateObj = new Date(apt.date + 'T12:00:00')
+    const dateStr = dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+
+    return (
+        <Link href={href} className={styles.rebookCard}>
+            <div className={styles.rebookThumb}>
+                {biz.cover_image_url || biz.logo_url ? (
+                    <img src={biz.cover_image_url || biz.logo_url} alt={biz.name} />
+                ) : (
+                    <span className={styles.bizInitial}>{(biz.name || '?')[0].toUpperCase()}</span>
+                )}
+            </div>
+            <div className={styles.rebookInfo}>
+                <span className={styles.rebookBizName}>{biz.name}</span>
+                <span className={styles.rebookDate}>{dateStr}</span>
+                <span className={styles.rebookService}>
+                    {apt.price != null && `$${Number(apt.price).toLocaleString()}`}
+                    {apt.price != null && apt.service_name && ' · '}
+                    {apt.service_name && '1 artículo'}
+                </span>
+                <span className={styles.rebookCta}>Volver a reservar</span>
+            </div>
+        </Link>
+    )
+}
+
+function SkeletonCards({ count = 3 }) {
+    return (
+        <div className={styles.scrollRow}>
+            {Array.from({ length: count }).map((_, i) => (
+                <div key={i} className={styles.skeletonCard}>
+                    <div className={styles.skeletonThumb} />
+                    <div className={styles.skeletonLines}>
+                        <div className={styles.skeletonLine} style={{ width: '70%' }} />
+                        <div className={styles.skeletonLine} style={{ width: '40%' }} />
+                    </div>
+                </div>
+            ))}
+        </div>
+    )
 }
 
 export default function BookListPage() {
-    const { user, loading: authLoading, signOut } = useAuth()
+    const { user, profile, loading: authLoading } = useAuth()
     const [businesses, setBusinesses] = useState([])
+    const [recentAppts, setRecentAppts] = useState([])
     const [loading, setLoading] = useState(true)
-    const [search, setSearch] = useState('')
-    const [selectedRubro, setSelectedRubro] = useState('')
 
-    async function loadBusinesses() {
+    useEffect(() => {
+        loadData()
+    }, [user])
+
+    async function loadData() {
         if (!supabase) { setLoading(false); return }
-        const { data } = await supabase
+
+        // Load businesses
+        const { data: bizData } = await supabase
             .from('businesses')
-            .select('id, name, business_type, address, phone, services')
-            .order('name')
-        setBusinesses(data || [])
+            .select('id, name, slug, business_type, address, phone, services, cover_image_url, logo_url, avg_rating, total_reviews')
+            .order('avg_rating', { ascending: false })
+            .limit(20)
+
+        setBusinesses(bizData || [])
+
+        // Load recent appointments if logged in
+        if (user) {
+            const { data: clientRecords } = await supabase
+                .from('clients')
+                .select('id, business_id')
+                .eq('email', user.email)
+
+            if (clientRecords?.length) {
+                const clientIds = clientRecords.map(c => c.id)
+                const businessIds = [...new Set(clientRecords.map(c => c.business_id))]
+
+                const { data: appts } = await supabase
+                    .from('appointments')
+                    .select('id, business_id, service_name, date, time, price, status')
+                    .in('client_id', clientIds)
+                    .in('status', ['completed', 'confirmed'])
+                    .order('date', { ascending: false })
+                    .limit(5)
+
+                if (appts?.length) {
+                    const { data: apptBizData } = await supabase
+                        .from('businesses')
+                        .select('id, name, slug, cover_image_url, logo_url, business_type')
+                        .in('id', businessIds)
+
+                    const bizMap = {}
+                    apptBizData?.forEach(b => { bizMap[b.id] = b })
+                    setRecentAppts(appts.map(a => ({ ...a, business: bizMap[a.business_id] || null })))
+                }
+            }
+        }
+
         setLoading(false)
     }
 
-    useEffect(() => {
-        loadBusinesses()
-    }, [])
+    const greeting = profile?.full_name
+        ? `Hola, ${profile.full_name.split(' ')[0]}`
+        : 'Para ti'
 
-    const rubros = [...new Set(businesses.map(b => b.business_type).filter(Boolean))]
-
-    const filtered = businesses.filter(biz => {
-        const q = search.toLowerCase()
-        const matchesSearch = !search ||
-            biz.name?.toLowerCase().includes(q) ||
-            biz.address?.toLowerCase().includes(q)
-        const matchesRubro = !selectedRubro || biz.business_type === selectedRubro
-        return matchesSearch && matchesRubro
-    })
-
-    if (authLoading) {
-        return (
-            <div className={styles.bookPage}>
-                <div className={styles.loadingWrap}>
-                    <div className="loading-spinner" />
-                </div>
-            </div>
-        )
-    }
-
-    if (!user) {
-        return (
-            <div className={styles.bookPage}>
-                <div className={styles.container}>
-                    <div className={styles.header}>
-                        <Link href="/" className={styles.logo}>
-                            <span className={styles.logoMark}>G</span>
-                            <span className={styles.logoText}>GLOWUP</span>
-                        </Link>
-                    </div>
-                    <div className={styles.authCard}>
-                        <Store size={32} style={{ color: 'var(--accent)', marginBottom: 'var(--space-3)' }} />
-                        <h2>Iniciá sesión para reservar</h2>
-                        <p>Necesitás una cuenta para reservar turnos en GLOWUP.</p>
-                        <div className={styles.authButtons}>
-                            <Link href="/login?redirect=/book" className="btn btn-primary">Iniciar sesión</Link>
-                            <Link href="/register?redirect=/book" className="btn btn-secondary">Crear cuenta</Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        )
-    }
-
-    return (
+    const content = (
         <div className={styles.bookPage}>
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <Link href="/" className={styles.logo}>
-                        <span className={styles.logoMark}>G</span>
-                        <span className={styles.logoText}>GLOWUP</span>
-                    </Link>
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                        <Link href="/book/favorites" className={styles.myApptsLink}>
-                            <Heart size={14} /> Favoritos
-                        </Link>
-                        <Link href="/book/my-appointments" className={styles.myApptsLink}>
-                            <History size={14} /> Mis turnos
-                        </Link>
-                        <button onClick={async () => { await signOut(); window.location.href = '/login' }}
-                            className={styles.myApptsLink}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', color: 'var(--text-tertiary)' }}>
-                            <LogOut size={14} /> Salir
-                        </button>
+            {/* Header */}
+            <div className={styles.header}>
+                <h1 className={styles.pageTitle}>{greeting}</h1>
+                <Link href="/explore" className={styles.searchIcon} aria-label="Buscar">
+                    <Search size={22} />
+                </Link>
+            </div>
+
+            {loading ? (
+                <div className={styles.sections}>
+                    <div className={styles.section}>
+                        <h2 className={styles.sectionTitle}>Recomendado</h2>
+                        <SkeletonCards />
                     </div>
                 </div>
+            ) : (
+                <div className={styles.sections}>
+                    {/* Volver a reservar */}
+                    {recentAppts.length > 0 && (
+                        <div className={styles.section}>
+                            <h2 className={styles.sectionTitle}>Volver a reservar</h2>
+                            <div className={styles.scrollRow}>
+                                {recentAppts.map(apt => (
+                                    <RebookCard key={apt.id} apt={apt} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                <div className={styles.pageHeader}>
-                    <h1>Reservar turno</h1>
-                    <p>Encontrá tu negocio y agendá tu turno</p>
-                </div>
+                    {/* Recomendado */}
+                    {businesses.length > 0 && (
+                        <div className={styles.section}>
+                            <div className={styles.sectionHeader}>
+                                <h2 className={styles.sectionTitle}>Recomendado</h2>
+                                <Link href="/explore" className={styles.seeAll}>
+                                    Ver todo <ChevronRight size={14} />
+                                </Link>
+                            </div>
+                            <div className={styles.scrollRow}>
+                                {businesses.slice(0, 8).map(biz => (
+                                    <BizCardSmall key={biz.id} biz={biz} />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
-                {/* Buscador */}
-                <div style={{ position: 'relative', marginBottom: 'var(--space-3)' }}>
-                    <Search size={16} style={{ position: 'absolute', left: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)', pointerEvents: 'none' }} />
-                    <input
-                        className="input"
-                        style={{ paddingLeft: 'calc(var(--space-3) + 22px)', paddingRight: search ? 'calc(var(--space-3) + 22px)' : undefined }}
-                        placeholder="Buscar por nombre o zona..."
-                        value={search}
-                        onChange={e => setSearch(e.target.value)}
-                    />
-                    {search && (
-                        <button
-                            onClick={() => setSearch('')}
-                            style={{ position: 'absolute', right: 'var(--space-3)', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-tertiary)', padding: 0, display: 'flex' }}
-                        >
-                            <X size={16} />
-                        </button>
+                    {/* All businesses fallback */}
+                    {businesses.length === 0 && recentAppts.length === 0 && (
+                        <div className={styles.emptyState}>
+                            <Store size={40} />
+                            <h3>No hay negocios disponibles todavía</h3>
+                            <p>Cuando se registren negocios, los verás acá.</p>
+                        </div>
                     )}
                 </div>
+            )}
 
-                {/* Filtros por rubro */}
-                {rubros.length > 0 && (
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
-                        <button
-                            onClick={() => setSelectedRubro('')}
-                            style={{
-                                padding: 'var(--space-1) var(--space-3)',
-                                borderRadius: 'var(--radius-full)',
-                                border: '1px solid',
-                                borderColor: !selectedRubro ? 'var(--accent)' : 'var(--border)',
-                                background: !selectedRubro ? 'var(--accent)' : 'transparent',
-                                color: !selectedRubro ? '#fff' : 'var(--text-secondary)',
-                                fontSize: 'var(--font-size-sm)',
-                                cursor: 'pointer',
-                                fontFamily: 'inherit',
-                            }}
-                        >
-                            Todos
-                        </button>
-                        {rubros.map(rubro => (
-                            <button
-                                key={rubro}
-                                onClick={() => setSelectedRubro(selectedRubro === rubro ? '' : rubro)}
-                                style={{
-                                    padding: 'var(--space-1) var(--space-3)',
-                                    borderRadius: 'var(--radius-full)',
-                                    border: '1px solid',
-                                    borderColor: selectedRubro === rubro ? 'var(--accent)' : 'var(--border)',
-                                    background: selectedRubro === rubro ? 'var(--accent)' : 'transparent',
-                                    color: selectedRubro === rubro ? '#fff' : 'var(--text-secondary)',
-                                    fontSize: 'var(--font-size-sm)',
-                                    cursor: 'pointer',
-                                    fontFamily: 'inherit',
-                                }}
-                            >
-                                {RUBRO_LABELS[rubro] || rubro}
-                            </button>
-                        ))}
+            {/* Not logged in prompt */}
+            {!user && !authLoading && (
+                <div className={styles.loginPrompt}>
+                    <p>Iniciá sesión para ver tus reservas y favoritos</p>
+                    <div className={styles.loginBtns}>
+                        <Link href="/login?redirect=/book" className="btn btn-primary">Iniciar sesión</Link>
+                        <Link href="/register?redirect=/book" className="btn btn-secondary">Crear cuenta</Link>
                     </div>
-                )}
-
-                {loading ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                        {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
-                    </div>
-                ) : filtered.length === 0 ? (
-                    <div className={styles.emptyState}>
-                        <Store size={32} />
-                        <p>{search || selectedRubro ? 'No se encontraron negocios con ese filtro' : 'No hay negocios disponibles todavía'}</p>
-                        {(search || selectedRubro) && (
-                            <button
-                                onClick={() => { setSearch(''); setSelectedRubro('') }}
-                                className="btn btn-ghost btn-sm"
-                                style={{ marginTop: 'var(--space-3)' }}
-                            >
-                                Limpiar filtros
-                            </button>
-                        )}
-                    </div>
-                ) : (
-                    <div className={styles.businessGrid}>
-                        {filtered.map(biz => (
-                            <Link key={biz.id} href={`/book/${biz.id}`} className={styles.businessCard}>
-                                <div className={styles.bizAvatar}>
-                                    {biz.name?.[0]?.toUpperCase()}
-                                </div>
-                                <div className={styles.bizInfo}>
-                                    <h3>{biz.name}</h3>
-                                    <span className={styles.bizType}>{RUBRO_LABELS[biz.business_type] || biz.business_type}</span>
-                                    {biz.address && (
-                                        <span className={styles.bizAddress}>
-                                            <MapPin size={12} /> {biz.address}
-                                        </span>
-                                    )}
-                                    <div style={{ display: 'flex', gap: 'var(--space-3)', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <span className={styles.bizServices}>
-                                            <CalendarDays size={12} /> {biz.services?.length || 0} servicios
-                                        </span>
-                                        {getMinPrice(biz.services) !== null && (
-                                            <span className={styles.bizServices}>
-                                                <DollarSign size={12} /> Desde ${getMinPrice(biz.services).toLocaleString()}
-                                            </span>
-                                        )}
-                                    </div>
-                                </div>
-                                <ArrowRight size={18} className={styles.bizArrow} />
-                            </Link>
-                        ))}
-                    </div>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     )
+
+    return <ConsumerLayout>{content}</ConsumerLayout>
 }

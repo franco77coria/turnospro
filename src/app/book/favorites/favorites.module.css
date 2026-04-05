@@ -1,0 +1,222 @@
+.page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    background: var(--bg-primary);
+}
+
+.container {
+    max-width: 520px;
+    margin: 0 auto;
+    padding: 0 var(--space-4) var(--space-6);
+}
+
+.loadingWrap {
+    display: flex;
+    justify-content: center;
+    padding: var(--space-10);
+}
+
+/* ── Header ── */
+.header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-6) 0 var(--space-4);
+    position: sticky;
+    top: 0;
+    background: var(--bg-primary);
+    z-index: 10;
+}
+
+.header h1 {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+.backBtn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    color: var(--text-primary);
+    text-decoration: none;
+    transition: all var(--transition);
+    flex-shrink: 0;
+}
+
+.backBtn:hover {
+    background: var(--bg-tertiary);
+}
+
+/* ── Auth Card ── */
+.authCard {
+    text-align: center;
+    padding: var(--space-10);
+    background: var(--bg-primary);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--border);
+    margin-top: var(--space-8);
+}
+
+.authCard h2 {
+    margin: var(--space-3) 0 var(--space-4);
+    font-size: var(--font-size-lg);
+}
+
+/* ── Empty State ── */
+.emptyState {
+    text-align: center;
+    padding: var(--space-10) var(--space-4);
+    color: var(--text-tertiary);
+}
+
+.emptyState h3 {
+    margin: var(--space-3) 0 var(--space-1);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+}
+
+.emptyState p {
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-sm);
+}
+
+/* ── Favorites List ── */
+.favList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.favCard {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: box-shadow var(--transition);
+}
+
+.favCard:hover {
+    box-shadow: var(--shadow-sm);
+}
+
+.favMain {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    text-decoration: none;
+    color: inherit;
+}
+
+.favThumb {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, var(--accent) 0%, #818CF8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 700;
+    font-size: var(--font-size-lg);
+}
+
+.favThumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.favInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.favName {
+    font-weight: 700;
+    font-size: var(--font-size-base);
+}
+
+.favType {
+    font-size: var(--font-size-xs);
+    color: var(--accent);
+    font-weight: 500;
+}
+
+.favAddr {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Actions ── */
+.favActions {
+    display: flex;
+    gap: var(--space-2);
+    padding: 0 var(--space-4) var(--space-3);
+}
+
+.bookBtn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    border: 1.5px solid var(--accent);
+    background: none;
+    color: var(--accent);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all var(--transition);
+    min-height: 36px;
+}
+
+.bookBtn:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.removeBtn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-full);
+    border: none;
+    background: var(--danger-light);
+    color: var(--danger);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all var(--transition);
+    min-height: 36px;
+}
+
+.removeBtn:hover {
+    background: var(--danger);
+    color: white;
+}
+
+/* ── Responsive ── */
+@media (max-width: 480px) {
+    .container {
+        padding: 0 var(--space-3) var(--space-6);
+    }
+}

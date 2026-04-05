@@ -1,10 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
-import { Heart, MapPin, ArrowLeft, Store, ArrowRight } from 'lucide-react'
+import { Heart, MapPin, ArrowLeft, Store, ArrowRight, Star } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import Link from 'next/link'
-import styles from '../my-appointments/my-appointments.module.css'
+import ConsumerLayout from '@/components/layout/ConsumerLayout'
+import styles from './favorites.module.css'
 
 export default function FavoritesPage() {
     const { user, loading: authLoading } = useAuth()
@@ -42,101 +43,105 @@ export default function FavoritesPage() {
 
     if (authLoading) {
         return (
-            <div className={styles.page}>
-                <div className={styles.loadingWrap}><div className="loading-spinner" /></div>
-            </div>
+            <ConsumerLayout>
+                <div className={styles.page}>
+                    <div className={styles.loadingWrap}><div className="loading-spinner" /></div>
+                </div>
+            </ConsumerLayout>
         )
     }
 
     if (!user) {
         return (
-            <div className={styles.page}>
-                <div className={styles.container}>
-                    <div className={styles.authCard}>
-                        <Heart size={32} style={{ color: '#EF4444' }} />
-                        <h2>Iniciá sesión para ver tus favoritos</h2>
-                        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                            <Link href="/login" className="btn btn-primary">Iniciar sesión</Link>
-                            <Link href="/register" className="btn btn-secondary">Crear cuenta</Link>
+            <ConsumerLayout>
+                <div className={styles.page}>
+                    <div className={styles.container}>
+                        <div className={styles.authCard}>
+                            <Heart size={32} style={{ color: '#EF4444' }} />
+                            <h2>Iniciá sesión para ver tus favoritos</h2>
+                            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                                <Link href="/login" className="btn btn-primary">Iniciar sesión</Link>
+                                <Link href="/register" className="btn btn-secondary">Crear cuenta</Link>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </ConsumerLayout>
         )
     }
 
     return (
-        <div className={styles.page}>
-            <div className={styles.container}>
-                <div className={styles.header}>
-                    <Link href="/book" className={styles.backBtn}>
-                        <ArrowLeft size={16} />
-                    </Link>
-                    <div>
-                        <h1>Mis favoritos</h1>
-                        <p>Negocios que guardaste</p>
+        <ConsumerLayout>
+            <div className={styles.page}>
+                <div className={styles.container}>
+                    {/* Header */}
+                    <div className={styles.header}>
+                        <Link href="/book/profile" className={styles.backBtn}>
+                            <ArrowLeft size={18} />
+                        </Link>
+                        <h1>Favoritos</h1>
                     </div>
-                </div>
 
-                {loading ? (
-                    <div className={styles.loadingWrap}><div className="loading-spinner" /></div>
-                ) : favorites.length === 0 ? (
-                    <div className={styles.empty}>
-                        <Heart size={40} />
-                        <h3>No tenés favoritos aún</h3>
-                        <p>Explorá negocios y guardá los que más te gusten</p>
-                        <Link href="/explore" className="btn btn-primary">Explorar negocios</Link>
-                    </div>
-                ) : (
-                    <div className={styles.appointmentList}>
-                        {favorites.map(fav => {
-                            const biz = fav.businesses
-                            if (!biz) return null
-                            const servicesCount = biz.services?.length || 0
-                            return (
-                                <div key={fav.id} className={styles.appointmentCard}>
-                                    <div className={styles.appointmentTop}>
-                                        <div className={styles.dateBlock} style={{ background: '#FEF2F2' }}>
-                                            <Heart size={20} fill="#EF4444" color="#EF4444" />
-                                        </div>
-                                        <div className={styles.appointmentInfo}>
-                                            <h3>{biz.name}</h3>
-                                            <div className={styles.appointmentMeta}>
-                                                <span className="badge badge-accent" style={{ fontSize: 'var(--font-size-xs)' }}>
-                                                    {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
-                                                </span>
-                                                {servicesCount > 0 && (
-                                                    <span>{servicesCount} servicio{servicesCount !== 1 ? 's' : ''}</span>
-                                                )}
-                                            </div>
-                                            {biz.address && (
-                                                <div className={styles.businessInfo}>
-                                                    <MapPin size={12} />
-                                                    <span>{biz.address}</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className={styles.appointmentActions}>
+                    {loading ? (
+                        <div className={styles.loadingWrap}><div className="loading-spinner" /></div>
+                    ) : favorites.length === 0 ? (
+                        <div className={styles.emptyState}>
+                            <Heart size={40} />
+                            <h3>No tenés favoritos aún</h3>
+                            <p>Explorá negocios y guardá los que más te gusten</p>
+                            <Link href="/explore" className="btn btn-primary">Explorar negocios</Link>
+                        </div>
+                    ) : (
+                        <div className={styles.favList}>
+                            {favorites.map(fav => {
+                                const biz = fav.businesses
+                                if (!biz) return null
+                                return (
+                                    <div key={fav.id} className={styles.favCard}>
                                         <Link
                                             href={biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`}
-                                            className={styles.actionBtn}
+                                            className={styles.favMain}
                                         >
-                                            Reservar turno <ArrowRight size={13} />
+                                            <div className={styles.favThumb}>
+                                                {biz.cover_image_url || biz.logo_url ? (
+                                                    <img src={biz.cover_image_url || biz.logo_url} alt={biz.name} />
+                                                ) : (
+                                                    <span>{(biz.name || '?')[0].toUpperCase()}</span>
+                                                )}
+                                            </div>
+                                            <div className={styles.favInfo}>
+                                                <span className={styles.favName}>{biz.name}</span>
+                                                <span className={styles.favType}>
+                                                    {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
+                                                </span>
+                                                {biz.address && (
+                                                    <span className={styles.favAddr}>
+                                                        <MapPin size={12} /> {biz.address}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </Link>
-                                        <button
-                                            className={`${styles.actionBtn} ${styles.cancelBtn}`}
-                                            onClick={() => toggleFavorite(fav.business_id)}
-                                        >
-                                            <Heart size={13} /> Quitar
-                                        </button>
+                                        <div className={styles.favActions}>
+                                            <Link
+                                                href={biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`}
+                                                className={styles.bookBtn}
+                                            >
+                                                Reservar <ArrowRight size={13} />
+                                            </Link>
+                                            <button
+                                                className={styles.removeBtn}
+                                                onClick={() => toggleFavorite(fav.business_id)}
+                                            >
+                                                <Heart size={13} /> Quitar
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            )
-                        })}
-                    </div>
-                )}
+                                )
+                            })}
+                        </div>
+                    )}
+                </div>
             </div>
-        </div>
+        </ConsumerLayout>
     )
 }
