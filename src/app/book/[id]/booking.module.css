@@ -1,6 +1,8 @@
+/* GLOWUP Premium Booking Flow Styling */
+
 .bookingPage {
     min-height: 100vh;
-    background: linear-gradient(135deg, #f0f4ff 0%, #fafafa 50%, #f5f3ff 100%);
+    background: var(--bg-primary);
     padding: var(--space-4);
     display: flex;
     align-items: flex-start;
@@ -10,7 +12,8 @@
 .container {
     max-width: 520px;
     width: 100%;
-    margin-top: var(--space-6);
+    margin-top: 24px;
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .loadingWrap {
@@ -20,83 +23,94 @@
     min-height: 60vh;
 }
 
-/* Header — see .bookingHeader below .favBtn */
+/* Header */
+.bookingHeader {
+    text-align: center;
+    margin-bottom: 24px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg-card);
+    padding: 16px;
+    border-radius: var(--r-xl);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+}
 
 .businessLogo {
-    width: 56px;
-    height: 56px;
-    border-radius: var(--radius-lg);
-    background: var(--accent);
+    width: 48px;
+    height: 48px;
+    border-radius: var(--r-lg);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     color: white;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: var(--font-size-xl);
+    font-family: var(--font-display);
+    font-size: 20px;
     font-weight: 800;
-    margin-bottom: var(--space-3);
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 .bookingHeader h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
 .address {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-1);
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    margin-top: var(--space-1);
+    gap: 6px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin-top: 4px;
+    font-weight: 500;
 }
 
 .favBtn {
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--bg-primary);
+    border: 1px solid var(--line);
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
 }
 
 .favBtn:hover {
-    border-color: #EF4444;
-    background: #FEF2F2;
+    border-color: var(--pink);
+    transform: scale(1.05);
 }
 
-.bookingHeader {
-    text-align: center;
-    margin-bottom: var(--space-6);
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Progress */
+/* Progress Stepper */
 .progress {
     display: flex;
     justify-content: center;
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
+    gap: 16px;
+    margin-bottom: 24px;
+    background: var(--bg-card);
+    padding: 12px 16px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
 }
 
 .progressStep {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
-    font-weight: 500;
-    min-height: 44px;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-mute);
 }
 
 .progressDot {
@@ -107,89 +121,92 @@
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    font-weight: 700;
-    background: var(--bg-tertiary);
-    color: var(--text-tertiary);
-    transition: all var(--transition);
+    font-weight: 800;
+    background: color-mix(in oklab, var(--ink-soft) 8%, transparent);
+    color: var(--ink-mute);
+    transition: all var(--t-fast);
 }
 
 .progressDone .progressDot {
-    background: var(--success);
+    background: var(--pink);
     color: white;
 }
 
 .progressActive .progressDot {
-    background: var(--accent);
+    background: var(--pink);
     color: white;
-    box-shadow: 0 0 0 3px var(--accent-light);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--pink) 25%, transparent);
 }
 
 .progressActive {
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
-/* Step content */
+/* Step Content Container */
 .stepContent {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-top: 3px solid var(--accent);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
-    box-shadow: var(--shadow-premium);
-    animation: fadeInUp 250ms ease;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-sm);
+    animation: fadeInUp 0.4s var(--e-out) forwards;
 }
 
 .stepContent h2 {
-    font-size: var(--font-size-lg);
-    font-weight: 700;
-    margin-bottom: var(--space-4);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin-bottom: 16px;
 }
 
 .backBtn {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-1);
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
-    margin-bottom: var(--space-3);
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
     cursor: pointer;
-    transition: color var(--transition);
+    transition: color var(--t-fast);
 }
 
 .backBtn:hover {
-    color: var(--accent);
+    color: var(--pink);
 }
 
 .subLabel {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-secondary);
-    margin: var(--space-4) 0 var(--space-2);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    margin: 16px 0 8px;
 }
 
-/* Services */
+/* Services Step */
 .serviceList {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 8px;
 }
 
 .serviceItem {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-card);
     cursor: pointer;
-    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--t-fast);
     text-align: left;
 }
 
 .serviceItem:hover {
-    border-color: var(--accent-subtle);
-    box-shadow: var(--shadow-sm);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
 }
 
 .serviceItem:active {
@@ -197,14 +214,15 @@
 }
 
 .serviceItem.selected {
-    border-color: var(--accent);
-    background: var(--accent-light);
-    box-shadow: var(--shadow-glow);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--pink) 10%, transparent);
 }
 
 .serviceName {
-    font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
     display: block;
 }
 
@@ -212,15 +230,16 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 12px;
+    color: var(--ink-soft);
     margin-top: 2px;
 }
 
 .servicePrice {
-    font-weight: 700;
-    font-size: var(--font-size-base);
-    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 16px;
+    color: var(--pink);
     white-space: nowrap;
 }
 
@@ -228,11 +247,11 @@
 .dateGrid {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--space-2);
+    gap: 8px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
-    padding-bottom: var(--space-1);
+    padding-bottom: 8px;
 }
 
 .dateGrid::-webkit-scrollbar {
@@ -240,144 +259,135 @@
 }
 
 .dateBtn {
-    padding: var(--space-2) var(--space-3);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
-    color: var(--text-secondary);
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-card);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-soft);
     cursor: pointer;
-    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--t-fast);
     text-transform: capitalize;
 }
 
 .dateBtn:hover {
-    border-color: var(--accent-subtle);
-    box-shadow: var(--shadow-sm);
-}
-
-.dateBtn:active {
-    transform: scale(0.95);
+    border-color: var(--pink);
+    color: var(--ink);
 }
 
 .dateBtn.selected {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--pink);
+    background: var(--pink);
     color: white;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 /* Times */
 .timeGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-2);
+    gap: 8px;
 }
 
 .timeBtn {
-    padding: var(--space-2);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--text-secondary);
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--bg-card);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
     cursor: pointer;
-    transition: all 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all var(--t-fast);
+    text-align: center;
 }
 
 .timeBtn:hover {
-    border-color: var(--accent-subtle);
-    box-shadow: var(--shadow-sm);
-}
-
-.timeBtn:active {
-    transform: scale(0.95);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
 }
 
 .timeBtn.selected {
-    border-color: var(--accent);
-    background: var(--accent);
+    border-color: var(--pink);
+    background: var(--pink);
     color: white;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
-/* Form */
+/* Booking Confirmation */
 .form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
-}
-
-.form .label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
+    gap: 16px;
 }
 
 .bookingSummary {
     display: flex;
     justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
-    background: var(--accent-light);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--accent);
-    margin-bottom: var(--space-4);
+    padding: 14px 16px;
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    border-left: 4px solid var(--pink);
+    border-radius: var(--r-lg);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--pink);
+    margin-bottom: 16px;
 }
 
-/* Success */
+/* Success Card */
 .successCard {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-8);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
     text-align: center;
-    box-shadow: var(--shadow-premium);
-    animation: scaleIn 300ms ease;
+    box-shadow: var(--shadow-sm);
+    animation: fadeInUp 0.4s var(--e-out) forwards;
 }
 
 .successIcon {
     width: 56px;
     height: 56px;
     border-radius: 50%;
-    background: var(--success-light);
-    color: var(--success);
+    background: color-mix(in oklab, var(--success, #10B981) 10%, transparent);
+    color: var(--success, #10B981);
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-4);
-    animation: checkmarkPop 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    margin: 0 auto 16px;
+    animation: scaleIn 0.3s var(--e-out) forwards;
 }
 
 .successCard h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    margin-bottom: var(--space-2);
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--ink);
+    margin-bottom: 8px;
 }
 
-.successCard>p {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-6);
+.successCard > p {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 24px;
 }
 
 .summaryCard {
-    background: var(--bg-secondary);
-    border-radius: var(--radius-lg);
-    padding: var(--space-4);
+    background: var(--bg-primary);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: 16px;
     text-align: left;
 }
 
 .summaryRow {
     display: flex;
     justify-content: space-between;
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--border-light);
-    font-size: var(--font-size-sm);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+    font-size: 13px;
+    color: var(--ink);
 }
 
 .summaryRow:last-child {
@@ -385,53 +395,67 @@
 }
 
 .summaryLabel {
-    color: var(--text-secondary);
+    color: var(--ink-soft);
 }
 
 .summaryValue {
-    font-weight: 600;
+    font-weight: 700;
     text-transform: capitalize;
 }
 
-/* Error */
+/* Error Card */
 .errorCard {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-8);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
     text-align: center;
+    box-shadow: var(--shadow-sm);
 }
 
 .errorMsg {
-    padding: var(--space-3);
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    border-radius: var(--radius-sm);
-    color: #DC2626;
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-4);
+    padding: 12px;
+    background: color-mix(in oklab, var(--pink) 10%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    color: var(--pink);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
     text-align: center;
 }
 
 /* Footer */
 .footer {
     text-align: center;
-    margin-top: var(--space-6);
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    margin-top: 24px;
+    font-size: 11px;
+    color: var(--ink-mute);
+    font-weight: 500;
 }
 
 .footer a {
-    color: var(--accent);
-    font-weight: 600;
+    color: var(--pink);
+    font-weight: 700;
+    text-decoration: none;
 }
 
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translateY(12px);
+        transform: translateY(16px);
     }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
 
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
     to {
         opacity: 1;
         transform: none;
@@ -448,20 +472,19 @@
     }
 
     .progress {
-        gap: var(--space-3);
+        gap: 12px;
     }
 
     .stepContent {
-        padding: var(--space-4);
+        padding: 16px;
     }
 
     .bookingPage {
-        padding: var(--space-3);
-        padding-bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+        padding: 12px;
     }
 
     .container {
-        margin-top: var(--space-3);
+        margin-top: 12px;
     }
 
     .dateGrid {
@@ -472,33 +495,15 @@
 
     .dateBtn {
         flex-shrink: 0;
-        min-height: 44px;
+        min-height: 40px;
     }
 
     .timeBtn {
-        min-height: 44px;
+        min-height: 40px;
     }
 
     .serviceItem {
-        padding: var(--space-3);
-        min-height: 56px;
-    }
-
-    .successCard {
-        padding: var(--space-5);
-    }
-
-    .backBtn {
-        min-height: 36px;
-        padding: var(--space-2) 0;
-    }
-
-    .timeBtn {
-        font-size: var(--font-size-sm);
-    }
-
-    .progress {
-        padding: 0 var(--space-2);
+        padding: 12px;
     }
 }
 
@@ -508,15 +513,11 @@
     }
 
     .bookingHeader h1 {
-        font-size: var(--font-size-lg);
+        font-size: 18px;
     }
 
     .bookingSummary {
         flex-direction: column;
-        gap: var(--space-1);
-    }
-
-    .stepContent {
-        padding: var(--space-3);
+        gap: 4px;
     }
 }

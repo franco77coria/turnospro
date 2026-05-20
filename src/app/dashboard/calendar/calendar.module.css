@@ -1,65 +1,77 @@
+/* GLOWUP Premium Calendar Styling */
+
 .calendar {
     max-width: 100%;
-    overflow-x: auto;
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-5);
+    margin-bottom: 24px;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 .headerLeft {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
+    gap: 16px;
 }
 
 .header h1 {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
 .navBtns {
     display: flex;
-    gap: var(--space-1);
+    gap: 6px;
 }
 
 .currentMonth {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink-soft);
     text-transform: capitalize;
 }
 
+/* Calendar Grid container */
 .calendarGrid {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
     overflow: hidden;
     min-width: 700px;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--t-fast);
 }
 
 .gridHeader {
     display: grid;
     grid-template-columns: 60px repeat(7, 1fr);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in oklab, var(--ink-soft) 3%, transparent);
 }
 
 .timeCol {
-    padding: var(--space-3);
-    border-right: 1px solid var(--border-light);
+    padding: 12px;
+    border-right: 1px solid var(--line);
 }
 
 .dayCol {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--space-3);
-    gap: 2px;
-    border-right: 1px solid var(--border-light);
+    padding: 14px 8px;
+    gap: 4px;
+    border-right: 1px solid var(--line);
+    transition: background var(--t-fast);
 }
 
 .dayCol:last-child {
@@ -67,51 +79,77 @@
 }
 
 .dayCol.today {
-    background: var(--accent-light);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
 }
 
 .dayName {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
-    font-weight: 500;
+    font-size: 11px;
+    color: var(--ink-mute);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .dayNum {
-    font-size: var(--font-size-lg);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--ink);
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
 }
 
 .today .dayNum {
-    color: var(--accent);
+    background: var(--pink);
+    color: white;
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 40%, transparent);
 }
 
 .gridBody {
-    max-height: calc(100vh - 220px);
+    max-height: calc(100vh - 280px);
     overflow-y: auto;
+}
+
+/* Webkit Scrollbars for Calendar */
+.gridBody::-webkit-scrollbar {
+    width: 6px;
+}
+.gridBody::-webkit-scrollbar-track {
+    background: transparent;
+}
+.gridBody::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .timeRow {
     display: grid;
     grid-template-columns: 60px repeat(7, 1fr);
-    min-height: 36px;
-    border-bottom: 1px solid var(--border-light);
+    min-height: 48px;
+    border-bottom: 1px solid var(--line);
 }
 
 .timeLabel {
-    padding: var(--space-2);
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    padding: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-mute);
     text-align: right;
-    padding-right: var(--space-3);
-    border-right: 1px solid var(--border-light);
+    padding-right: 12px;
+    border-right: 1px solid var(--line);
+    background: color-mix(in oklab, var(--ink-soft) 2%, transparent);
 }
 
 .cell {
-    border-right: 1px solid var(--border-light);
-    padding: 2px;
+    border-right: 1px solid var(--line);
+    padding: 4px;
     cursor: pointer;
-    min-height: 36px;
-    transition: background var(--transition);
+    min-height: 48px;
+    transition: background var(--t-fast);
+    position: relative;
 }
 
 .cell:last-child {
@@ -119,23 +157,32 @@
 }
 
 .cell:hover {
-    background: var(--bg-hover);
+    background: color-mix(in oklab, var(--ink-soft) 4%, transparent);
 }
 
+/* Appointment block in grid */
 .aptBlock {
-    background: var(--accent-light);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius-sm);
-    padding: 3px 6px;
-    margin-bottom: 2px;
+    background: var(--bg-card);
+    border-radius: var(--r-md);
+    padding: 6px 10px;
+    margin-bottom: 4px;
     cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--line);
+    border-left-width: 4px;
+    transition: all var(--t-fast);
+}
+
+.aptBlock:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .aptBlockName {
     display: block;
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-primary);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -143,10 +190,11 @@
 
 .aptBlockService {
     font-size: 10px;
-    color: var(--text-secondary);
+    color: var(--ink-soft);
+    font-weight: 500;
 }
 
-/* Mobile: day view */
+/* Mobile Day View */
 .mobileView {
     display: none;
 }
@@ -155,75 +203,88 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: var(--space-4);
+    margin-bottom: 16px;
+    background: var(--bg-card);
+    padding: 12px 16px;
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
 }
 
 .mobileDateLabel {
-    font-size: var(--font-size-md);
-    font-weight: 600;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
     text-transform: capitalize;
+    color: var(--ink);
 }
 
 .mobileTimeline {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 8px;
 }
 
 .mobileSlot {
     display: flex;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
-    min-height: 52px;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    min-height: 64px;
     cursor: pointer;
-    transition: background var(--transition);
+    transition: all var(--t-fast);
 }
 
 .mobileSlot:hover {
-    background: var(--bg-hover);
+    border-color: var(--pink);
+    transform: translateX(2px);
 }
 
 .mobileSlotTime {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--text-tertiary);
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ink-soft);
     min-width: 48px;
-    padding-top: 2px;
+    padding-top: 4px;
 }
 
 .mobileSlotContent {
     flex: 1;
     display: flex;
     flex-direction: column;
-    gap: var(--space-1);
+    gap: 6px;
 }
 
 .mobileApt {
-    background: var(--accent-light);
-    border-left: 3px solid var(--accent);
-    border-radius: var(--radius-sm);
-    padding: var(--space-2) var(--space-3);
+    background: var(--bg-card);
+    border-radius: var(--r-md);
+    padding: 8px 12px;
+    border: 1px solid var(--line);
+    border-left-width: 4px;
+    box-shadow: var(--shadow-sm);
 }
 
 .mobileAptName {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
     display: block;
 }
 
 .mobileAptService {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 11px;
+    color: var(--ink-soft);
 }
 
 .mobileEmpty {
-    border: 1px dashed var(--border);
-    border-radius: var(--radius-md);
-    padding: var(--space-3);
+    border: 1px dashed var(--line);
+    border-radius: var(--r-lg);
+    padding: 16px;
     text-align: center;
-    color: var(--text-tertiary);
-    font-size: var(--font-size-xs);
+    color: var(--ink-mute);
+    font-size: 12px;
 }
 
 @media (max-width: 768px) {
@@ -236,129 +297,105 @@
     }
 
     .header h1 {
-        font-size: var(--font-size-lg);
+        font-size: 22px;
     }
 
     .headerLeft {
-        gap: var(--space-2);
+        gap: 8px;
     }
 
     .currentMonth {
         display: none;
     }
 
-    .navBtns button {
-        min-width: 44px;
-        min-height: 44px;
-    }
-
     .mobileSlot {
-        min-height: 56px;
-    }
-
-    .datePill {
-        min-height: 44px;
-        min-width: 52px;
-    }
-
-    .proPill {
-        min-height: 40px;
-    }
-
-    .timeSlot {
-        min-height: 44px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .wizardProgress {
-        padding: 0 var(--space-4) var(--space-3);
-    }
-
-    .clientItem {
-        min-height: 48px;
-    }
-
-    .serviceCard {
-        padding: var(--space-3);
+        min-height: 60px;
     }
 }
 
-/* ========== WIZARD STYLES ========== */
-
+/* WIZARD & MODAL IMPROVEMENTS */
 .wizardProgress {
     display: flex;
-    gap: var(--space-2);
-    padding: 0 var(--space-6) var(--space-3);
+    gap: 8px;
+    padding: 0 24px 16px;
 }
 
 .wizardDot {
     flex: 1;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--border);
-    transition: all var(--transition);
+    height: 4px;
+    border-radius: var(--r-full);
+    background: var(--line);
+    transition: all var(--t-fast);
 }
 
 .wizardDotActive {
-    background: var(--accent);
+    background: var(--pink);
 }
 
 .wizardDotCurrent {
-    background: var(--accent);
-    box-shadow: 0 0 6px rgba(99, 102, 241, 0.4);
+    background: var(--pink);
+    box-shadow: 0 0 10px color-mix(in oklab, var(--pink) 50%, transparent);
 }
 
-/* Client list */
 .clientList {
     max-height: 240px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
+    padding-right: 4px;
+}
+
+.clientList::-webkit-scrollbar {
+    width: 4px;
+}
+.clientList::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .clientItem {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border-radius: var(--radius-md);
+    gap: 12px;
+    padding: 10px 14px;
+    border-radius: var(--r-lg);
     width: 100%;
     text-align: left;
     cursor: pointer;
-    transition: all var(--transition);
-    background: none;
-    border: none;
+    transition: all var(--t-fast);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
     font-family: inherit;
-    font-size: inherit;
     color: inherit;
 }
 
 .clientItem:hover {
-    background: var(--bg-hover);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
 }
 
 .clientItemSelected {
-    background: var(--accent-light) !important;
+    border-color: var(--pink) !important;
+    background: color-mix(in oklab, var(--pink) 8%, transparent) !important;
 }
 
 .clientItemNew {
-    border: 1px dashed var(--border);
+    border: 1px dashed var(--pink);
+    background: color-mix(in oklab, var(--pink) 2%, transparent);
 }
 
 .clientAvatar {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--accent-light);
-    color: var(--accent);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-size: 13px;
     flex-shrink: 0;
 }
 
@@ -370,47 +407,58 @@
 }
 
 .clientName {
-    font-weight: 500;
-    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
 }
 
 .clientDetail {
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 11px;
+    color: var(--ink-soft);
 }
 
-/* Service cards */
+/* Service cards grid */
 .serviceGrid {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 8px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.serviceGrid::-webkit-scrollbar {
+    width: 4px;
+}
+.serviceGrid::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .serviceCard {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    gap: 6px;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
     text-align: left;
     cursor: pointer;
-    transition: all var(--transition);
-    background: var(--bg-primary);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
     font-family: inherit;
     color: inherit;
     width: 100%;
 }
 
 .serviceCard:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
 }
 
 .serviceCardSelected {
-    border-color: var(--accent) !important;
-    background: var(--accent-light) !important;
-    box-shadow: 0 0 0 2px var(--accent-light);
+    border-color: var(--pink) !important;
+    background: color-mix(in oklab, var(--pink) 8%, transparent) !important;
 }
 
 .serviceCardTop {
@@ -420,8 +468,9 @@
 }
 
 .serviceCardName {
-    font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--ink);
 }
 
 .serviceCardBottom {
@@ -434,145 +483,176 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 11px;
+    color: var(--ink-soft);
 }
 
 .serviceCardPrice {
-    font-weight: 700;
-    font-size: var(--font-size-sm);
-    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 14px;
+    color: var(--pink);
 }
 
 /* Date pills */
 .datePills {
     display: flex;
-    gap: var(--space-2);
+    gap: 8px;
     overflow-x: auto;
-    padding-bottom: var(--space-3);
-    margin-bottom: var(--space-3);
+    padding-bottom: 12px;
+    margin-bottom: 16px;
     -webkit-overflow-scrolling: touch;
+}
+
+.datePills::-webkit-scrollbar {
+    height: 4px;
+}
+.datePills::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .datePill {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    min-width: 48px;
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
+    gap: 4px;
+    min-width: 56px;
+    padding: 10px 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
     cursor: pointer;
-    transition: all var(--transition);
-    background: var(--bg-primary);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
     font-family: inherit;
     color: inherit;
     flex-shrink: 0;
 }
 
 .datePill:hover {
-    border-color: var(--accent);
+    border-color: var(--pink);
 }
 
 .datePillSelected {
-    background: var(--accent) !important;
-    border-color: var(--accent) !important;
+    background: var(--pink) !important;
+    border-color: var(--pink) !important;
     color: white !important;
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 .datePillToday {
-    border-color: var(--accent);
+    border-color: var(--pink);
 }
 
 .datePillDay {
-    font-size: var(--font-size-xs);
-    text-transform: capitalize;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-mute);
+}
+
+.datePillSelected .datePillDay {
+    color: rgba(255, 255, 255, 0.8) !important;
 }
 
 .datePillNum {
-    font-size: var(--font-size-md);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
 }
 
 /* Professional pills */
 .proPills {
     display: flex;
-    gap: var(--space-2);
+    gap: 8px;
     flex-wrap: wrap;
+    margin-bottom: 16px;
 }
 
 .proPill {
-    padding: var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
+    padding: 8px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-full);
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition);
-    background: var(--bg-primary);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
     font-family: inherit;
-    color: inherit;
+    color: var(--ink-soft);
 }
 
 .proPill:hover {
-    border-color: var(--accent);
+    border-color: var(--pink);
+    color: var(--ink);
 }
 
 .proPillSelected {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: var(--pink) !important;
+    border-color: var(--pink) !important;
+    color: white !important;
 }
 
 /* Time grid */
 .timeGrid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: var(--space-2);
+    gap: 8px;
     max-height: 180px;
     overflow-y: auto;
+    padding-right: 4px;
+}
+
+.timeGrid::-webkit-scrollbar {
+    width: 4px;
+}
+.timeGrid::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: var(--r-full);
 }
 
 .timeSlot {
-    padding: var(--space-2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    font-size: 13px;
+    font-weight: 700;
     text-align: center;
     cursor: pointer;
-    transition: all var(--transition);
-    background: var(--bg-primary);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
     font-family: inherit;
-    color: inherit;
+    color: var(--ink);
 }
 
 .timeSlot:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
 }
 
 .timeSlotSelected {
-    background: var(--accent) !important;
-    border-color: var(--accent) !important;
+    background: var(--pink) !important;
+    border-color: var(--pink) !important;
     color: white !important;
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
-/* Summary card */
+/* Summary Card */
 .summaryCard {
-    background: var(--bg-secondary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
     overflow: hidden;
+    box-shadow: var(--shadow-sm);
 }
 
 .summaryRow {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--border-light);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--line);
 }
 
 .summaryRow:last-child {
@@ -580,22 +660,27 @@
 }
 
 .summaryLabel {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 500;
 }
 
 .summaryValue {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
 }
 
 .summaryTotal {
-    background: var(--accent-light);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    border-top: 1px solid var(--line);
 }
 
 .summaryTotal .summaryValue {
-    color: var(--accent);
-    font-size: var(--font-size-md);
+    color: var(--pink);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
 }
 
 @media (max-width: 768px) {
@@ -607,11 +692,5 @@
 @media (max-width: 380px) {
     .timeGrid {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .summaryRow {
-        padding: var(--space-2) var(--space-3);
-        flex-wrap: wrap;
-        gap: var(--space-1);
     }
 }

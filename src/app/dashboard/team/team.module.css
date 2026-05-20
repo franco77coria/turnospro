@@ -1,75 +1,123 @@
+/* GLOWUP Premium Team Page Styling */
+
 .team {
-    max-width: 1200px;
+    max-width: 100%;
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: 24px;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 .header h1 {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
 .subtitle {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-top: 4px;
 }
 
 .memberGrid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--space-4);
+    gap: 20px;
 }
 
 .memberCard {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 24px;
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 16px;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--t-fast);
+}
+
+.memberCard:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--pink);
 }
 
 .memberTop {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 .memberAvatar {
-    background: var(--accent-light);
-    color: var(--accent);
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: white;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 20%, transparent);
 }
 
 .memberInfo {
     flex: 1;
+    min-width: 0;
 }
 
 .memberInfo h3 {
-    font-size: var(--font-size-base);
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .memberDetail {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 13px;
+    color: var(--ink-soft);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .memberActions {
     display: flex;
-    gap: var(--space-2);
-    margin-top: auto;
+    gap: 8px;
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
 }
 
 .statusToggle {
+    background: none;
+    border: none;
     padding: 0;
+    cursor: pointer;
+    outline: none;
 }
 
 .emptyCard {
     grid-column: 1 / -1;
+    background: var(--bg-card);
+    border: 1px dashed var(--line);
+    border-radius: var(--r-xl);
+    padding: 48px 24px;
 }
 
 @media (max-width: 768px) {
@@ -78,10 +126,11 @@
     }
 
     .header h1 {
-        font-size: var(--font-size-xl);
+        font-size: 22px;
     }
 
     .memberActions button {
         min-height: 44px;
+        flex: 1;
     }
 }

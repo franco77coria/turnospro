@@ -1,139 +1,183 @@
 'use client'
+
 import { usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { isSuperAdmin } from '@/lib/superadmin'
 import { filterNavByRole } from '@/lib/permissions'
-import { BarChart3, CalendarDays, Clock, Users, Tag, UserCircle, Wallet, Settings, LogOut, ShieldCheck, Eye, ExternalLink, PieChart, Gift, Package, ShoppingCart, MapPin, BellRing } from 'lucide-react'
-import styles from './Sidebar.module.css'
+import { Icons } from '@/components/Icons'
+import DarkModeToggle from '@/components/DarkModeToggle'
 
 const NAV_ITEMS = [
-    { href: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { href: '/dashboard/calendar', label: 'Calendario', icon: CalendarDays },
-    { href: '/dashboard/appointments', label: 'Turnos', icon: Clock },
-    { href: '/dashboard/pos', label: 'Punto de Venta', icon: ShoppingCart },
-    { href: '/dashboard/clients', label: 'Clientes', icon: Users },
-    { href: '/dashboard/services', label: 'Servicios', icon: Tag },
-    { href: '/dashboard/inventory', label: 'Productos', icon: Package },
-    { href: '/dashboard/team', label: 'Equipo', icon: UserCircle },
-    { href: '/dashboard/marketing', label: 'Marketing', icon: Gift },
-    { href: '/dashboard/finance', label: 'Caja', icon: Wallet },
-    { href: '/dashboard/analytics', label: 'Estadísticas', icon: PieChart },
-    { href: '/dashboard/waitlist', label: 'Lista de espera', icon: BellRing },
+  { href: '/dashboard', label: 'Hoy', icon: 'Sparkles' },
+  { href: '/dashboard/calendar', label: 'Agenda', icon: 'Calendar' },
+  { href: '/dashboard/appointments', label: 'Turnos', icon: 'Clock' },
+  { href: '/dashboard/clients', label: 'Clientes', icon: 'Users' },
+  { href: '/dashboard/services', label: 'Servicios', icon: 'Tag' },
+  { href: '/dashboard/finance', label: 'Caja', icon: 'Wallet' },
 ]
 
 const BOTTOM_ITEMS = [
-    { href: '/dashboard/locations', label: 'Sucursales', icon: MapPin },
-    { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
+  { href: '/dashboard/settings', label: 'Configuración', icon: 'Palette' },
 ]
 
 export default function Sidebar() {
-    const pathname = usePathname()
-    const { user, profile, business, signOut } = useAuth()
+  const pathname = usePathname()
+  const { user, profile, business, signOut } = useAuth()
 
-    const isActive = (href) => {
-        if (href === '/dashboard') return pathname === '/dashboard'
-        return pathname.startsWith(href)
+  const isActive = (href) => {
+    if (href === '/dashboard') return pathname === '/dashboard'
+    return pathname.startsWith(href)
+  }
+
+  const showAdmin = user && isSuperAdmin(user.email)
+  const userRole = profile?.role || 'Profesional'
+  const visibleNavItems = filterNavByRole(NAV_ITEMS, userRole)
+  const visibleBottomItems = filterNavByRole(BOTTOM_ITEMS, userRole)
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+    } catch (e) {
+      console.error('Logout error:', e)
     }
+    window.location.href = '/login'
+  }
 
-    const showAdmin = user && isSuperAdmin(user.email)
-    const userRole = profile?.role || 'Profesional'
-    const visibleNavItems = filterNavByRole(NAV_ITEMS, userRole)
-    const visibleBottomItems = filterNavByRole(BOTTOM_ITEMS, userRole)
+  return (
+    <aside className="dash-sidebar">
+      {/* Brand Header */}
+      <div className="dash-brand">
+        <span className="gu-logo-mark">G</span>
+        <span>GLOWUP</span>
+      </div>
 
-    return (
-        <aside className={styles.sidebar}>
-            <div className={styles.logo}>
-                <div className={styles.logoIcon}>G</div>
-                <div className={styles.logoText}>
-                    <span className={styles.logoName}>{business?.name || 'GLOWUP'}</span>
-                    <span className={styles.logoRole}>{profile?.role || 'Admin'}</span>
-                </div>
+      {/* Business Info Card */}
+      <div className="dash-biz">
+        <div className="dash-biz-thumb">
+          {business?.name?.[0]?.toUpperCase() || 'G'}
+        </div>
+        <div>
+          <div className="dash-biz-name">{business?.name || 'Mi Negocio'}</div>
+          <div className="dash-biz-role">{profile?.role || 'Administrador'}</div>
+        </div>
+      </div>
+
+      {/* Navigation Links */}
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 }}>
+        {visibleNavItems.map(item => {
+          const IconComponent = Icons[item.icon] || Icons.Sparkles
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dash-nav-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <IconComponent size={20} />
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+
+        {showAdmin && (
+          <>
+            <div className="dash-nav-sep" />
+            <Link
+              href="/dashboard/admin"
+              className={`dash-nav-item ${isActive('/dashboard/admin') ? 'active' : ''}`}
+            >
+              <Icons.Shield size={20} />
+              <span>Aprobaciones</span>
+            </Link>
+            <Link
+              href="/dashboard/demo"
+              className={`dash-nav-item ${isActive('/dashboard/demo') ? 'active' : ''}`}
+            >
+              <Icons.Eye size={20} />
+              <span>Demo Rubros</span>
+            </Link>
+            {business?.id && (
+              <a
+                href={`/book/${business.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="dash-nav-item"
+              >
+                <Icons.ArrowRight size={20} />
+                <span>Vista cliente</span>
+              </a>
+            )}
+          </>
+        )}
+      </nav>
+
+      {/* Bottom section */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: 'auto' }}>
+        {visibleBottomItems.map(item => {
+          const IconComponent = Icons[item.icon] || Icons.Palette
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`dash-nav-item ${isActive(item.href) ? 'active' : ''}`}
+            >
+              <IconComponent size={20} />
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+
+        <div className="dash-nav-sep" />
+
+        {/* User Card & Logout */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px' }}>
+          <div 
+            style={{ 
+              width: '36px', 
+              height: '36px', 
+              borderRadius: '50%', 
+              background: 'linear-gradient(135deg, var(--pink), var(--violet))', 
+              display: 'grid', 
+              placeItems: 'center',
+              color: 'white',
+              fontFamily: 'var(--font-display)',
+              fontWeight: 700,
+              fontSize: '14px'
+            }}
+          >
+            {profile?.full_name?.[0]?.toUpperCase() || 'U'}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--cream)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {profile?.full_name || 'Usuario'}
             </div>
-
-            <nav className={styles.nav}>
-                <div className={styles.navGroup}>
-                    {visibleNavItems.map(item => {
-                        const Icon = item.icon
-                        return (
-                            <Link
-                                key={item.href}
-                                href={item.href}
-                                className={`${styles.navItem} ${isActive(item.href) ? styles.active : ''}`}
-                            >
-                                <Icon size={18} className={styles.navIcon} />
-                                <span>{item.label}</span>
-                            </Link>
-                        )
-                    })}
-
-                    {showAdmin && (
-                        <>
-                            <Link
-                                href="/dashboard/admin"
-                                className={`${styles.navItem} ${styles.adminItem} ${isActive('/dashboard/admin') ? styles.active : ''}`}
-                            >
-                                <ShieldCheck size={18} className={styles.navIcon} />
-                                <span>Aprobaciones</span>
-                            </Link>
-                            <Link
-                                href="/dashboard/demo"
-                                className={`${styles.navItem} ${isActive('/dashboard/demo') ? styles.active : ''}`}
-                            >
-                                <Eye size={18} className={styles.navIcon} />
-                                <span>Demo Rubros</span>
-                            </Link>
-                            {business?.id && (
-                                <a
-                                    href={`/book/${business.id}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className={styles.navItem}
-                                >
-                                    <ExternalLink size={18} className={styles.navIcon} />
-                                    <span>Vista cliente</span>
-                                </a>
-                            )}
-                        </>
-                    )}
-                </div>
-            </nav>
-
-            <div className={styles.bottom}>
-                {visibleBottomItems.map(item => {
-                    const Icon = item.icon
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            className={`${styles.navItem} ${isActive(item.href) ? styles.active : ''}`}
-                        >
-                            <Icon size={18} className={styles.navIcon} />
-                            <span>{item.label}</span>
-                        </Link>
-                    )
-                })}
-                <div className={styles.userCard}>
-                    <div className="avatar avatar-sm">
-                        {profile?.full_name?.[0] || 'U'}
-                    </div>
-                    <div className={styles.userInfo}>
-                        <span className={styles.userName}>{profile?.full_name || 'Usuario'}</span>
-                        <span className={styles.userEmail}>{profile?.email || ''}</span>
-                    </div>
-                    <button onClick={async () => {
-                        try {
-                            await signOut()
-                        } catch (e) {
-                            console.error('Logout error:', e)
-                        }
-                        // Force hard redirect regardless
-                        window.location.href = '/login'
-                    }} className={styles.logoutBtn} title="Cerrar sesión">
-                        <LogOut size={14} />
-                    </button>
-                </div>
+            <div style={{ fontSize: '11px', color: 'color-mix(in oklab, var(--cream) 50%, transparent)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {profile?.email || 'email@glowup.com'}
             </div>
-        </aside>
-    )
+          </div>
+          
+          <DarkModeToggle />
+
+          <button 
+            onClick={handleSignOut}
+            style={{ 
+              color: 'color-mix(in oklab, var(--cream) 60%, transparent)', 
+              cursor: 'pointer',
+              display: 'grid',
+              placeItems: 'center',
+              padding: '6px',
+              borderRadius: '50%',
+              transition: 'all var(--t-fast)'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--pink)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'color-mix(in oklab, var(--cream) 60%, transparent)'}
+            title="Cerrar sesión"
+            type="button"
+          >
+            <Icons.X size={16} />
+          </button>
+        </div>
+      </div>
+    </aside>
+  )
 }

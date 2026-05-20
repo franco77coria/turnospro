@@ -1,61 +1,156 @@
+/* GLOWUP Premium Clients List Styling */
+
 .clients {
-    max-width: 1200px;
+    max-width: 100%;
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: 24px;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 .header h1 {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
 .subtitle {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-top: 4px;
 }
 
 .searchWrap {
     position: relative;
     max-width: 400px;
-    margin-bottom: var(--space-4);
+    margin-bottom: 24px;
 }
 
 .searchIcon {
     position: absolute;
-    left: 12px;
+    left: 14px;
     top: 50%;
     transform: translateY(-50%);
-    color: var(--text-tertiary);
+    color: var(--ink-mute);
 }
 
 .searchInput {
-    padding-left: 36px !important;
+    padding-left: 40px !important;
 }
 
 .emptyState {
     text-align: center;
-    padding: var(--space-8);
-    color: var(--text-secondary);
+    padding: 48px;
+    color: var(--ink-mute);
+    font-weight: 500;
+}
+
+/* Table Wrappers */
+.tableWrap {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--t-fast);
+}
+
+.tableWrap :global(.table-container) {
+    overflow-x: auto;
+}
+
+.tableWrap :global(.table) {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.tableWrap :global(.table th) {
+    background: color-mix(in oklab, var(--ink-soft) 3%, transparent);
+    padding: 14px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--line);
+}
+
+.tableWrap :global(.table td) {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    color: var(--ink);
+    vertical-align: middle;
+}
+
+.tableWrap :global(.table tr:last-child td) {
+    border-bottom: none;
+}
+
+.tableWrap :global(.table tr:hover td) {
+    background: color-mix(in oklab, var(--ink-soft) 2%, transparent);
+}
+
+/* Client Avatar Styling in Table */
+.tableWrap :global(.avatar) {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: white;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 12px;
+    font-family: var(--font-display);
 }
 
 /* Mobile card list */
 .cardList {
     display: none;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .clientCard {
     display: flex;
     align-items: flex-start;
-    gap: var(--space-3);
+    gap: 14px;
+    padding: 16px;
+    background: var(--bg-card);
+    border-radius: var(--r-lg);
+    border: 1px solid var(--line);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all var(--t-fast);
+}
+
+.clientCard:hover {
+    border-color: var(--pink);
+    transform: translateY(-1px);
+}
+
+.clientCard :global(.avatar) {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: white;
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 14px;
+    font-family: var(--font-display);
+    flex-shrink: 0;
 }
 
 .clientCardBody {
@@ -64,33 +159,37 @@
 }
 
 .clientCardName {
-    font-weight: 600;
-    font-size: var(--font-size-sm);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--ink);
     display: block;
     margin-bottom: 2px;
 }
 
 .clientCardPhone {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--ink-soft);
     display: block;
 }
 
 .clientCardEmail {
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 12px;
+    color: var(--ink-mute);
     display: block;
-    margin-bottom: var(--space-2);
+    margin-bottom: 6px;
 }
 
 .clientCardNotes {
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 12px;
+    color: var(--ink-mute);
     display: block;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: min(220px, 60vw);
+    max-width: min(240px, 65vw);
+    background: color-mix(in oklab, var(--ink) 2%, transparent);
+    padding: 4px 8px;
+    border-radius: var(--r-sm);
 }
 
 @media (max-width: 768px) {
@@ -107,10 +206,6 @@
     }
 
     .header h1 {
-        font-size: var(--font-size-xl);
-    }
-
-    .clientCard {
-        min-height: 52px;
+        font-size: 22px;
     }
 }

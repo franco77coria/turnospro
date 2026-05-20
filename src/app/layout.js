@@ -1,34 +1,41 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from 'next/font/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/Toast'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import JsonLd, { buildWebSiteSchema } from '@/components/JsonLd'
 
-const inter = Inter({
+const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700', '800'],
+  weight: ['400', '500', '600', '700', '800'],
   display: 'swap',
-  variable: '--font-inter',
+  variable: '--font-bricolage',
+})
+
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-jakarta',
 })
 
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#4F46E5',
+  themeColor: '#FF2E8E',
 }
 
 export const metadata = {
   title: {
-    default: 'GLOWUP — Gestión de turnos para tu negocio',
+    default: 'GLOWUP — Brillá hoy',
     template: '%s | GLOWUP',
   },
-  description: 'Sistema universal de turnos, equipo y finanzas para peluquerías, barberías, spas, consultorios y más. Reservá tu turno online en segundos.',
+  description: 'Reservá tu próximo turno en peluquerías, barberías, spas, consultorios y más. Encontrá disponibilidad en tiempo real y reservá sin llamar a nadie.',
   manifest: '/manifest.json',
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://glowup.com.ar'),
   openGraph: {
-    title: 'GLOWUP — Gestión de turnos para tu negocio',
+    title: 'GLOWUP — Brillá hoy',
     description: 'Reservá tu próximo turno online. Peluquerías, barberías, spas, consultorios y más.',
     type: 'website',
     locale: 'es_AR',
@@ -36,7 +43,7 @@ export const metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'GLOWUP — Gestión de turnos',
+    title: 'GLOWUP — Brillá hoy',
     description: 'Reservá tu próximo turno online.',
   },
   robots: {
@@ -51,11 +58,11 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={inter.variable}>
+    <html lang="es" className={`${bricolage.variable} ${jakarta.variable}`}>
       <head>
         <JsonLd data={buildWebSiteSchema()} />
       </head>
-      <body className={inter.className}>
+      <body className={jakarta.className}>
         <AuthProvider>
           <ToastProvider>
             {children}

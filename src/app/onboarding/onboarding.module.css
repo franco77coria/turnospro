@@ -1,25 +1,28 @@
+/* GLOWUP Premium Onboarding Styling */
+
 .onboarding {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
+    background: var(--bg-primary);
     padding: var(--space-4);
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .card {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-8);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
     max-width: 560px;
     width: 100%;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
 }
 
 .header {
     text-align: center;
-    margin-bottom: var(--space-8);
+    margin-bottom: 24px;
 }
 
 .logoMark {
@@ -28,84 +31,107 @@
     justify-content: center;
     width: 40px;
     height: 40px;
-    border-radius: var(--radius-md);
-    background: var(--accent);
+    border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     color: white;
+    font-family: var(--font-display);
     font-weight: 800;
-    margin-bottom: var(--space-4);
+    margin-bottom: 16px;
+    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 .header h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    margin-bottom: var(--space-2);
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 6px;
 }
 
 .header p {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 14px;
 }
 
 .typeGrid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .typeCard {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-5) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
+    gap: 8px;
+    padding: 20px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
     cursor: pointer;
-    transition: all var(--transition);
-    background: var(--bg-primary);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
 }
 
 .typeCard:hover {
-    border-color: var(--accent);
-    background: var(--accent-light);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 3%, transparent);
+    transform: translateY(-2px);
 }
 
 .typeCard.typeSelected {
-    border-color: var(--accent);
-    background: var(--accent-light);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--pink) 15%, transparent);
 }
 
 .typeIcon {
-    font-size: 28px;
+    color: var(--pink);
 }
 
 .typeName {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
 }
 
 .form {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 16px;
 }
 
 .selectedType {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
-    background: var(--accent-light);
-    border-radius: var(--radius-md);
-    font-weight: 600;
-    font-size: var(--font-size-sm);
+    gap: 12px;
+    padding: 12px 16px;
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    border-left: 4px solid var(--pink);
+    border-radius: var(--r-lg);
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--pink);
 }
 
 .changeBtn {
     margin-left: auto;
-    color: var(--accent);
-    font-size: var(--font-size-xs);
-    font-weight: 500;
+    background: none;
+    border: none;
+    color: var(--pink);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border-radius: var(--r-md);
+    transition: all var(--t-fast);
+}
+
+.changeBtn:hover {
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
 }
 
 @media (max-width: 480px) {
@@ -114,6 +140,6 @@
     }
 
     .card {
-        padding: var(--space-5);
+        padding: 20px;
     }
 }

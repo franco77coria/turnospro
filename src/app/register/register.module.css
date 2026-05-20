@@ -1,25 +1,28 @@
+/* GLOWUP Premium Register Styling */
+
 .registerPage {
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--bg-secondary);
+    background: var(--bg-primary);
     padding: var(--space-4);
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .registerCard {
-    background: var(--bg-primary);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xl);
-    padding: var(--space-8);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 32px;
     text-align: center;
-    max-width: 460px;
+    max-width: 480px;
     width: 100%;
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
 }
 
 .logo {
-    margin-bottom: var(--space-4);
+    margin-bottom: 20px;
 }
 
 .logoMark {
@@ -28,116 +31,130 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    border-radius: var(--radius-lg);
-    background: var(--accent);
+    border-radius: var(--r-lg);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     color: white;
-    font-size: var(--font-size-xl);
+    font-family: var(--font-display);
+    font-size: 24px;
     font-weight: 800;
+    box-shadow: 0 4px 12px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 .registerCard h1 {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
-    margin-bottom: var(--space-2);
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 8px;
 }
 
-.registerCard>p {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-6);
+.registerCard > p {
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-bottom: 24px;
 }
 
 /* Type selection */
 .typeGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
+    gap: 16px;
+    margin-bottom: 24px;
 }
 
 .typeCard {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-5) var(--space-3);
-    background: var(--bg-primary);
-    border: 2px solid var(--border);
-    border-radius: var(--radius-lg);
+    gap: 8px;
+    padding: 24px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
     text-align: center;
 }
 
 .typeCard:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    border-color: var(--pink);
+    box-shadow: 0 0 0 2px color-mix(in oklab, var(--pink) 15%, transparent);
+    transform: translateY(-2px);
 }
 
 .typeCard svg {
-    color: var(--accent);
+    color: var(--pink);
 }
 
 .typeCard h3 {
-    font-size: var(--font-size-base);
-    font-weight: 600;
-    color: var(--text-primary);
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 800;
+    color: var(--ink);
+    margin: 4px 0 0;
 }
 
 .typeCard p {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--ink-soft);
     line-height: 1.4;
+    margin: 0;
 }
 
 .approvalBadge {
     display: inline-block;
-    background: #FEF3C7;
-    color: #92400E;
+    background: color-mix(in oklab, var(--amber, #F59E0B) 10%, transparent);
+    color: var(--amber, #D97706);
     padding: 2px 8px;
-    border-radius: var(--radius-full);
-    font-size: 10px;
-    font-weight: 600;
+    border-radius: var(--r-full);
+    font-size: 9px;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.03em;
-    margin-top: var(--space-1);
+    letter-spacing: 0.05em;
+    margin-top: 4px;
 }
 
 .backLink {
-    margin-top: var(--space-4);
+    margin-top: 16px;
 }
 
 .backLink a {
     display: inline-flex;
     align-items: center;
-    gap: var(--space-2);
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    gap: 8px;
+    color: var(--ink-soft);
+    font-size: 13px;
+    font-weight: 600;
     text-decoration: none;
-    transition: color var(--transition);
+    transition: color var(--t-fast);
 }
 
 .backLink a:hover {
-    color: var(--accent);
+    color: var(--pink);
 }
 
-/* Step 2 */
+/* Step 2 Header */
 .stepHeader {
     display: flex;
     align-items: flex-start;
-    gap: var(--space-3);
+    gap: 12px;
     text-align: left;
-    margin-bottom: var(--space-5);
+    margin-bottom: 24px;
 }
 
 .stepHeader h1 {
-    font-size: var(--font-size-lg);
-    margin-bottom: var(--space-1);
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    margin-bottom: 4px;
+    color: var(--ink);
 }
 
 .stepHeader p {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 13px;
+    margin: 0;
 }
 
 .backBtn {
@@ -146,48 +163,57 @@
     justify-content: center;
     width: 36px;
     height: 36px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
     flex-shrink: 0;
     margin-top: 2px;
+    color: var(--ink-soft);
 }
 
 .backBtn:hover {
-    background: var(--bg-hover);
+    border-color: var(--pink);
+    color: var(--pink);
+    transform: scale(1.05);
 }
 
 .form {
     text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .errorMsg {
-    padding: var(--space-3);
-    background: #FEF2F2;
-    border: 1px solid #FECACA;
-    border-radius: var(--radius-sm);
-    color: #DC2626;
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-4);
+    padding: 12px;
+    background: color-mix(in oklab, var(--pink) 10%, transparent);
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    color: var(--pink);
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 16px;
     text-align: center;
 }
 
 .successMsg {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 14px;
     line-height: 1.6;
-    margin-top: var(--space-4);
+    margin-top: 16px;
 }
 
 .divider {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    margin: var(--space-4) 0;
-    color: var(--text-tertiary);
-    font-size: var(--font-size-xs);
+    gap: 12px;
+    margin: 16px 0;
+    color: var(--ink-mute);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .divider::before,
@@ -195,30 +221,30 @@
     content: '';
     flex: 1;
     height: 1px;
-    background: var(--border);
+    background: var(--line);
 }
 
 .googleBtn {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: var(--space-3);
+    gap: 12px;
     width: 100%;
-    padding: var(--space-3) var(--space-4);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--bg-primary);
-    font-size: var(--font-size-sm);
-    font-weight: 500;
+    padding: 12px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-md);
+    background: var(--bg-card);
+    font-size: 14px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
     font-family: inherit;
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
 .googleBtn:hover {
-    background: var(--bg-hover);
-    border-color: var(--text-tertiary);
+    border-color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 2%, transparent);
 }
 
 @media (max-width: 768px) {
@@ -227,6 +253,6 @@
     }
 
     .registerCard {
-        padding: var(--space-6);
+        padding: 24px;
     }
 }

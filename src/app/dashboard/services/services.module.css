@@ -1,46 +1,66 @@
+/* GLOWUP Premium Services List Styling */
+
 .services {
     max-width: 800px;
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--space-6);
+    margin-bottom: 24px;
     flex-wrap: wrap;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 .header h1 {
-    font-size: var(--font-size-2xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
 }
 
 .subtitle {
-    color: var(--text-secondary);
-    font-size: var(--font-size-sm);
+    color: var(--ink-soft);
+    font-size: 14px;
+    margin-top: 4px;
 }
 
 .error {
-    background: var(--danger-light);
-    color: var(--danger);
-    padding: var(--space-3) var(--space-4);
-    border-radius: var(--radius-md);
-    margin-bottom: var(--space-4);
-    font-size: var(--font-size-sm);
+    background: color-mix(in oklab, var(--pink) 10%, transparent);
+    color: var(--pink);
+    padding: 12px 16px;
+    border-radius: var(--r-md);
+    margin-bottom: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid var(--line);
 }
 
 .serviceList {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: 12px;
 }
 
 .serviceCard {
     display: flex;
     align-items: center;
-    gap: var(--space-4);
-    flex-wrap: wrap;
+    gap: 20px;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-sm);
+    transition: all var(--t-fast);
+}
+
+.serviceCard:hover {
+    border-color: var(--pink);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
 }
 
 .serviceInfo {
@@ -49,72 +69,87 @@
 }
 
 .serviceName {
-    font-weight: 600;
+    font-weight: 700;
+    font-size: 16px;
+    color: var(--ink);
     display: block;
+    margin-bottom: 4px;
 }
 
 .serviceDuration {
-    font-size: var(--font-size-xs);
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 500;
 }
 
 .servicePrice {
-    font-weight: 700;
-    color: var(--accent);
-    font-size: var(--font-size-lg);
+    font-family: var(--font-display);
+    font-weight: 800;
+    color: var(--pink);
+    font-size: 20px;
+    letter-spacing: -0.01em;
 }
 
 .serviceActions {
     display: flex;
-    gap: var(--space-2);
+    gap: 8px;
+    align-items: center;
 }
 
 .emptyState {
     text-align: center;
-    padding: var(--space-8);
-    color: var(--text-secondary);
+    padding: 48px 24px;
+    background: var(--bg-card);
+    border-radius: var(--r-xl);
+    border: 1px dashed var(--line);
 }
 
 .emptyState p {
-    margin-bottom: var(--space-3);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 4px;
 }
 
 .emptyState .emptyHint {
-    font-size: var(--font-size-xs);
-    margin-bottom: var(--space-4);
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 400;
+    margin-bottom: 20px;
 }
 
 .emptyIcon {
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    background: var(--accent-light);
-    color: var(--accent);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto var(--space-4);
+    margin: 0 auto 16px;
+    box-shadow: 0 4px 12px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
 .formGrid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
+    gap: 16px;
 }
 
 @media (max-width: 768px) {
     .serviceCard {
         flex-direction: column;
         align-items: flex-start;
+        gap: 12px;
+        padding: 16px;
     }
 
     .serviceActions {
         width: 100%;
-    }
-
-    .serviceActions button {
-        flex: 1;
-        min-height: 44px;
+        border-top: 1px solid var(--line);
+        padding-top: 12px;
+        justify-content: flex-end;
     }
 
     .formGrid {
@@ -122,6 +157,6 @@
     }
 
     .header h1 {
-        font-size: var(--font-size-xl);
+        font-size: 22px;
     }
 }

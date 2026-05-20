@@ -1,31 +1,31 @@
-/* ============================================
-   Book Page — "Para ti" Home (Booksy-style)
-   ============================================ */
+/* GLOWUP Premium Consumer Booking Page Styling */
 
 .bookPage {
     min-height: 100vh;
-    min-height: 100dvh;
     background: var(--bg-primary);
     padding: 0 var(--space-4);
+    animation: reveal-y 0.6s var(--e-out) forwards;
 }
 
-/* ── Header ── */
+/* Header */
 .header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: var(--space-6) 0 var(--space-4);
+    padding: 24px 0 16px;
     position: sticky;
     top: 0;
     background: var(--bg-primary);
     z-index: 10;
+    border-bottom: 1px solid transparent;
 }
 
 .pageTitle {
-    font-size: var(--font-size-3xl);
+    font-family: var(--font-display);
+    font-size: 32px;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
 .searchIcon {
@@ -35,30 +35,33 @@
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    border: 1.5px solid var(--border);
-    color: var(--text-primary);
+    border: 1px solid var(--line);
+    color: var(--ink);
     text-decoration: none;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
+    background: var(--bg-card);
+    box-shadow: var(--shadow-sm);
     flex-shrink: 0;
 }
 
 .searchIcon:hover {
-    background: var(--bg-tertiary);
-    border-color: var(--text-tertiary);
+    border-color: var(--pink);
+    color: var(--pink);
+    transform: scale(1.05);
 }
 
-/* ── Sections ── */
+/* Sections */
 .sections {
     display: flex;
     flex-direction: column;
-    gap: var(--space-8);
-    padding-bottom: var(--space-6);
+    gap: 32px;
+    padding-bottom: 48px;
 }
 
 .section {
     display: flex;
     flex-direction: column;
-    gap: var(--space-4);
+    gap: 16px;
 }
 
 .sectionHeader {
@@ -68,36 +71,38 @@
 }
 
 .sectionTitle {
-    font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
     letter-spacing: -0.01em;
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
 .seeAll {
     display: flex;
     align-items: center;
     gap: 2px;
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--accent);
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--pink);
     text-decoration: none;
-    transition: opacity var(--transition);
+    transition: all var(--t-fast);
 }
 
 .seeAll:hover {
-    opacity: 0.7;
+    opacity: 0.8;
+    transform: translateX(2px);
 }
 
-/* ── Scroll Row ── */
+/* Scroll Row */
 .scrollRow {
     display: flex;
-    gap: var(--space-3);
+    gap: 16px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
     scroll-snap-type: x mandatory;
-    padding-bottom: var(--space-1);
+    padding: 4px;
     margin: 0 calc(-1 * var(--space-4));
     padding-left: var(--space-4);
     padding-right: var(--space-4);
@@ -107,51 +112,51 @@
     display: none;
 }
 
-/* ── Rebook Card ── */
+/* Rebook Card */
 .rebookCard {
     display: flex;
-    gap: var(--space-3);
+    gap: 14px;
     min-width: 300px;
     max-width: 340px;
-    background: var(--bg-primary);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    border-radius: var(--radius-xl);
-    padding: var(--space-3);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 16px;
     text-decoration: none;
     color: inherit;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
     scroll-snap-align: start;
     flex-shrink: 0;
-    box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-sm);
 }
 
 .rebookCard:hover {
-    border-color: var(--accent-subtle);
-    box-shadow: 0 8px 30px -5px rgba(99, 102, 241, 0.15);
+    border-color: var(--pink);
+    box-shadow: var(--shadow-md);
     transform: translateY(-2px);
 }
 
-.rebookCard:active {
-    transform: scale(0.98);
-}
-
 .rebookThumb {
-    width: 80px;
-    height: 80px;
-    border-radius: var(--radius-lg);
+    width: 72px;
+    height: 72px;
+    border-radius: var(--r-lg);
     overflow: hidden;
     flex-shrink: 0;
-    background: linear-gradient(135deg, var(--accent) 0%, #4F46E5 100%);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .rebookThumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform var(--t-fast);
+}
+
+.rebookCard:hover .rebookThumb img {
+    transform: scale(1.05);
 }
 
 .rebookInfo {
@@ -164,31 +169,32 @@
 
 .rebookBizName {
     font-weight: 700;
-    font-size: var(--font-size-base);
-    color: var(--text-primary);
+    font-size: 15px;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .rebookDate {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--ink-soft);
+    font-weight: 500;
 }
 
 .rebookService {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    font-size: 12px;
+    color: var(--ink-mute);
 }
 
 .rebookCta {
-    font-size: var(--font-size-sm);
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 2px;
+    font-size: 12px;
+    color: var(--pink);
+    font-weight: 700;
+    margin-top: 4px;
 }
 
-/* ── BizCard Small (Recomendado) ── */
+/* BizCard Small (Recomendado) */
 .bizCardSmall {
     display: flex;
     flex-direction: column;
@@ -197,54 +203,62 @@
     text-decoration: none;
     color: inherit;
     scroll-snap-align: start;
-    transition: all var(--transition);
+    transition: all var(--t-fast);
     flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    padding: 8px;
 }
 
 .bizCardSmall:hover {
-    opacity: 0.9;
-}
-
-.bizCardSmall:active {
-    transform: scale(0.97);
+    border-color: var(--pink);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
 }
 
 .bizThumb {
     width: 100%;
-    height: 160px;
-    border-radius: var(--radius-xl);
+    height: 150px;
+    border-radius: var(--r-lg);
     overflow: hidden;
-    background: linear-gradient(135deg, var(--accent) 0%, #818CF8 50%, #C084FC 100%);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: var(--space-2);
-    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.05);
 }
 
 .bizThumb img {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    transition: transform var(--t-fast);
+}
+
+.bizCardSmall:hover .bizThumb img {
+    transform: scale(1.05);
 }
 
 .bizInitial {
-    font-size: 3rem;
+    font-family: var(--font-display);
+    font-size: 40px;
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.4);
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .bizMeta {
     display: flex;
     flex-direction: column;
-    gap: 1px;
-    padding: 0 var(--space-1);
+    gap: 2px;
+    padding: 8px 4px 4px;
 }
 
 .bizName {
     font-weight: 700;
-    font-size: var(--font-size-base);
-    color: var(--text-primary);
+    font-size: 14px;
+    color: var(--ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -254,114 +268,124 @@
     display: flex;
     align-items: center;
     gap: 3px;
-    font-size: var(--font-size-sm);
+    font-size: 12px;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--ink);
 }
 
 .bizReviewCount {
     font-weight: 400;
-    color: var(--text-tertiary);
-    font-size: var(--font-size-xs);
+    color: var(--ink-soft);
+    font-size: 11px;
 }
 
 .bizAddr {
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 11px;
+    color: var(--ink-soft);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .bizType {
-    font-size: var(--font-size-xs);
-    color: var(--text-tertiary);
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.05em;
 }
 
-/* ── Empty State ── */
+/* Empty State */
 .emptyState {
     text-align: center;
-    padding: var(--space-16) var(--space-4);
-    color: var(--text-tertiary);
+    padding: 64px 16px;
+    color: var(--ink-mute);
+    background: var(--bg-card);
+    border-radius: var(--r-xl);
+    border: 1px dashed var(--line);
 }
 
 .emptyState h3 {
-    margin-top: var(--space-3);
-    font-size: var(--font-size-lg);
-    color: var(--text-primary);
+    margin-top: 16px;
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--ink);
 }
 
 .emptyState p {
-    margin-top: var(--space-2);
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--ink-soft);
 }
 
-/* ── Login Prompt ── */
+/* Login Prompt */
 .loginPrompt {
-    background: var(--bg-secondary);
-    border-radius: var(--radius-xl);
-    padding: var(--space-6);
+    background: color-mix(in oklab, var(--pink) 5%, var(--bg-card));
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 24px;
     text-align: center;
-    margin-top: var(--space-4);
+    margin-top: 16px;
 }
 
 .loginPrompt p {
-    font-size: var(--font-size-sm);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-4);
+    font-size: 14px;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    font-weight: 500;
 }
 
 .loginBtns {
     display: flex;
-    gap: var(--space-3);
+    gap: 12px;
     justify-content: center;
     flex-wrap: wrap;
 }
 
-/* ── Skeleton ── */
+/* Skeleton */
 .skeletonCard {
     display: flex;
     flex-direction: column;
     width: 200px;
     min-width: 200px;
     flex-shrink: 0;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-radius: var(--r-xl);
+    padding: 8px;
 }
 
 .skeletonThumb {
     width: 100%;
-    height: 160px;
-    border-radius: var(--radius-lg);
-    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
-    background-size: 200% 100%;
+    height: 150px;
+    border-radius: var(--r-lg);
+    background: var(--line);
     animation: shimmer 1.5s ease-in-out infinite;
-    margin-bottom: var(--space-2);
 }
 
 .skeletonLines {
     display: flex;
     flex-direction: column;
     gap: 6px;
-    padding: 0 var(--space-1);
+    padding: 8px 4px 4px;
 }
 
 .skeletonLine {
     height: 12px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
-    background-size: 200% 100%;
+    border-radius: var(--r-sm);
+    background: var(--line);
     animation: shimmer 1.5s ease-in-out infinite;
 }
 
 @keyframes shimmer {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
 }
 
-/* ── Responsive ── */
 @media (max-width: 480px) {
     .pageTitle {
-        font-size: var(--font-size-2xl);
+        font-size: 26px;
     }
 
     .rebookCard {
@@ -374,31 +398,6 @@
     }
 
     .bizThumb {
-        height: 130px;
-    }
-}
-
-@media (max-width: 380px) {
-    .bookPage {
-        padding: 0 var(--space-3);
-    }
-
-    .rebookCard {
-        min-width: 260px;
-    }
-
-    .bizCardSmall {
-        width: 150px;
-        min-width: 150px;
-    }
-
-    .bizThumb {
-        height: 110px;
-    }
-
-    .scrollRow {
-        margin: 0 calc(-1 * var(--space-3));
-        padding-left: var(--space-3);
-        padding-right: var(--space-3);
+        height: 120px;
     }
 }
