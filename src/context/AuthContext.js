@@ -47,6 +47,12 @@ export function AuthProvider({ children }) {
                 currentProfile = newProfile
             }
 
+            // Auto-correct client roles that got desynced during signup (role default value was 'Dueño' in DB)
+            if (currentProfile && currentProfile.account_type === 'user' && currentProfile.role !== 'user' && !currentProfile.business_id) {
+                currentProfile.role = 'user'
+                await supabase.from('profiles').update({ role: 'user' }).eq('id', userId)
+            }
+
             if (!currentProfile) {
                 setProfile(null)
                 setBusiness(null)

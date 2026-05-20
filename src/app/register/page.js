@@ -118,7 +118,7 @@ export default function RegisterPage() {
             <div className={styles.registerPage}>
                 <div className={styles.registerCard}>
                     <div className={styles.logo}>
-                        <span className={styles.logoMark}>G</span>
+                        <img src="/logo.png" alt="G" className={styles.logoMark} />
                     </div>
                     {accountType === 'business' ? (
                         <>
@@ -147,7 +147,7 @@ export default function RegisterPage() {
         <div className={styles.registerPage}>
             <div className={styles.registerCard}>
                 <div className={styles.logo}>
-                    <span className={styles.logoMark}>G</span>
+                    <img src="/logo.png" alt="G" className={styles.logoMark} />
                 </div>
 
                 {step === 1 ? (

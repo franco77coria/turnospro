@@ -70,7 +70,19 @@ export async function GET(request) {
 
                 // Profile already exists — route based on existing role
                 if (profile) {
-                    const isClient = profile.role === 'user' && !profile.business_id
+                    let updatedRole = profile.role
+
+                    // Sync role if it is out of sync with the intended signup accountType
+                    if (accountType === 'user' && profile.role !== 'user' && !profile.business_id) {
+                        updatedRole = 'user'
+                        await supabase.from('profiles').update({ role: 'user', account_type: 'user' }).eq('id', user.id)
+                    } else if (accountType === 'business' && profile.role === 'user') {
+                        // Switch to business onboarding if they explicitly request business account type now
+                        updatedRole = 'pending_business'
+                        await supabase.from('profiles').update({ role: 'pending_business', account_type: 'business' }).eq('id', user.id)
+                    }
+
+                    const isClient = updatedRole === 'user' && !profile.business_id
                     return NextResponse.redirect(`${origin}${isClient ? '/book' : '/dashboard'}`)
                 }
             }

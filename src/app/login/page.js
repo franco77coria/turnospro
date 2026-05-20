@@ -99,7 +99,7 @@ function LoginContent() {
             <div className={styles.loginPage}>
                 <div className={styles.loginCard}>
                     <div className={styles.logo}>
-                        <span className={styles.logoMark}>G</span>
+                        <img src="/logo.png" alt="G" className={styles.logoMark} />
                     </div>
                     <h1>Recuperar contraseña</h1>
                     <p>Ingresá tu email y te enviaremos instrucciones</p>
@@ -139,7 +139,7 @@ function LoginContent() {
         <div className={styles.loginPage}>
             <div className={styles.loginCard}>
                 <div className={styles.logo}>
-                    <span className={styles.logoMark}>G</span>
+                    <img src="/logo.png" alt="G" className={styles.logoMark} />
                 </div>
                 <h1>Iniciar sesión</h1>
                 <p>Accedé a tu cuenta de GLOWUP</p>

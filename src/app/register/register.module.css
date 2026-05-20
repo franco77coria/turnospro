@@ -40,6 +40,13 @@
     box-shadow: 0 4px 12px color-mix(in oklab, var(--pink) 30%, transparent);
 }
 
+img.logoMark {
+    background: none !important;
+    box-shadow: none !important;
+    border-radius: 50% !important;
+    object-fit: contain;
+}
+
 .registerCard h1 {
     font-family: var(--font-display);
     font-size: 24px;

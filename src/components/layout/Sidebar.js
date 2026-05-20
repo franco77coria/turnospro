@@ -48,7 +48,7 @@ export default function Sidebar() {
     <aside className="dash-sidebar">
       {/* Brand Header */}
       <div className="dash-brand">
-        <span className="gu-logo-mark">G</span>
+        <img src="/logo.png" alt="G" className="gu-logo-mark" />
         <span>GLOWUP</span>
       </div>
 

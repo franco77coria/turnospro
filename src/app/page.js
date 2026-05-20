@@ -50,7 +50,7 @@ export default function Landing() {
       <nav className="gu-nav">
         <div className="gu-nav-inner">
           <Link href="/" className="gu-logo">
-            <span className="gu-logo-mark">G</span>
+            <img src="/logo.png" alt="G" className="gu-logo-mark" />
             <span>GLOWUP</span>
           </Link>
           <div className="gu-nav-links">
@@ -363,7 +363,7 @@ export default function Landing() {
           <div className="gu-footer-grid">
             <div>
               <div className="gu-logo" style={{ marginBottom: 12 }}>
-                <span className="gu-logo-mark">G</span>
+                <img src="/logo.png" alt="G" className="gu-logo-mark" />
                 <span>GLOWUP</span>
               </div>
               <p style={{ fontSize: 14, color: 'var(--ink-soft)', maxWidth: 260, lineHeight: 1.5 }}>
