@@ -44,7 +44,7 @@ export default function Landing() {
   useReveal();
 
   return (
-    <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ background: 'var(--bg)', minHeight: '100vh', display: 'flex', flexDirection: 'column', overflowX: 'hidden' }}>
       
       {/* NAVBAR */}
       <nav className="gu-nav">
@@ -59,13 +59,13 @@ export default function Landing() {
             <DarkModeToggle />
             {user ? (
               <Link href="/dashboard" className="gu-btn gu-btn-primary gu-btn-sm">
-                Mi Dashboard
+                <span className="gu-nav-hide-sm">Mi </span>Dashboard
               </Link>
             ) : (
               <>
                 <Link href="/login" className="gu-nav-link">Ingresar</Link>
                 <Link href="/register" className="gu-btn gu-btn-pink gu-btn-sm">
-                  Registrar negocio
+                  Registrar <span className="gu-nav-hide-sm">negocio</span>
                 </Link>
               </>
             )}

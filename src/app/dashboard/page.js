@@ -237,7 +237,7 @@ export default function DashboardPage() {
               <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--ink-mute)' }}>
                 <Icons.Clock size={36} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
                 <p style={{ fontWeight: 600 }}>No hay turnos para hoy</p>
-                <p style={{ fontSize: '13px', marginTop: '4px' }}>Hacé click en "Nuevo turno" para agendar uno.</p>
+                <p style={{ fontSize: '13px', marginTop: '4px' }}>Hacé click en &quot;Nuevo turno&quot; para agendar uno.</p>
               </div>
             ) : (
               todayAppointmentsList.map((appt) => (

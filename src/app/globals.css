@@ -172,6 +172,14 @@ input, select, textarea, button { font-family: inherit; font-size: inherit; }
   .gu-nav-inner { padding: 12px 16px; }
   .gu-nav-links .gu-nav-hide-sm { display: none; }
 }
+@media (max-width: 480px) {
+  .gu-nav-inner { padding: 10px 12px; gap: 8px; }
+  .gu-logo { font-size: 18px; gap: 6px; }
+  .gu-logo-mark { width: 30px; height: 30px; font-size: 15px; }
+  .gu-nav-links { gap: 4px; }
+  .gu-nav-link { padding: 8px 10px; font-size: 13px; }
+  .gu-btn-sm { padding: 8px 12px; font-size: 12px; }
+}
 
 /* ===== Buttons ===== */
 .gu-btn {
