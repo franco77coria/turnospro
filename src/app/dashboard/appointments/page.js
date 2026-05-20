@@ -9,20 +9,65 @@ import ClientProfileCard from '@/components/ClientProfileCard'
 import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
-    const { business, loading: authLoading } = useAuth()
+    const { user, profile, business, loading: authLoading } = useAuth()
     const [selectedClientId, setSelectedClientId] = useState(null)
     const [appointments, setAppointments] = useState([])
     const [filter, setFilter] = useState('all')
     const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0])
     const [loadingApts, setLoadingApts] = useState(true)
+    const [currentMember, setCurrentMember] = useState(null)
+
+    // Load active employee data if current profile is a Professional
+    useEffect(() => {
+        async function fetchCurrentMember() {
+            if (!supabase || !user?.id || profile?.role !== 'Profesional') return
+            try {
+                const { data } = await supabase
+                    .from('team_members')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle()
+                if (data) {
+                    setCurrentMember(data)
+                }
+            } catch (err) {
+                console.error('Error fetching employee details:', err)
+            }
+        }
+        fetchCurrentMember()
+    }, [user?.id, profile?.role])
 
     async function loadAppointments() {
-        if (!supabase) return
+        if (!supabase || !business?.id) return
         try {
             let query = supabase
                 .from('appointments')
                 .select('*, clients(name, phone), team_members(name)')
                 .eq('business_id', business.id)
+
+            if (profile?.role === 'Profesional') {
+                let memberId = currentMember?.id
+                if (!memberId) {
+                    const { data } = await supabase
+                        .from('team_members')
+                        .select('id')
+                        .eq('user_id', user.id)
+                        .maybeSingle()
+                    if (data) {
+                        setCurrentMember(data)
+                        memberId = data.id
+                    }
+                }
+                if (memberId) {
+                    query = query.eq('team_member_id', memberId)
+                } else {
+                    setAppointments([])
+                    setLoadingApts(false)
+                    return
+                }
+            }
+
+            query = query
                 .order('date', { ascending: true })
                 .order('time', { ascending: true })
 
@@ -41,7 +86,7 @@ export default function AppointmentsPage() {
 
     useEffect(() => {
         if (business?.id) loadAppointments()
-    }, [business?.id, dateFilter, filter])
+    }, [business?.id, dateFilter, filter, currentMember])
 
     async function updateStatus(id, status) {
         if (!supabase) return

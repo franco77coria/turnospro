@@ -35,7 +35,7 @@ function formatDate(d) {
 }
 
 export default function CalendarPage() {
-    const { business, loading: authLoading } = useAuth()
+    const { user, profile, business, loading: authLoading } = useAuth()
     const [currentDate, setCurrentDate] = useState(new Date())
     const [appointments, setAppointments] = useState([])
     const [showNewModal, setShowNewModal] = useState(false)
@@ -51,6 +51,28 @@ export default function CalendarPage() {
     const [occupiedSlots, setOccupiedSlots] = useState([])
     const [loadingSlots, setLoadingSlots] = useState(false)
     const [filterProfessional, setFilterProfessional] = useState(null)
+    const [currentMember, setCurrentMember] = useState(null)
+
+    // Load active employee data if current profile is a Professional
+    useEffect(() => {
+        async function fetchCurrentMember() {
+            if (!supabase || !user?.id || profile?.role !== 'Profesional') return
+            try {
+                const { data } = await supabase
+                    .from('team_members')
+                    .select('id')
+                    .eq('user_id', user.id)
+                    .maybeSingle()
+                if (data) {
+                    setCurrentMember(data)
+                    setFilterProfessional(data.id)
+                }
+            } catch (err) {
+                console.error('[Calendar] Error fetching employee details:', err)
+            }
+        }
+        fetchCurrentMember()
+    }, [user?.id, profile?.role])
 
     const weekDates = getWeekDates(currentDate)
     const today = formatDate(new Date())
@@ -242,7 +264,15 @@ export default function CalendarPage() {
 
     function resetWizard() {
         setWizardStep(1)
-        setNewApt({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: 30, team_member_id: null })
+        setNewApt({
+            client_id: null,
+            client_name: '',
+            service_name: '',
+            date: '',
+            time: '',
+            duration: 30,
+            team_member_id: profile?.role === 'Profesional' && currentMember ? currentMember.id : null
+        })
         setRecurrence({ enabled: false, type: 'weekly', count: 4 })
         setClientSearch('')
         setError('')
@@ -373,7 +403,7 @@ export default function CalendarPage() {
                 </button>
             </div>
 
-            {teamMembers.length > 0 && (
+            {teamMembers.length > 0 && profile?.role !== 'Profesional' && (
                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-3)' }}>
                     <button
                         className={`btn btn-sm ${!filterProfessional ? 'btn-primary' : 'btn-secondary'}`}
@@ -626,7 +656,7 @@ export default function CalendarPage() {
 
                                             {newApt.date && (
                                                 <>
-                                                    {teamMembers.length > 0 && (
+                                                    {teamMembers.length > 0 && profile?.role !== 'Profesional' && (
                                                         <div style={{ marginBottom: 'var(--space-3)' }}>
                                                             <label className="label" style={{ marginBottom: 'var(--space-2)' }}>Profesional</label>
                                                             <div className={styles.proPills}>

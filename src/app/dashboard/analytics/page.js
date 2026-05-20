@@ -58,7 +58,7 @@ function AnalyticsContent() {
         // Fetch team members
         const { data: team } = await supabase
             .from('team_members')
-            .select('id, name')
+            .select('id, name, commission_rate')
             .eq('business_id', business.id)
             .eq('active', true)
 
@@ -89,11 +89,21 @@ function AnalyticsContent() {
             .slice(0, 5)
 
         // Professional performance
-        const proStats = (team || []).map(m => ({
-            name: m.name,
-            count: apts.filter(a => a.team_member_id === m.id).length,
-            completed: apts.filter(a => a.team_member_id === m.id && a.status === 'completed').length,
-        })).sort((a, b) => b.count - a.count)
+        const proStats = (team || []).map(m => {
+            const memberApts = apts.filter(a => a.team_member_id === m.id)
+            const completedApts = memberApts.filter(a => a.status === 'completed')
+            const totalGenerated = completedApts.reduce((sum, a) => sum + (a.price || 0), 0)
+            const rate = m.commission_rate || 0
+            const commission = Math.round((totalGenerated * rate) / 100)
+            return {
+                name: m.name,
+                count: memberApts.length,
+                completed: completedApts.length,
+                generated: totalGenerated,
+                commission,
+                rate
+            }
+        }).sort((a, b) => b.generated - a.generated)
 
         // Revenue by day (last 7 days)
         const revenueByDay = []
@@ -290,7 +300,7 @@ function AnalyticsContent() {
                         )}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--space-5)' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', marginBottom: 'var(--space-5)' }}>
                         {/* Top Services */}
                         <div className="card">
                             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Servicios más solicitados</h3>
@@ -315,31 +325,52 @@ function AnalyticsContent() {
                                 </div>
                             )}
                         </div>
+                    </div>
 
-                        {/* Professional Performance */}
-                        <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Rendimiento por profesional</h3>
-                            {stats.proStats.length === 0 ? (
-                                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)' }}>Sin equipo configurado</p>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                    {/* Professional Performance & Commissions Table */}
+                    <div className="card" style={{ marginBottom: 'var(--space-5)', overflowX: 'auto' }}>
+                        <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Rendimiento y comisiones por profesional</h3>
+                        {stats.proStats.length === 0 ? (
+                            <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-sm)' }}>Sin equipo configurado</p>
+                        ) : (
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--font-size-sm)', textAlign: 'left', minWidth: 500 }}>
+                                <thead>
+                                    <tr style={{ borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>
+                                        <th style={{ padding: 'var(--space-2) var(--space-3)', fontWeight: 600 }}>Profesional</th>
+                                        <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'center', fontWeight: 600 }}>Turnos (OK)</th>
+                                        <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontWeight: 600 }}>Total Generado</th>
+                                        <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontWeight: 600 }}>Comisión</th>
+                                        <th style={{ padding: 'var(--space-2) var(--space-3)', textAlign: 'right', fontWeight: 600 }}>Neto Local</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     {stats.proStats.map(pro => (
-                                        <div key={pro.name} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 'var(--font-size-sm)', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                                <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-xs)', fontWeight: 600, flexShrink: 0 }}>
-                                                    {pro.name[0]}
+                                        <tr key={pro.name} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                                            <td style={{ padding: 'var(--space-3) var(--space-2)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--accent-light)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 'var(--font-size-xs)', fontWeight: 600, flexShrink: 0 }}>
+                                                        {pro.name[0]}
+                                                    </div>
+                                                    <span style={{ fontWeight: 500 }}>{pro.name}</span>
                                                 </div>
-                                                <span>{pro.name}</span>
-                                            </div>
-                                            <div style={{ display: 'flex', gap: 'var(--space-3)', color: 'var(--text-tertiary)' }}>
-                                                <span>{pro.count} turnos</span>
-                                                <span style={{ color: 'var(--success)' }}>{pro.completed} ok</span>
-                                            </div>
-                                        </div>
+                                            </td>
+                                            <td style={{ padding: 'var(--space-3) var(--space-2)', textAlign: 'center' }}>
+                                                {pro.count} <span style={{ color: 'var(--text-tertiary)' }}>({pro.completed} ok)</span>
+                                            </td>
+                                            <td style={{ padding: 'var(--space-3) var(--space-2)', textAlign: 'right', fontWeight: 600 }}>
+                                                ${pro.generated.toLocaleString()}
+                                            </td>
+                                            <td style={{ padding: 'var(--space-3) var(--space-2)', textAlign: 'right', color: 'var(--danger)' }}>
+                                                ${pro.commission.toLocaleString()} <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>({pro.rate}%)</span>
+                                            </td>
+                                            <td style={{ padding: 'var(--space-3) var(--space-2)', textAlign: 'right', color: 'var(--success)', fontWeight: 600 }}>
+                                                ${(pro.generated - pro.commission).toLocaleString()}
+                                            </td>
+                                        </tr>
                                     ))}
-                                </div>
-                            )}
-                        </div>
+                                </tbody>
+                            </table>
+                        )}
                     </div>
 
                     {/* Summary footer */}
