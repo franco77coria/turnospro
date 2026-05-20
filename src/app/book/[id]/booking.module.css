@@ -472,7 +472,31 @@
     }
 
     .progress {
-        gap: 12px;
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        padding: 12px 24px;
+        gap: 0;
+    }
+
+    .progress::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 32px;
+        right: 32px;
+        height: 2px;
+        background: var(--line);
+        transform: translateY(-50%);
+        z-index: 1;
+    }
+
+    .progressStep {
+        position: relative;
+        z-index: 2;
+        background: var(--bg-card);
+        padding: 0 6px;
+        gap: 0;
     }
 
     .stepContent {

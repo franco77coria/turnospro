@@ -1680,6 +1680,27 @@ img.gu-logo-mark,
   margin-bottom: 24px;
   flex-wrap: wrap;
 }
+@media (max-width: 576px) {
+  .dash-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .dash-topbar > div:first-child {
+    width: 100%;
+  }
+  .dash-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .dash-actions > a {
+    flex: 1;
+    justify-content: center;
+  }
+}
 .dash-greeting {
   font-family: var(--font-display);
   font-size: clamp(28px, 3vw, 40px);
@@ -1727,7 +1748,12 @@ img.gu-logo-mark,
   margin-bottom: 24px;
 }
 @media (max-width: 960px) { .dash-kpis { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 480px) { .dash-kpis { grid-template-columns: 1fr 1fr; gap: 8px; } }
+@media (max-width: 480px) { 
+  .dash-kpis { grid-template-columns: 1fr 1fr; gap: 8px; } 
+  .dash-kpi { padding: 12px; }
+  .dash-kpi-value { font-size: 24px; margin-top: 4px; }
+  .dash-kpi-label { font-size: 10px; gap: 6px; }
+}
 
 .dash-kpi {
   background: var(--surface);
@@ -1813,6 +1839,18 @@ img.gu-logo-mark,
   border-top: 1px dashed var(--line);
   transition: padding-left var(--t-fast);
   cursor: pointer;
+}
+@media (max-width: 576px) {
+  .dash-schedule-item {
+    grid-template-columns: 55px 3px 1fr;
+    gap: 8px 12px;
+    padding: 12px 0;
+  }
+  .dash-schedule-item > div:last-child {
+    grid-column: 3;
+    justify-content: flex-start;
+    margin-top: 2px;
+  }
 }
 .dash-schedule-item:first-child { border-top: 0; }
 .dash-schedule-item:hover { padding-left: 8px; }

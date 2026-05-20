@@ -205,7 +205,7 @@ function SettingsContent() {
             <form onSubmit={handleSave}>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                     gap: '24px',
                     alignItems: 'start'
                 }}>
@@ -298,21 +298,21 @@ function SettingsContent() {
                             </h3>
                             
                             {/* Link */}
-                            <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                            <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
                                 <input className="input" value={
                                     business.slug
                                         ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
                                         : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
-                                } readOnly style={{ opacity: 0.8 }} />
+                                } readOnly style={{ opacity: 0.8, flex: '1 1 200px' }} />
                                 <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyLink}
-                                    style={{ whiteSpace: 'nowrap', minWidth: 80 }}>
+                                    style={{ whiteSpace: 'nowrap', minWidth: 80, flex: '1 1 auto' }}>
                                     {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
                                 </button>
                             </div>
 
                             {/* QR Code */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--line)' }}>
-                                <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--line)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                                     <QRCodeSVG 
                                         value={
                                             business.slug
@@ -324,9 +324,9 @@ function SettingsContent() {
                                         includeMargin={false}
                                     />
                                 </div>
-                                <div style={{ flex: 1 }}>
-                                    <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--cream)' }}>Código QR de reservas</h4>
-                                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-2)', lineHeight: 1.4 }}>
+                                <div style={{ flex: '1 1 200px', minWidth: 200, textAlign: 'center' }}>
+                                    <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--cream)', textAlign: 'left' }}>Código QR de reservas</h4>
+                                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-2)', lineHeight: 1.4, textAlign: 'left' }}>
                                         Imprimí este código para que tus clientes puedan escanear y reservar directamente.
                                     </p>
                                     <button type="button" className="btn btn-primary btn-sm" onClick={() => {
