@@ -13,8 +13,10 @@ const NAV_ITEMS = [
   { href: '/dashboard/calendar', label: 'Agenda', icon: 'Calendar' },
   { href: '/dashboard/appointments', label: 'Turnos', icon: 'Clock' },
   { href: '/dashboard/clients', label: 'Clientes', icon: 'Users' },
-  { href: '/dashboard/services', label: 'Servicios', icon: 'Tag' },
+  { href: '/dashboard/services', label: 'Servicios', icon: 'Scissors' },
   { href: '/dashboard/finance', label: 'Caja', icon: 'Wallet' },
+  { href: '/dashboard/team', label: 'Equipo', icon: 'User' },
+  { href: '/dashboard/analytics', label: 'Estadísticas', icon: 'BarChart' },
 ]
 
 const BOTTOM_ITEMS = [

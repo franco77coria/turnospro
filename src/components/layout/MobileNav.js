@@ -18,6 +18,7 @@ const MORE_ITEMS = [
     { href: '/dashboard/clients', label: 'Clientes', icon: Users },
     { href: '/dashboard/services', label: 'Servicios', icon: Tag },
     { href: '/dashboard/team', label: 'Equipo', icon: UserCircle },
+    { href: '/dashboard/analytics', label: 'Estadísticas', icon: BarChart3 },
     { href: '/dashboard/settings', label: 'Configuracion', icon: Settings },
 ]
 

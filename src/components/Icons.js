@@ -50,6 +50,8 @@ export const Icons = {
   Instagram: (p) => <Icon size={p?.size} {...p}><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><circle cx="17.5" cy="6.5" r=".5" fill="currentColor"/></Icon>,
   ChevronRight: (p) => <Icon size={p?.size} {...p}><path d="m9 18 6-6-6-6"/></Icon>,
   LogOut:    (p) => <Icon size={p?.size} {...p}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></Icon>,
+  BarChart:  (p) => <Icon size={p?.size} {...p}><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></Icon>,
+  Tag:       (p) => <Icon size={p?.size} {...p}><path d="M12 2 2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></Icon>,
 };
 
 export default Icons;
