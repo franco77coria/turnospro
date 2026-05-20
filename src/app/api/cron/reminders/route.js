@@ -87,68 +87,111 @@ export async function GET(request) {
             const date = new Date(apt.date)
             const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
-            // Smart confirmation: if client has 2+ cancellations this month, request CONFIRMO via WhatsApp
+            // Smart confirmation logic and general WhatsApp reminder
             const currentMonth = argentinaNow.toISOString().slice(0, 7)
             const monthlyCancels = apt.clients.last_cancellation_month === currentMonth
                 ? (apt.clients.monthly_cancellations || 0)
                 : 0
 
-            if (monthlyCancels >= 2 && apt.clients.phone) {
+            let whatsappSent = false
+            let emailSent = false
+            let isConfirmationRequest = false
+
+            // 1. Try sending WhatsApp first if phone exists
+            if (apt.clients.phone) {
                 try {
                     const { sendWhatsAppText } = await import('@/lib/whatsapp')
                     const phoneNumberId = apt.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID
-                    const deadline = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours to confirm
-
-                    await sendWhatsAppText({
-                        to: apt.clients.phone,
-                        phoneNumberId,
-                        text: `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)}.\n\nPor favor respondé CONFIRMO para confirmar tu turno. Si no confirmás en las próximas 2 horas, el turno podría ser liberado.`
-                    })
-
-                    // Set confirmation flags
-                    await supabase
-                        .from('appointments')
-                        .update({
-                            confirmation_required: true,
-                            confirmation_deadline: deadline.toISOString(),
-                            reminder_sent: true,
-                            reminder_sent_at: new Date().toISOString(),
+                    
+                    let messageText = ''
+                    if (monthlyCancels >= 2) {
+                        isConfirmationRequest = true
+                        const deadline = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours to confirm
+                        messageText = `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)} hs.\n\nPor favor respondé CONFIRMO para confirmar tu turno. Si no confirmás en las próximas 2 horas, el turno podría ser liberado.`
+                        
+                        await sendWhatsAppText({
+                            to: apt.clients.phone,
+                            phoneNumberId,
+                            text: messageText
                         })
-                        .eq('id', apt.id)
 
-                    return { sent: true, id: apt.id, type: 'confirmation_request' }
+                        await supabase
+                            .from('appointments')
+                            .update({
+                                confirmation_required: true,
+                                confirmation_deadline: deadline.toISOString(),
+                                reminder_sent: true,
+                                reminder_sent_at: new Date().toISOString(),
+                            })
+                            .eq('id', apt.id)
+                    } else {
+                        messageText = `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)} hs en ${apt.businesses?.name || 'GLOWUP'}.\n\n¡Te esperamos! Si no podés asistir, respondé CANCELAR.`
+                        
+                        await sendWhatsAppText({
+                            to: apt.clients.phone,
+                            phoneNumberId,
+                            text: messageText
+                        })
+
+                        await supabase
+                            .from('appointments')
+                            .update({
+                                reminder_sent: true,
+                                reminder_sent_at: new Date().toISOString(),
+                            })
+                            .eq('id', apt.id)
+                    }
+                    whatsappSent = true
                 } catch (e) {
-                    console.error('Smart confirmation WhatsApp error:', e)
-                    // Fall through to normal email reminder
+                    console.error('WhatsApp reminder dispatch failed:', e)
                 }
             }
 
-            const html = reminderEmail({
-                clientName: apt.clients.name || 'Cliente',
-                serviceName: apt.service_name || 'Turno',
-                date: formattedDate,
-                time: apt.time,
-                hoursUntil,
-                businessName: apt.businesses?.name || 'GLOWUP',
-                businessType: apt.businesses?.business_type || 'custom',
-                businessPhone: apt.businesses?.phone,
-                appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
-            })
+            // 2. Send email reminder if email exists (either as fallback or complementary)
+            if (apt.clients.email) {
+                try {
+                    const html = reminderEmail({
+                        clientName: apt.clients.name || 'Cliente',
+                        serviceName: apt.service_name || 'Turno',
+                        date: formattedDate,
+                        time: apt.time,
+                        hoursUntil,
+                        businessName: apt.businesses?.name || 'GLOWUP',
+                        businessType: apt.businesses?.business_type || 'custom',
+                        businessPhone: apt.businesses?.phone,
+                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+                    })
 
-            await resend.emails.send({
-                from: 'GLOWUP <onboarding@resend.dev>',
-                to: [apt.clients.email],
-                subject: `Recordatorio — Tu turno es ${hoursUntil <= 1 ? 'en menos de 1 hora' : `en ${hoursUntil} horas`} | ${apt.businesses?.name}`,
-                html,
-            })
+                    await resend.emails.send({
+                        from: 'GLOWUP <onboarding@resend.dev>',
+                        to: [apt.clients.email],
+                        subject: `Recordatorio — Tu turno es ${hoursUntil <= 1 ? 'en menos de 1 hora' : `en ${hoursUntil} horas`} | ${apt.businesses?.name}`,
+                        html,
+                    })
 
-            // Mark reminder as sent
-            await supabase
-                .from('appointments')
-                .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
-                .eq('id', apt.id)
+                    // If WhatsApp wasn't sent, we mark reminder as sent here
+                    if (!whatsappSent) {
+                        await supabase
+                            .from('appointments')
+                            .update({ reminder_sent: true, reminder_sent_at: new Date().toISOString() })
+                            .eq('id', apt.id)
+                    }
+                    emailSent = true
+                } catch (e) {
+                    console.error('Email reminder dispatch failed:', e)
+                }
+            }
 
-            return { sent: true, id: apt.id }
+            if (whatsappSent || emailSent) {
+                return { 
+                    sent: true, 
+                    id: apt.id, 
+                    type: isConfirmationRequest ? 'confirmation_request' : 'standard_reminder',
+                    channels: { whatsapp: whatsappSent, email: emailSent }
+                }
+            } else {
+                return { sent: false, id: apt.id, reason: 'dispatch_failed_all_channels' }
+            }
         }))
 
         const sentCount = results.filter(r => r.status === 'fulfilled' && r.value?.sent).length
