@@ -50,9 +50,8 @@ export default function InvitePage() {
             const { error: rpcError } = await supabase.rpc('accept_invite', { p_token: token })
             if (rpcError) throw rpcError
             
-            // Success, force refresh and redirect
-            router.push('/dashboard')
-            setTimeout(() => window.location.reload(), 500)
+            // Success, redirect with clean reload
+            window.location.href = '/dashboard'
         } catch (err) {
             console.error('Accept error:', err)
             setError('No pudimos aceptar la invitación. Intentá de nuevo.')

@@ -190,399 +190,421 @@ function SettingsContent() {
 
     if (authLoading || !business?.id) {
         return (
-            <div style={{ maxWidth: 640 }}>
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
-                    <div className="loading-spinner" />
+            <div style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: '0 var(--space-4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0' }}>
+                    <div className="loading-spinner" style={{ width: '40px', height: '40px' }} />
                 </div>
             </div>
         )
     }
 
     return (
-        <div style={{ maxWidth: 640 }}>
-            <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)' }}>Configuración</h1>
+        <div style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: '0 var(--space-4) var(--space-8) var(--space-4)' }}>
+            <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)', fontFamily: 'var(--font-display)', color: 'var(--cream)' }}>Configuración</h1>
 
             <form onSubmit={handleSave}>
-                {/* Business Info */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Datos del negocio</h3>
-                    <div className="form-group">
-                        <label className="label">Nombre del negocio</label>
-                        <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Rubro</label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) 0' }}>
-                            <span style={{ fontWeight: 500 }}>{BUSINESS_TEMPLATES[form.business_type]?.name || 'No definido'}</span>
+                <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))',
+                    gap: '24px',
+                    alignItems: 'start'
+                }}>
+                    {/* COLUMNA IZQUIERDA: Información del Negocio y Horarios */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        {/* Business Info */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--cream)' }}>Datos del negocio</h3>
+                            <div className="form-group">
+                                <label className="label">Nombre del negocio</label>
+                                <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Rubro</label>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', padding: 'var(--space-2) 0' }}>
+                                    <span style={{ fontWeight: 500, color: 'var(--pink)' }}>{BUSINESS_TEMPLATES[form.business_type]?.name || 'No definido'}</span>
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Descripción</label>
+                                <textarea
+                                    className="input"
+                                    rows={3}
+                                    placeholder="Describí tu negocio para tus clientes..."
+                                    value={form.description}
+                                    onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
+                                    style={{ resize: 'vertical', minHeight: 80 }}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Teléfono</label>
+                                <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Dirección</label>
+                                <input className="input" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+                            </div>
                         </div>
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Descripción</label>
-                        <textarea
-                            className="input"
-                            rows={3}
-                            placeholder="Describí tu negocio para tus clientes..."
-                            value={form.description}
-                            onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
-                            style={{ resize: 'vertical', minHeight: 80 }}
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Teléfono</label>
-                        <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Dirección</label>
-                        <input className="input" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
-                    </div>
-                </div>
 
-                {/* Work Schedule */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Clock size={18} /> Horario de atención
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-                        <div className="form-group">
-                            <label className="label">Apertura</label>
-                            <input className="input" type="time" value={workHoursForm.start}
-                                onChange={e => setWorkHoursForm(p => ({ ...p, start: e.target.value }))} />
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Cierre</label>
-                            <input className="input" type="time" value={workHoursForm.end}
-                                onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
-                        </div>
-                    </div>
+                        {/* Work Schedule */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Clock size={18} /> Horario de atención
+                            </h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                <div className="form-group">
+                                    <label className="label">Apertura</label>
+                                    <input className="input" type="time" value={workHoursForm.start}
+                                        onChange={e => setWorkHoursForm(p => ({ ...p, start: e.target.value }))} />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Cierre</label>
+                                    <input className="input" type="time" value={workHoursForm.end}
+                                        onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
+                                </div>
+                            </div>
 
-                    {/* Work Days */}
-                    <div className="form-group" style={{ marginTop: 'var(--space-3)' }}>
-                        <label className="label">Días de trabajo</label>
-                        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                            {DAY_NAMES.map((name, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => toggleWorkDay(idx)}
-                                    style={{
-                                        padding: '8px 14px',
-                                        borderRadius: 'var(--radius-md)',
-                                        border: '1px solid ' + (workDays.includes(idx) ? 'var(--accent)' : 'var(--border)'),
-                                        background: workDays.includes(idx) ? 'var(--accent)' : 'var(--bg-primary)',
-                                        color: workDays.includes(idx) ? 'white' : 'var(--text-secondary)',
-                                        fontSize: 'var(--font-size-sm)',
-                                        fontWeight: 500,
-                                        cursor: 'pointer',
-                                        transition: 'all var(--transition)',
-                                    }}
-                                >
-                                    {name}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Booking Settings */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Shield size={18} /> Políticas de turnos
-                    </h3>
-
-                    <div className="form-group">
-                        <label className="label">Horas mínimas para cancelar</label>
-                        <input className="input" type="number" min="0" max="72" value={minCancelHours}
-                            onChange={e => setMinCancelHours(e.target.value)} />
-                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
-                            Los clientes no podrán cancelar con menos de {minCancelHours}h de anticipación
-                        </span>
-                    </div>
-
-                    <div className="form-group">
-                        <label className="label">Tiempo buffer entre turnos (minutos)</label>
-                        <input className="input" type="number" min="0" max="60" step="5" value={bufferTime}
-                            onChange={e => setBufferTime(e.target.value)} />
-                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
-                            Descanso o preparación entre turno y turno
-                        </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-                        <div className="form-group">
-                            <label className="label">Anticipación mínima (horas)</label>
-                            <input className="input" type="number" min="0" max="168" value={minAdvance}
-                                onChange={e => setMinAdvance(e.target.value)} />
-                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
-                                No se puede reservar con menos de {minAdvance}h antes
-                            </span>
-                        </div>
-                        <div className="form-group">
-                            <label className="label">Anticipación máxima (días)</label>
-                            <input className="input" type="number" min="1" max="365" value={maxAdvance}
-                                onChange={e => setMaxAdvance(e.target.value)} />
-                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
-                                Pueden reservar hasta {maxAdvance} días adelante
-                            </span>
-                        </div>
-                    </div>
-
-                    <div className="form-group" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--border)' }}>
-                        <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                            <Shield size={14} color="var(--accent)" /> Seña / Depósito Requerido (%)
-                        </label>
-                        <input className="input" type="number" min="0" max="100" value={depositPercentage}
-                            onChange={e => setDepositPercentage(e.target.value)} />
-                        <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
-                            Porcentaje que el cliente debe pagar por adelantado para confirmar el turno (0 = no requiere seña)
-                        </span>
-                    </div>
-                </div>
-
-                {/* Closed Dates (Holidays) */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Calendar size={18} /> Días cerrados / Feriados
-                    </h3>
-
-                    {closedDates.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                            {closedDates.map((cd, i) => {
-                                const dateObj = new Date(cd.date + 'T12:00:00')
-                                return (
-                                    <div key={i} style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: 'var(--space-2) var(--space-3)',
-                                        background: 'var(--bg-secondary)',
-                                        borderRadius: 'var(--radius-md)',
-                                        fontSize: 'var(--font-size-sm)',
-                                    }}>
-                                        <span>
-                                            <strong>{dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-                                            {cd.reason && <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>— {cd.reason}</span>}
-                                        </span>
-                                        <button type="button" onClick={() => removeClosedDate(i)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger, #DC2626)', padding: 4 }}>
-                                            <X size={14} />
+                            {/* Work Days */}
+                            <div className="form-group" style={{ marginTop: 'var(--space-3)' }}>
+                                <label className="label">Días de trabajo</label>
+                                <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                                    {DAY_NAMES.map((name, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button"
+                                            onClick={() => toggleWorkDay(idx)}
+                                            style={{
+                                                padding: '8px 14px',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid ' + (workDays.includes(idx) ? 'var(--pink)' : 'var(--line)'),
+                                                background: workDays.includes(idx) ? 'var(--pink)' : 'var(--bg-card)',
+                                                color: workDays.includes(idx) ? 'white' : 'var(--cream)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                fontWeight: 600,
+                                                cursor: 'pointer',
+                                                transition: 'all var(--t-fast)',
+                                            }}
+                                        >
+                                            {name}
                                         </button>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                        <div className="form-group" style={{ flex: '1 1 140px' }}>
-                            <label className="label">Fecha</label>
-                            <input className="input" type="date" value={newClosedDate}
-                                onChange={e => setNewClosedDate(e.target.value)} />
-                        </div>
-                        <div className="form-group" style={{ flex: '2 1 200px' }}>
-                            <label className="label">Motivo (opcional)</label>
-                            <input className="input" placeholder="Ej: Feriado, Vacaciones..."
-                                value={newClosedReason} onChange={e => setNewClosedReason(e.target.value)} />
-                        </div>
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={addClosedDate}
-                            style={{ height: 40, whiteSpace: 'nowrap' }}>
-                            <Plus size={14} /> Agregar
-                        </button>
-                    </div>
-                </div>
-
-                {/* Team Absences */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <UserX size={18} /> Ausencias del equipo
-                    </h3>
-                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-                        Registra vacaciones o ausencias de tu equipo. Esos dias no apareceran disponibles para reservas.
-                    </p>
-
-                    {teamAbsences.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                            {teamAbsences.map(abs => {
-                                const member = teamMembers.find(m => m.id === abs.team_member_id)
-                                const start = new Date(abs.start_date + 'T12:00:00')
-                                const end = new Date(abs.end_date + 'T12:00:00')
-                                return (
-                                    <div key={abs.id} style={{
-                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: 'var(--space-2) var(--space-3)',
-                                        background: 'var(--warning-light)',
-                                        borderRadius: 'var(--radius-md)',
-                                        fontSize: 'var(--font-size-sm)',
-                                    }}>
-                                        <span>
-                                            <strong>{member?.name || 'Profesional'}</strong>
-                                            <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>
-                                                {start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} — {end.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                            </span>
-                                            {abs.reason && abs.reason !== 'Ausencia' && (
-                                                <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>({abs.reason})</span>
-                                            )}
-                                        </span>
-                                        <button type="button" onClick={() => removeTeamAbsence(abs.id)}
-                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4 }}>
-                                            <X size={14} />
-                                        </button>
-                                    </div>
-                                )
-                            })}
-                        </div>
-                    )}
-
-                    {teamMembers.length > 0 ? (
-                        <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                            <div className="form-group" style={{ flex: '1 1 160px' }}>
-                                <label className="label">Profesional</label>
-                                <select className="select" value={newAbsence.team_member_id}
-                                    onChange={e => setNewAbsence(p => ({ ...p, team_member_id: e.target.value }))}>
-                                    <option value="">Seleccionar...</option>
-                                    {teamMembers.map(m => (
-                                        <option key={m.id} value={m.id}>{m.name}</option>
                                     ))}
-                                </select>
+                                </div>
                             </div>
-                            <div className="form-group" style={{ flex: '1 1 130px' }}>
-                                <label className="label">Desde</label>
-                                <input className="input" type="date" value={newAbsence.start_date}
-                                    onChange={e => setNewAbsence(p => ({ ...p, start_date: e.target.value }))} />
-                            </div>
-                            <div className="form-group" style={{ flex: '1 1 130px' }}>
-                                <label className="label">Hasta</label>
-                                <input className="input" type="date" value={newAbsence.end_date}
-                                    onChange={e => setNewAbsence(p => ({ ...p, end_date: e.target.value }))} />
-                            </div>
-                            <div className="form-group" style={{ flex: '1 1 140px' }}>
-                                <label className="label">Motivo</label>
-                                <input className="input" placeholder="Vacaciones..." value={newAbsence.reason}
-                                    onChange={e => setNewAbsence(p => ({ ...p, reason: e.target.value }))} />
-                            </div>
-                            <button type="button" className="btn btn-secondary btn-sm" onClick={addTeamAbsence}
-                                style={{ height: 40, whiteSpace: 'nowrap' }}>
-                                <Plus size={14} /> Agregar
-                            </button>
                         </div>
-                    ) : (
-                        <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-tertiary)' }}>
-                            No hay miembros del equipo. Agrega profesionales en la seccion Equipo.
-                        </p>
-                    )}
-                </div>
 
-                {/* Booking Link & QR Code */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Link2 size={18} /> Link de reservas y Código QR
-                    </h3>
-                    
-                    {/* Link */}
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                        <input className="input" value={
-                            business.slug
-                                ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
-                                : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
-                        } readOnly style={{ opacity: 0.8 }} />
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyLink}
-                            style={{ whiteSpace: 'nowrap', minWidth: 80 }}>
-                            {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
-                        </button>
-                    </div>
-
-                    {/* QR Code */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)' }}>
-                        <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)' }}>
-                            <QRCodeSVG 
-                                value={
+                        {/* Booking Link & QR Code */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Link2 size={18} /> Link de reservas y Código QR
+                            </h3>
+                            
+                            {/* Link */}
+                            <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+                                <input className="input" value={
                                     business.slug
                                         ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
                                         : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
-                                } 
-                                size={120} 
-                                level="M" 
-                                includeMargin={false}
-                            />
+                                } readOnly style={{ opacity: 0.8 }} />
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyLink}
+                                    style={{ whiteSpace: 'nowrap', minWidth: 80 }}>
+                                    {copied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar</>}
+                                </button>
+                            </div>
+
+                            {/* QR Code */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--line)' }}>
+                                <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center' }}>
+                                    <QRCodeSVG 
+                                        value={
+                                            business.slug
+                                                ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
+                                                : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
+                                        } 
+                                        size={100} 
+                                        level="M" 
+                                        includeMargin={false}
+                                    />
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--cream)' }}>Código QR de reservas</h4>
+                                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-2)', lineHeight: 1.4 }}>
+                                        Imprimí este código para que tus clientes puedan escanear y reservar directamente.
+                                    </p>
+                                    <button type="button" className="btn btn-primary btn-sm" onClick={() => {
+                                        const svg = document.getElementById('booking-qr-code').innerHTML;
+                                        const blob = new Blob([svg], { type: 'image/svg+xml' });
+                                        const url = URL.createObjectURL(blob);
+                                        const a = document.createElement('a');
+                                        a.href = url;
+                                        a.download = `qr-glowup-${business.name.toLowerCase().replace(/\s+/g, '-')}.svg`;
+                                        document.body.appendChild(a);
+                                        a.click();
+                                        document.body.removeChild(a);
+                                        URL.revokeObjectURL(url);
+                                    }}>
+                                        <Download size={12} /> Descargar QR
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <h4 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-1)' }}>Código QR de reservas</h4>
-                            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-3)', lineHeight: 1.4 }}>
-                                Imprimí este código para que tus clientes puedan escanear y acceder directamente a tu página de reservas.
+
+                        {/* Embeddable Widget */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Link2 size={18} /> Widget para tu sitio web
+                            </h3>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                                Copiá y pegá este código HTML en tu página web (WordPress, Wix, etc.) para integrar el botón de reservas.
                             </p>
-                            <button type="button" className="btn btn-primary btn-sm" onClick={() => {
-                                const svg = document.getElementById('booking-qr-code').innerHTML;
-                                const blob = new Blob([svg], { type: 'image/svg+xml' });
-                                const url = URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `qr-glowup-${business.name.toLowerCase().replace(/\s+/g, '-')}.svg`;
-                                document.body.appendChild(a);
-                                a.click();
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                            }}>
-                                <Download size={14} /> Descargar QR
-                            </button>
+                            <div style={{ position: 'relative' }}>
+                                <textarea 
+                                    className="input" 
+                                    readOnly 
+                                    rows={3}
+                                    style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: 'rgba(0,0,0,0.2)', resize: 'none' }}
+                                    value={`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
+                                />
+                                <button type="button" className="btn btn-secondary btn-sm" 
+                                    style={{ position: 'absolute', top: '10px', right: '10px' }}
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
+                                        toast.success('Código copiado');
+                                    }}>
+                                    <Copy size={14} /> Copiar
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Embeddable Widget */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <Link2 size={18} /> Widget para tu sitio web
-                    </h3>
-                    <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-                        Copiá y pegá este código HTML en tu página web (WordPress, Wix, etc.) para integrar el botón de reservas.
-                    </p>
-                    <div style={{ position: 'relative' }}>
-                        <textarea 
-                            className="input" 
-                            readOnly 
-                            rows={3}
-                            style={{ fontFamily: 'monospace', fontSize: '13px', backgroundColor: 'var(--bg-secondary)', resize: 'none' }}
-                            value={`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
-                        />
-                        <button type="button" className="btn btn-secondary btn-sm" 
-                            style={{ position: 'absolute', top: '10px', right: '10px' }}
-                            onClick={() => {
-                                navigator.clipboard.writeText(`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
-                                toast.success('Código copiado');
-                            }}>
-                            <Copy size={14} /> Copiar
-                        </button>
-                    </div>
-                </div>
+                    {/* COLUMNA DERECHA: Políticas, Feriados y Cuenta */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        {/* Booking Settings */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Shield size={18} /> Políticas de turnos
+                            </h3>
 
-                {/* Account Info */}
-                <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
-                    <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)' }}>Mi cuenta</h3>
-                    <div className="form-group">
-                        <label className="label">Email</label>
-                        <input className="input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} />
-                    </div>
-                    <div className="form-group">
-                        <label className="label">Rol</label>
-                        <span className="badge badge-accent">{profile?.role || 'Dueño'}</span>
+                            <div className="form-group">
+                                <label className="label">Horas mínimas para cancelar</label>
+                                <input className="input" type="number" min="0" max="72" value={minCancelHours}
+                                    onChange={e => setMinCancelHours(e.target.value)} />
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    Los clientes no podrán cancelar con menos de {minCancelHours}h de anticipación
+                                </span>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label">Tiempo buffer entre turnos (minutos)</label>
+                                <input className="input" type="number" min="0" max="60" step="5" value={bufferTime}
+                                    onChange={e => setBufferTime(e.target.value)} />
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    Descanso o preparación entre turno y turno
+                                </span>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                <div className="form-group">
+                                    <label className="label">Anticipación mínima (horas)</label>
+                                    <input className="input" type="number" min="0" max="168" value={minAdvance}
+                                        onChange={e => setMinAdvance(e.target.value)} />
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                        No se puede reservar con menos de {minAdvance}h antes
+                                    </span>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Anticipación máxima (días)</label>
+                                    <input className="input" type="number" min="1" max="365" value={maxAdvance}
+                                        onChange={e => setMaxAdvance(e.target.value)} />
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                        Pueden reservar hasta {maxAdvance} días adelante
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="form-group" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--line)' }}>
+                                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                    <Shield size={14} color="var(--pink)" /> Seña / Depósito Requerido (%)
+                                </label>
+                                <input className="input" type="number" min="0" max="100" value={depositPercentage}
+                                    onChange={e => setDepositPercentage(e.target.value)} />
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    Porcentaje que el cliente debe pagar por adelantado para confirmar el turno (0 = no requiere seña)
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Closed Dates (Holidays) */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Calendar size={18} /> Días cerrados / Feriados
+                            </h3>
+
+                            {closedDates.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                    {closedDates.map((cd, i) => {
+                                        const dateObj = new Date(cd.date + 'T12:00:00')
+                                        return (
+                                            <div key={i} style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: 'var(--space-2) var(--space-3)',
+                                                background: 'var(--bg-secondary)',
+                                                borderRadius: 'var(--radius-md)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                border: '1px solid var(--line)'
+                                            }}>
+                                                <span style={{ color: 'var(--cream)' }}>
+                                                    <strong>{dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
+                                                    {cd.reason && <span style={{ color: 'color-mix(in oklab, var(--cream) 50%, transparent)', marginLeft: 8 }}>— {cd.reason}</span>}
+                                                </span>
+                                                <button type="button" onClick={() => removeClosedDate(i)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger, #DC2626)', padding: 4 }}>
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div className="form-group" style={{ flex: '1 1 140px' }}>
+                                    <label className="label">Fecha</label>
+                                    <input className="input" type="date" value={newClosedDate}
+                                        onChange={e => setNewClosedDate(e.target.value)} />
+                                </div>
+                                <div className="form-group" style={{ flex: '2 1 180px' }}>
+                                    <label className="label">Motivo (opcional)</label>
+                                    <input className="input" placeholder="Ej: Feriado, Vacaciones..."
+                                        value={newClosedReason} onChange={e => setNewClosedReason(e.target.value)} />
+                                </div>
+                                <button type="button" className="btn btn-secondary btn-sm" onClick={addClosedDate}
+                                    style={{ height: 40, whiteSpace: 'nowrap' }}>
+                                    <Plus size={14} /> Agregar
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Team Absences */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <UserX size={18} /> Ausencias del equipo
+                            </h3>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                                Registra vacaciones o ausencias. Esos días no aparecerán disponibles para reservas.
+                            </p>
+
+                            {teamAbsences.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                    {teamAbsences.map(abs => {
+                                        const member = teamMembers.find(m => m.id === abs.team_member_id)
+                                        const start = new Date(abs.start_date + 'T12:00:00')
+                                        const end = new Date(abs.end_date + 'T12:00:00')
+                                        return (
+                                            <div key={abs.id} style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                padding: 'var(--space-2) var(--space-3)',
+                                                background: 'rgba(255, 184, 0, 0.1)',
+                                                border: '1px solid rgba(255, 184, 0, 0.3)',
+                                                borderRadius: 'var(--radius-md)',
+                                                fontSize: 'var(--font-size-sm)',
+                                                color: 'var(--cream)'
+                                            }}>
+                                                <span>
+                                                    <strong>{member?.name || 'Profesional'}</strong>
+                                                    <span style={{ color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginLeft: 8 }}>
+                                                        {start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} — {end.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                                    </span>
+                                                    {abs.reason && abs.reason !== 'Ausencia' && (
+                                                        <span style={{ color: 'color-mix(in oklab, var(--cream) 50%, transparent)', marginLeft: 8 }}>({abs.reason})</span>
+                                                    )}
+                                                </span>
+                                                <button type="button" onClick={() => removeTeamAbsence(abs.id)}
+                                                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 4 }}>
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
+                            {teamMembers.length > 0 ? (
+                                <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                    <div className="form-group" style={{ flex: '1 1 160px' }}>
+                                        <label className="label">Profesional</label>
+                                        <select className="select" value={newAbsence.team_member_id}
+                                            onChange={e => setNewAbsence(p => ({ ...p, team_member_id: e.target.value }))}>
+                                            <option value="">Seleccionar...</option>
+                                            {teamMembers.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group" style={{ flex: '1 1 110px' }}>
+                                        <label className="label">Desde</label>
+                                        <input className="input" type="date" value={newAbsence.start_date}
+                                            onChange={e => setNewAbsence(p => ({ ...p, start_date: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group" style={{ flex: '1 1 110px' }}>
+                                        <label className="label">Hasta</label>
+                                        <input className="input" type="date" value={newAbsence.end_date}
+                                            onChange={e => setNewAbsence(p => ({ ...p, end_date: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group" style={{ flex: '1 1 120px' }}>
+                                        <label className="label">Motivo</label>
+                                        <input className="input" placeholder="Vacaciones..." value={newAbsence.reason}
+                                            onChange={e => setNewAbsence(p => ({ ...p, reason: e.target.value }))} />
+                                    </div>
+                                    <button type="button" className="btn btn-secondary btn-sm" onClick={addTeamAbsence}
+                                        style={{ height: 40, whiteSpace: 'nowrap' }}>
+                                        <Plus size={14} /> Agregar
+                                    </button>
+                                </div>
+                            ) : (
+                                <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    No hay miembros del equipo. Agrega profesionales en la sección Equipo.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Account Info */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--cream)' }}>Mi cuenta</h3>
+                            <div className="form-group">
+                                <label className="label">Email</label>
+                                <input className="input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Rol</label>
+                                <div style={{ marginTop: '4px' }}>
+                                    <span className="badge badge-accent" style={{ background: 'var(--pink)', color: 'white', border: 'none', padding: '4px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: 700 }}>
+                                        {profile?.role || 'Dueño'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Danger Zone */}
+                        <div className="card" style={{ borderColor: 'var(--danger)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: 'var(--danger)', marginBottom: 'var(--space-2)' }}>Zona peligrosa</h3>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                                Estas acciones son irreversibles.
+                            </p>
+                            <button type="button" className="btn btn-danger btn-sm" onClick={() => toast.info('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>
+                        </div>
                     </div>
                 </div>
 
                 {error && (
-                    <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
+                    <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', margin: 'var(--space-4) 0', fontSize: 'var(--font-size-sm)' }}>
                         {error}
                     </div>
                 )}
 
-                <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={saving}>
-                    {saving ? <div className="loading-spinner" /> : saved ? '✓ Guardado' : <><Save size={16} /> Guardar cambios</>}
-                </button>
+                <div style={{ display: 'flex', justifyContent: 'center', marginTop: '32px' }}>
+                    <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%', maxWidth: '350px', fontWeight: 700, borderRadius: 'var(--radius-md)' }} disabled={saving}>
+                        {saving ? <div className="loading-spinner" /> : saved ? '✓ Guardado' : <><Save size={16} /> Guardar cambios</>}
+                    </button>
+                </div>
             </form>
-
-            <div className="card" style={{ marginTop: 'var(--space-5)', borderColor: 'var(--danger)' }}>
-                <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: 'var(--danger)', marginBottom: 'var(--space-2)' }}>Zona peligrosa</h3>
-                <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
-                    Estas acciones son irreversibles.
-                </p>
-                <button className="btn btn-danger btn-sm" onClick={() => toast.info('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>
-            </div>
-        </div>
     )
 }

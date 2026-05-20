@@ -4,6 +4,64 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/send-email'
 import { notifyWaitlist } from '@/lib/waitlist'
 
+// Helper para enviar notificaciones push por cancelación
+async function sendCancellationPush(supabase, appointment) {
+    try {
+        const { sendPushNotification } = await import('@/lib/push')
+        const formattedDate = appointment.date.split('-').reverse().join('/')
+        const formattedTime = appointment.time?.slice(0, 5)
+        const clientName = appointment.clients?.name || 'Un cliente'
+        const bizName = appointment.businesses?.name || 'el negocio'
+
+        // 1. Notificar al cliente
+        if (appointment.clients?.email) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('email', appointment.clients.email)
+                .single()
+
+            if (profile?.id) {
+                await sendPushNotification(profile.id, {
+                    title: 'Turno Cancelado ❌',
+                    body: `Tu turno para ${appointment.service_name} en ${bizName} el ${formattedDate} a las ${formattedTime} hs fue cancelado.`,
+                    url: '/book/my-appointments',
+                    tag: `cancel-${appointment.id}`
+                })
+            }
+        }
+
+        // 2. Notificar al negocio
+        const recipients = new Set()
+        if (appointment.businesses?.owner_id) {
+            recipients.add(appointment.businesses.owner_id)
+        }
+
+        if (appointment.team_member_id) {
+            const { data: member } = await supabase
+                .from('team_members')
+                .select('user_id')
+                .eq('id', appointment.team_member_id)
+                .single()
+            if (member?.user_id) {
+                recipients.add(member.user_id)
+            }
+        }
+
+        const promises = Array.from(recipients).map(userId => 
+            sendPushNotification(userId, {
+                title: 'Turno Cancelado por Cliente ❌',
+                body: `${clientName} canceló su turno para ${appointment.service_name} el ${formattedDate} a las ${formattedTime} hs.`,
+                url: '/dashboard/calendar',
+                tag: `cancel-biz-${appointment.id}`
+            })
+        )
+        await Promise.all(promises)
+    } catch (e) {
+        console.error('Error sending cancellation push:', e)
+    }
+}
+
 export async function POST(request) {
     try {
         const { token } = await request.json()
@@ -147,6 +205,9 @@ export async function POST(request) {
                 title: 'Turno cancelado',
                 message: `${appointment.clients?.name || 'Un cliente'} canceló ${appointment.service_name} del ${formattedDate} a las ${formattedTime}.`,
             }]).catch(() => {}) // non-critical
+
+            // Web Push notification
+            sendCancellationPush(supabase, appointment)
         }
 
         // Notify waitlist entries for this date

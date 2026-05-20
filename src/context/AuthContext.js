@@ -28,10 +28,10 @@ export function AuthProvider({ children }) {
 
             // Profile doesn't exist — create it
             if (profileError && profileError.code === 'PGRST116') {
-                // Always assign 'user' role on initial profile creation
-                // Business owner role is assigned via createBusiness() / onboarding flow
-                // DO NOT read account_type from localStorage or query params (manipulable)
-                const role = 'user'
+                // Check user metadata for account type
+                const isBiz = userMeta?.account_type === 'business'
+                const role = isBiz ? 'pending_business' : 'user'
+                const account_type = isBiz ? 'business' : 'user'
 
                 const { data: newProfile } = await supabase
                     .from('profiles')
@@ -41,6 +41,7 @@ export function AuthProvider({ children }) {
                         full_name: userMeta?.full_name || userEmail?.split('@')[0] || 'Usuario',
                         avatar_url: userMeta?.avatar_url || null,
                         role,
+                        account_type,
                     }], { onConflict: 'id', ignoreDuplicates: true })
                     .select()
                     .single()
@@ -48,9 +49,11 @@ export function AuthProvider({ children }) {
             }
 
             // Auto-correct client roles that got desynced during signup (role default value was 'Dueño' in DB)
-            if (currentProfile && currentProfile.account_type === 'user' && currentProfile.role !== 'user' && !currentProfile.business_id) {
+            const isUserAccount = currentProfile?.account_type === 'user' || userMeta?.account_type === 'user'
+            if (currentProfile && isUserAccount && currentProfile.role !== 'user' && !currentProfile.business_id) {
                 currentProfile.role = 'user'
-                await supabase.from('profiles').update({ role: 'user' }).eq('id', userId)
+                currentProfile.account_type = 'user'
+                await supabase.from('profiles').update({ role: 'user', account_type: 'user' }).eq('id', userId)
             }
 
             if (!currentProfile) {

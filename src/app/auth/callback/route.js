@@ -42,7 +42,7 @@ export async function GET(request) {
 
                 if (profileError && profileError.code === 'PGRST116') {
                     // Profile doesn't exist — create it with the correct role
-                    const role = accountType === 'business' ? 'Dueño' : 'user'
+                    const role = accountType === 'business' ? 'pending_business' : 'user'
                     const { data: newProfile } = await supabase
                         .from('profiles')
                         .upsert([{
@@ -51,6 +51,7 @@ export async function GET(request) {
                             full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Usuario',
                             avatar_url: user.user_metadata?.avatar_url || null,
                             role,
+                            account_type: accountType || 'user',
                         }], { onConflict: 'id' })
                         .select('role, business_id')
                         .single()

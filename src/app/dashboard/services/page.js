@@ -135,22 +135,12 @@ function ServicesContent() {
         }
     }
 
-    if (loadingServices) {
-        return (
-            <div className={styles.services}>
-                <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
-                    <div className="loading-spinner" />
-                </div>
-            </div>
-        )
-    }
-
     return (
         <div className={styles.services}>
             <div className={styles.header}>
                 <div>
                     <h1>Servicios</h1>
-                    <p className={styles.subtitle}>{services.length} servicios configurados</p>
+                    <p className={styles.subtitle}>{loadingServices ? 'Cargando...' : `${services.length} servicios configurados`}</p>
                 </div>
                 <button className="btn btn-primary" onClick={() => {
                     setEditService(null)
@@ -163,7 +153,13 @@ function ServicesContent() {
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={styles.serviceList}>
-                {services.map((s) => (
+                {loadingServices ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', width: '100%', padding: '60px 0' }}>
+                        <div className="loading-spinner" style={{ width: '28px', height: '28px' }} />
+                    </div>
+                ) : null}
+
+                {!loadingServices && services.map((s) => (
                     <div key={s.id || s.name} className={`card card-compact ${styles.serviceCard}`} style={{ opacity: s.active === false ? 0.5 : 1 }}>
                         <div className={styles.serviceInfo}>
                             <span className={styles.serviceName}>{s.name}</span>
@@ -201,7 +197,7 @@ function ServicesContent() {
                     </div>
                 ))}
 
-                {services.length === 0 && (
+                {!loadingServices && services.length === 0 && (
                     <div className={`card ${styles.emptyState}`}>
                         <div className={styles.emptyIcon}>
                             <Tag size={24} />

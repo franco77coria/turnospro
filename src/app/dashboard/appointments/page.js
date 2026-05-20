@@ -139,7 +139,7 @@ export default function AppointmentsPage() {
         </div>
     )
 
-    if (authLoading || !business?.id || loadingApts) {
+    if (authLoading || !business?.id) {
         return (
             <div className={styles.appointments}>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
@@ -184,7 +184,15 @@ export default function AppointmentsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {appointments.length === 0 ? (
+                            {loadingApts ? (
+                                <tr>
+                                    <td colSpan={6} style={{ padding: '60px 0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <div className="loading-spinner" style={{ width: '28px', height: '28px' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : appointments.length === 0 ? (
                                 <tr><td colSpan={6} className={styles.emptyState}>No hay turnos para esta fecha</td></tr>
                             ) : appointments.map(apt => (
                                 <tr key={apt.id}>
@@ -208,7 +216,11 @@ export default function AppointmentsPage() {
 
             {/* Mobile: Card list */}
             <div className={styles.cardList}>
-                {appointments.length === 0 ? (
+                {loadingApts ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+                        <div className="loading-spinner" style={{ width: '28px', height: '28px' }} />
+                    </div>
+                ) : appointments.length === 0 ? (
                     <div className={`card ${styles.emptyState}`}>No hay turnos para esta fecha</div>
                 ) : appointments.map(apt => (
                     <div key={apt.id} className={`card ${styles.aptCard}`}>

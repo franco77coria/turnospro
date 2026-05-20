@@ -83,6 +83,7 @@ export default function RegisterPage() {
                     full_name: form.fullName,
                     phone: phoneResult.formatted,
                     role: accountType === 'business' ? 'pending_business' : 'user',
+                    account_type: accountType,
                 }])
                 if (profileError) {
                     console.error('Profile creation error:', profileError)

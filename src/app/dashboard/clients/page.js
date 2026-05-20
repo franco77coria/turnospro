@@ -95,7 +95,7 @@ export default function ClientsPage() {
         ? clients.filter(c => c.name?.toLowerCase().includes(search.toLowerCase()) || c.phone?.includes(search))
         : clients
 
-    if (authLoading || !business?.id || loadingClients) {
+    if (authLoading || !business?.id) {
         return (
             <div className={styles.clients}>
                 <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}>
@@ -140,7 +140,15 @@ export default function ClientsPage() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {loadingClients ? (
+                                <tr>
+                                    <td colSpan={5} style={{ padding: '60px 0' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                                            <div className="loading-spinner" style={{ width: '28px', height: '28px' }} />
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : filtered.length === 0 ? (
                                 <tr><td colSpan={5} className={styles.emptyState}>
                                     {search ? 'Sin resultados' : 'No hay clientes aun'}
                                 </td></tr>
@@ -180,7 +188,11 @@ export default function ClientsPage() {
 
             {/* Mobile: Card list */}
             <div className={styles.cardList}>
-                {filtered.length === 0 ? (
+                {loadingClients ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '60px 0' }}>
+                        <div className="loading-spinner" style={{ width: '28px', height: '28px' }} />
+                    </div>
+                ) : filtered.length === 0 ? (
                     <div className={`card ${styles.emptyState}`}>
                         {search ? 'Sin resultados' : 'No hay clientes aun'}
                     </div>
