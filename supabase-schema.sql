@@ -176,7 +176,7 @@ CREATE POLICY "Business clients access" ON clients FOR ALL
 USING (business_id IN (SELECT id FROM businesses WHERE owner_id = auth.uid()));
 -- Clients can read their own records (by matching email)
 CREATE POLICY "Clients can view own records" ON clients FOR SELECT
-USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
+USING (email = (auth.jwt() ->> 'email'));
 -- Anyone can insert client records (for public booking)
 CREATE POLICY "Anyone can create client" ON clients FOR INSERT WITH CHECK (true);
 
@@ -187,14 +187,14 @@ USING (business_id IN (SELECT id FROM businesses WHERE owner_id = auth.uid()));
 -- Clients can read their own appointments
 CREATE POLICY "Clients can view own appointments" ON appointments FOR SELECT
 USING (client_id IN (
-  SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')
 ));
 -- Anyone can create appointments (public booking)
 CREATE POLICY "Anyone can create appointment" ON appointments FOR INSERT WITH CHECK (true);
 -- Clients can update own appointments (for cancellation)
 CREATE POLICY "Clients can update own appointments" ON appointments FOR UPDATE
 USING (client_id IN (
-  SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())
+  SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')
 ));
 
 -- ── Transactions ──

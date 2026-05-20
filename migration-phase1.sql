@@ -71,7 +71,7 @@ DO $$ BEGIN
     SELECT 1 FROM pg_policies WHERE policyname = 'Clients can view own records' AND tablename = 'clients'
   ) THEN
     CREATE POLICY "Clients can view own records" ON clients FOR SELECT
-    USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
+    USING (email = (auth.jwt() ->> 'email'));
   END IF;
 END $$;
 
@@ -91,7 +91,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "Clients can view own appointments" ON appointments FOR SELECT
     USING (client_id IN (
-      SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())
+      SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')
     ));
   END IF;
 END $$;
@@ -112,7 +112,7 @@ DO $$ BEGIN
   ) THEN
     CREATE POLICY "Clients can update own appointments" ON appointments FOR UPDATE
     USING (client_id IN (
-      SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())
+      SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')
     ));
   END IF;
 END $$;

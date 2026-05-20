@@ -472,7 +472,7 @@ DO $$ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Clients can view own records' AND tablename = 'clients') THEN
     CREATE POLICY "Clients can view own records" ON clients FOR SELECT
-    USING (email = (SELECT email FROM auth.users WHERE id = auth.uid()));
+    USING (email = (auth.jwt() ->> 'email'));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Authenticated can create client' AND tablename = 'clients') THEN
     CREATE POLICY "Authenticated can create client" ON clients FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
@@ -491,14 +491,14 @@ DO $$ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Clients can view own appointments' AND tablename = 'appointments') THEN
     CREATE POLICY "Clients can view own appointments" ON appointments FOR SELECT
-    USING (client_id IN (SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())));
+    USING (client_id IN (SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Authenticated can create appointment' AND tablename = 'appointments') THEN
     CREATE POLICY "Authenticated can create appointment" ON appointments FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Clients can update own appointments' AND tablename = 'appointments') THEN
     CREATE POLICY "Clients can update own appointments" ON appointments FOR UPDATE
-    USING (client_id IN (SELECT id FROM clients WHERE email = (SELECT email FROM auth.users WHERE id = auth.uid())));
+    USING (client_id IN (SELECT id FROM clients WHERE email = (auth.jwt() ->> 'email')));
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Team members can view business appointments' AND tablename = 'appointments') THEN
     CREATE POLICY "Team members can view business appointments" ON appointments FOR SELECT
