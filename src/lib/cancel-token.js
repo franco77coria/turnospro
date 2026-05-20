@@ -1,16 +1,20 @@
 // Simple cancel token generation and verification using HMAC
 // Uses Web Crypto API (available in Node.js 18+ and all modern browsers)
 
-const CANCEL_SECRET = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET
-if (!CANCEL_SECRET) {
-    throw new Error('CANCEL_TOKEN_SECRET or CRON_SECRET environment variable is required')
+const getCancelSecret = () => {
+    const secret = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET
+    if (!secret && typeof window === 'undefined') {
+        throw new Error('CANCEL_TOKEN_SECRET or CRON_SECRET environment variable is required')
+    }
+    return secret || 'client-fallback-secret'
 }
 
 async function hmacSign(data) {
     const encoder = new TextEncoder()
+    const secret = getCancelSecret()
     const key = await crypto.subtle.importKey(
         'raw',
-        encoder.encode(CANCEL_SECRET),
+        encoder.encode(secret),
         { name: 'HMAC', hash: 'SHA-256' },
         false,
         ['sign']
