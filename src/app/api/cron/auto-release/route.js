@@ -61,7 +61,9 @@ export async function GET(request) {
                             phoneNumberId,
                             text: `Hola ${client.name || 'Cliente'}, tu turno de ${apt.service_name} del ${apt.date} a las ${apt.time?.slice(0, 5)} fue liberado porque no recibimos tu confirmación a tiempo. Podés volver a reservar desde la app.`
                         })
-                    } catch (_) {}
+                    } catch (err) {
+                        console.error('WhatsApp auto-release notification failed:', err)
+                    }
                 }
             }
 
@@ -76,7 +78,9 @@ export async function GET(request) {
                     businessSlug: apt.businesses?.slug,
                     phoneNumberId: apt.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID,
                 })
-            } catch (_) {}
+            } catch (err) {
+                console.error('Waitlist auto-release notification failed:', err)
+            }
 
             released++
         }

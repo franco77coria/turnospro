@@ -1,5 +1,4 @@
-// Simple in-memory rate limiter
-// For production with multiple instances, use Redis-based solution (e.g., @upstash/ratelimit)
+import { NextResponse } from 'next/server'
 
 const rateMap = new Map()
 
@@ -56,7 +55,6 @@ export function getRateLimitKey(request, prefix = '') {
  * @returns {Response|null} - Returns error response if rate limited, null if OK
  */
 export function applyRateLimit(request, { prefix = 'api', limit = 10, windowMs = 60000 } = {}) {
-    const { NextResponse } = require('next/server')
     const key = getRateLimitKey(request, prefix)
     const result = checkRate(key, limit, windowMs)
 
