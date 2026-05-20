@@ -1,106 +1,131 @@
 .mobileNav {
     display: none;
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: var(--mobile-nav-height);
-    background: var(--bg-primary);
-    border-top: 1px solid var(--border);
-    z-index: 50;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 440px;
+    height: 68px;
+    background: color-mix(in oklab, var(--surface) 85%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid var(--line);
+    border-radius: var(--r-2xl);
+    box-shadow: var(--shadow-lg);
+    z-index: 150;
     justify-content: space-around;
     align-items: center;
-    padding: 0 var(--space-2);
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    padding: 0 12px;
 }
 
 .item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-md);
-    color: var(--text-tertiary);
-    transition: color var(--transition);
-    min-width: 60px;
-    min-height: 48px;
-    justify-content: center;
+    gap: 4px;
+    padding: 6px 10px;
+    border-radius: var(--r-xl);
+    color: var(--ink-soft);
+    transition: all var(--t-fast);
+    min-width: 55px;
     background: none;
     border: none;
     font-family: inherit;
     cursor: pointer;
+    text-decoration: none;
+    justify-content: center;
+}
+
+.item:hover {
+    color: var(--ink);
 }
 
 .item.active {
-    color: var(--accent);
+    color: var(--pink);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
 }
 
 .label {
-    font-size: 10px;
-    font-weight: 500;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* More menu overlay */
 .moreOverlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
-    z-index: 60;
+    background: color-mix(in oklab, var(--ink) 25%, transparent);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    z-index: 140;
     display: flex;
     align-items: flex-end;
+    justify-content: center;
     animation: fadeIn 150ms ease;
+    padding: 16px;
 }
 
 .moreMenu {
     width: 100%;
-    background: var(--bg-primary);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-    padding: var(--space-4);
-    padding-bottom: calc(var(--mobile-nav-height) + var(--space-4) + env(safe-area-inset-bottom, 0));
-    animation: slideUp 200ms ease;
+    max-width: 440px;
+    background: color-mix(in oklab, var(--surface) 95%, transparent);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1.5px solid var(--line);
+    border-radius: var(--r-2xl);
+    padding: 20px;
+    margin-bottom: 84px; /* Flota encima de la barra */
+    box-shadow: var(--shadow-lg);
+    animation: slideUp 250ms var(--ease-spring);
 }
 
 .moreHeader {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: var(--space-3);
-    margin-bottom: var(--space-2);
-    border-bottom: 1px solid var(--border-light);
-    font-weight: 600;
-    font-size: var(--font-size-md);
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+    font-weight: 700;
+    font-size: 15px;
+    font-family: var(--font-display);
+    color: var(--ink);
 }
 
 .moreClose {
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    border-radius: var(--r-md);
+    color: var(--ink-soft);
     background: none;
     border: none;
     cursor: pointer;
+    transition: all var(--t-fast);
 }
 
 .moreClose:hover {
-    background: var(--bg-tertiary);
+    background: color-mix(in oklab, var(--ink-soft) 8%, transparent);
+    color: var(--ink);
 }
 
 .moreItem {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: 12px;
     width: 100%;
-    padding: var(--space-3) var(--space-3);
-    min-height: 48px;
-    border-radius: var(--radius-md);
-    font-size: var(--font-size-base);
-    font-weight: 500;
-    color: var(--text-secondary);
-    transition: all var(--transition);
+    padding: 10px 14px;
+    min-height: 44px;
+    border-radius: var(--r-lg);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    transition: all var(--t-fast);
     background: none;
     border: none;
     font-family: inherit;
@@ -109,24 +134,24 @@
 }
 
 .moreItem:hover {
-    background: var(--bg-hover);
-    color: var(--text-primary);
+    background: color-mix(in oklab, var(--ink-soft) 5%, transparent);
+    color: var(--ink);
 }
 
 .moreItemActive {
-    background: var(--accent-light);
-    color: var(--accent);
+    background: color-mix(in oklab, var(--pink) 8%, transparent);
+    color: var(--pink);
 }
 
 .logoutItem {
-    margin-top: var(--space-2);
-    border-top: 1px solid var(--border-light);
-    padding-top: var(--space-3);
+    margin-top: 8px;
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
     color: var(--danger);
 }
 
 .logoutItem:hover {
-    background: var(--danger-light);
+    background: color-mix(in oklab, var(--danger) 8%, transparent);
     color: var(--danger);
 }
 

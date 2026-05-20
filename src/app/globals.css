@@ -1578,10 +1578,6 @@ img.gu-logo-mark,
   min-height: 100vh;
   background: var(--cream);
 }
-@media (max-width: 960px) {
-  .dash-shell { grid-template-columns: 1fr; }
-  .dash-sidebar { display: none; }
-}
 
 .dash-sidebar {
   background: var(--ink);
@@ -1666,12 +1662,21 @@ img.gu-logo-mark,
   background: color-mix(in oklab, var(--cream) 10%, transparent);
 }
 
+@media (max-width: 960px) {
+  .dash-shell { 
+    grid-template-columns: 1fr; 
+  }
+  .dash-sidebar { 
+    display: none !important; 
+  }
+}
+
 .dash-main {
   padding: 28px 32px 48px;
   min-width: 0;
 }
 @media (max-width: 720px) {
-  .dash-main { padding: 20px 16px 80px; }
+  .dash-main { padding: 20px 16px 110px; }
 }
 
 .dash-topbar {
