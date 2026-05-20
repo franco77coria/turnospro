@@ -606,5 +606,6 @@ function SettingsContent() {
                     </button>
                 </div>
             </form>
+        </div>
     )
 }
