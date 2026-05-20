@@ -18,19 +18,25 @@ export default function AppointmentsPage() {
 
     async function loadAppointments() {
         if (!supabase) return
-        let query = supabase
-            .from('appointments')
-            .select('*, clients(name, phone), team_members(name)')
-            .eq('business_id', business.id)
-            .order('date', { ascending: true })
-            .order('time', { ascending: true })
+        try {
+            let query = supabase
+                .from('appointments')
+                .select('*, clients(name, phone), team_members(name)')
+                .eq('business_id', business.id)
+                .order('date', { ascending: true })
+                .order('time', { ascending: true })
 
-        if (dateFilter) query = query.eq('date', dateFilter)
-        if (filter !== 'all') query = query.eq('status', filter)
+            if (dateFilter) query = query.eq('date', dateFilter)
+            if (filter !== 'all') query = query.eq('status', filter)
 
-        const { data } = await query.limit(50)
-        setAppointments(data || [])
-        setLoadingApts(false)
+            const { data, error } = await query.limit(50)
+            if (error) throw error
+            setAppointments(data || [])
+        } catch (err) {
+            console.error('Error loading appointments:', err)
+        } finally {
+            setLoadingApts(false)
+        }
     }
 
     useEffect(() => {

@@ -17,13 +17,19 @@ export default function ClientsPage() {
 
     async function loadClients() {
         if (!supabase) return
-        const { data } = await supabase
-            .from('clients')
-            .select('*')
-            .eq('business_id', business.id)
-            .order('name')
-        setClients(data || [])
-        setLoadingClients(false)
+        try {
+            const { data, error } = await supabase
+                .from('clients')
+                .select('*')
+                .eq('business_id', business.id)
+                .order('name')
+            if (error) throw error
+            setClients(data || [])
+        } catch (err) {
+            console.error('Error loading clients:', err)
+        } finally {
+            setLoadingClients(false)
+        }
     }
 
     useEffect(() => {

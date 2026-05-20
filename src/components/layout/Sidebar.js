@@ -174,7 +174,7 @@ export default function Sidebar() {
             title="Cerrar sesión"
             type="button"
           >
-            <Icons.X size={16} />
+            <Icons.LogOut size={16} />
           </button>
         </div>
       </div>
