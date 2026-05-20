@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
     const fetchingRef = useRef(false)
+    const currentUserRef = useRef(null)
+
+    useEffect(() => {
+        currentUserRef.current = user
+    }, [user])
 
     // Load profile + business in parallel (single fetch cycle)
     const loadUserData = useCallback(async (userId, userEmail, userMeta) => {
@@ -156,18 +161,24 @@ export function AuthProvider({ children }) {
             const sessionUser = session?.user || null
 
             if (event === 'SIGNED_IN' && sessionUser && initialLoadDone) {
-                setLoading(true)
-                setUser(sessionUser)
-                await loadUserData(sessionUser.id, sessionUser.email, sessionUser.user_metadata)
+                // Avoid redundant loader and query loops on tab focus refresh
+                if (currentUserRef.current?.id !== sessionUser.id) {
+                    setLoading(true)
+                    setUser(sessionUser)
+                    await loadUserData(sessionUser.id, sessionUser.email, sessionUser.user_metadata)
+                    setLoading(false)
+                }
             } else if (event === 'SIGNED_OUT') {
                 setUser(null)
                 setProfile(null)
                 setBusiness(null)
+                setLoading(false)
             } else if (!sessionUser) {
                 setUser(null)
+                setLoading(false)
+            } else {
+                setLoading(false)
             }
-
-            setLoading(false)
         })
 
         return () => {
