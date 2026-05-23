@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 // can't flood a victim business with junk entries.
 export async function POST(request) {
     try {
-        const rateLimited = applyRateLimit(request, {
+        const rateLimited = await applyRateLimit(request, {
             prefix: 'waitlist',
             limit: 5,
             windowMs: 60 * 60 * 1000, // 5 entries / hour / IP

@@ -18,7 +18,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const limited = applyRateLimit(request, {
+        const limited = await applyRateLimit(request, {
             prefix: `whatsapp:${user.id}`,
             limit: 20,
             windowMs: 60000,

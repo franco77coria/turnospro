@@ -23,7 +23,7 @@ export async function POST(request) {
         }
 
         // Rate limit per user (10/min) — bound to authenticated identity
-        const rateLimited = applyRateLimit(request, {
+        const rateLimited = await applyRateLimit(request, {
             prefix: `email:${user.id}`,
             limit: 10,
             windowMs: 60000,

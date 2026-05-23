@@ -6,7 +6,7 @@ import { AvailabilityCheckSchema, parseBody } from '@/lib/schemas'
 export async function POST(request) {
     try {
         // Rate limit per IP — availability checks are public but cheap to abuse for enumeration
-        const rateLimited = applyRateLimit(request, { prefix: 'check', limit: 60, windowMs: 60000 })
+        const rateLimited = await applyRateLimit(request, { prefix: 'check', limit: 60, windowMs: 60000 })
         if (rateLimited) return rateLimited
 
         const raw = await request.json().catch(() => null)

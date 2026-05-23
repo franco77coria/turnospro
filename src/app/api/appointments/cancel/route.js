@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verifyCancelToken } from '@/lib/cancel-token'
+import { verifyCancelToken, markCancelTokenUsed } from '@/lib/cancel-token'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/send-email'
 import { notifyWaitlist } from '@/lib/waitlist'
@@ -65,7 +65,7 @@ export async function POST(request) {
     try {
         // Rate limit cancel attempts: 20/min/IP. HMAC token already makes guessing
         // infeasible; this just prevents enumeration noise.
-        const rateLimited = applyRateLimit(request, { prefix: 'cancel', limit: 20, windowMs: 60000 })
+        const rateLimited = await applyRateLimit(request, { prefix: 'cancel', limit: 20, windowMs: 60000 })
         if (rateLimited) return rateLimited
 
         const raw = await request.json().catch(() => null)
@@ -75,7 +75,7 @@ export async function POST(request) {
         }
         const { token } = parsed.data
 
-        const { valid, appointmentId } = await verifyCancelToken(token)
+        const { valid, appointmentId, expiresAt } = await verifyCancelToken(token)
         if (!valid || !appointmentId) {
             return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 })
         }
@@ -109,6 +109,17 @@ export async function POST(request) {
             return NextResponse.json({
                 error: `No se puede cancelar con menos de ${minCancelHours} horas de anticipación. Contactá al negocio directamente.`,
             }, { status: 400 })
+        }
+
+        // Atomically claim the token. The unique constraint on token_hash
+        // guarantees that only one caller wins the race; any concurrent
+        // duplicate POST gets "already used".
+        const claim = await markCancelTokenUsed(supabase, token, appointmentId, expiresAt)
+        if (!claim.ok) {
+            const message = claim.reason === 'already_used'
+                ? 'Este link de cancelación ya fue utilizado.'
+                : 'No se pudo procesar la cancelación. Intentá de nuevo.'
+            return NextResponse.json({ error: message }, { status: 409 })
         }
 
         const { error: updateErr } = await supabase

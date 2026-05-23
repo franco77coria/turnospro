@@ -46,7 +46,7 @@ export async function POST(request) {
         }
 
         // 5 reviews/min/user (write-side limit to prevent rating manipulation)
-        const rateLimited = applyRateLimit(request, {
+        const rateLimited = await applyRateLimit(request, {
             prefix: `review:${user.id}`,
             limit: 5,
             windowMs: 60000,

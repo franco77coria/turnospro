@@ -18,7 +18,7 @@ export async function POST(request) {
         }
 
         // 30 review requests/hour/user max — covers normal business volume
-        const rateLimited = applyRateLimit(request, {
+        const rateLimited = await applyRateLimit(request, {
             prefix: `review-req:${user.id}`,
             limit: 30,
             windowMs: 60 * 60 * 1000,

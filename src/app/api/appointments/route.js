@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { BookingSchema, parseBody } from '@/lib/schemas'
+import { sendEmail } from '@/lib/send-email'
 
 // Helper para enviar confirmación de turno vía WhatsApp al cliente
 async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time) {
@@ -145,7 +146,7 @@ export async function POST(request) {
         }
 
         // 2. Rate-limit per user — 10/min/user (more generous than per-IP since each user is identified)
-        const rateLimited = applyRateLimit(request, {
+        const rateLimited = await applyRateLimit(request, {
             prefix: `booking:${user.id}`,
             limit: 10,
             windowMs: 60000,
@@ -158,7 +159,7 @@ export async function POST(request) {
         if (!parsed.ok) {
             return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
-        const { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes } = parsed.data
+        const { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id } = parsed.data
 
         const supabase = createSupabaseAdmin()
 
@@ -229,6 +230,10 @@ export async function POST(request) {
             notifyPush(supabase, business_id, client_id, service_name, date, time)
             notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
             sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
+            await sendBookingSideEffects(supabase, {
+                appointmentId, business_id, client_id, team_member_id,
+                service_name, date, time, duration, send_emails, coupon_id,
+            })
 
             return NextResponse.json({ success: true, appointmentId })
         } catch (rpcErr) {
@@ -260,6 +265,10 @@ export async function POST(request) {
                 notifyPush(supabase, business_id, client_id, service_name, date, time)
                 notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
                 sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
+                await sendBookingSideEffects(supabase, {
+                    appointmentId: created.id, business_id, client_id, team_member_id,
+                    service_name, date, time, duration, send_emails, coupon_id,
+                })
 
                 return NextResponse.json({ success: true, appointmentId: created.id })
             }
@@ -268,5 +277,108 @@ export async function POST(request) {
     } catch (err) {
         console.error('Booking API error:', err)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
+// Server-side side effects for a successful booking — replaces the
+// client-side fan-out of email + notification + coupon increment that used
+// to live in useBookingFlow.js. Doing it here keeps everything behind the
+// authenticated + validated endpoint.
+async function sendBookingSideEffects(supabase, {
+    appointmentId, business_id, client_id, team_member_id,
+    service_name, date, time, duration, send_emails, coupon_id,
+}) {
+    // Atomically consume coupon if provided
+    if (coupon_id) {
+        try {
+            await supabase.rpc('increment_coupon_uses', { coupon_id })
+        } catch (e) {
+            console.error('Coupon increment failed (non-critical):', e)
+        }
+    }
+
+    // In-app notification for the owner — failure is non-critical
+    try {
+        const { data: business } = await supabase
+            .from('businesses')
+            .select('owner_id, name, business_type, phone')
+            .eq('id', business_id)
+            .single()
+
+        if (business?.owner_id) {
+            const formattedShort = new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+            let clientName = 'Un cliente'
+            let client = null
+            if (client_id) {
+                const { data: c } = await supabase
+                    .from('clients')
+                    .select('name, email, phone')
+                    .eq('id', client_id)
+                    .single()
+                client = c
+                if (c?.name) clientName = c.name
+            }
+
+            await supabase.from('notifications').insert([{
+                user_id: business.owner_id,
+                business_id,
+                type: 'appointment_booked',
+                title: 'Nuevo turno reservado',
+                message: `${clientName} reservó ${service_name} para el ${formattedShort} a las ${time}.`,
+            }]).catch(() => {})
+
+            // Emails — only when explicitly requested (booking flow opts in).
+            // For dashboard-side bookings the staff usually doesn't want
+            // these duplicates, so the default is false.
+            if (send_emails) {
+                const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+
+                if (client?.email) {
+                    sendEmail({
+                        type: 'confirmation',
+                        to: client.email,
+                        data: {
+                            clientName: client.name || 'Cliente',
+                            serviceName: service_name,
+                            date: formattedLong,
+                            time,
+                            duration,
+                            businessName: business.name || 'GLOWUP',
+                            businessType: business.business_type || 'custom',
+                            businessPhone: business.phone,
+                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/my-appointments`,
+                            appointmentId,
+                        }
+                    }).catch(e => console.error('Confirmation email failed (non-critical):', e))
+                }
+
+                const { data: ownerProfile } = await supabase
+                    .from('profiles')
+                    .select('email')
+                    .eq('id', business.owner_id)
+                    .single()
+
+                if (ownerProfile?.email) {
+                    sendEmail({
+                        type: 'new_booking_notify',
+                        to: ownerProfile.email,
+                        data: {
+                            clientName: client?.name || 'Cliente',
+                            clientEmail: client?.email,
+                            clientPhone: client?.phone,
+                            serviceName: service_name,
+                            date: formattedLong,
+                            time,
+                            duration,
+                            businessName: business.name || 'GLOWUP',
+                            businessType: business.business_type || 'custom',
+                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+                        }
+                    }).catch(e => console.error('Owner-notify email failed (non-critical):', e))
+                }
+            }
+        }
+    } catch (e) {
+        console.error('sendBookingSideEffects error (non-critical):', e)
     }
 }
