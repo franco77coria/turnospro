@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
 import { MapPin, Star, ChevronLeft } from 'lucide-react'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
+import JsonLd from '@/components/JsonLd'
 
 const CATEGORY_META = {
     barberia: { name: 'Barberías', desc: 'Los mejores barberos cerca tuyo. Reservá tu corte, barba y más.' },
@@ -142,33 +143,28 @@ export default async function CategoryPage({ params }) {
                     </div>
                 )}
 
-                {/* Structured data for SEO */}
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{
-                        __html: JSON.stringify({
-                            '@context': 'https://schema.org',
-                            '@type': 'ItemList',
-                            name: cat.name,
-                            description: cat.desc,
-                            numberOfItems: businesses.length,
-                            itemListElement: businesses.map((biz, i) => ({
-                                '@type': 'ListItem',
-                                position: i + 1,
-                                item: {
-                                    '@type': 'LocalBusiness',
-                                    name: biz.name,
-                                    address: biz.address || undefined,
-                                    aggregateRating: biz.avg_rating > 0 ? {
-                                        '@type': 'AggregateRating',
-                                        ratingValue: biz.avg_rating,
-                                        reviewCount: biz.total_reviews,
-                                    } : undefined,
-                                },
-                            })),
-                        }),
-                    }}
-                />
+                {/* Structured data for SEO — uses JsonLd helper which escapes `<` to prevent </script> break-out */}
+                <JsonLd data={{
+                    '@context': 'https://schema.org',
+                    '@type': 'ItemList',
+                    name: cat.name,
+                    description: cat.desc,
+                    numberOfItems: businesses.length,
+                    itemListElement: businesses.map((biz, i) => ({
+                        '@type': 'ListItem',
+                        position: i + 1,
+                        item: {
+                            '@type': 'LocalBusiness',
+                            name: biz.name,
+                            address: biz.address || undefined,
+                            aggregateRating: biz.avg_rating > 0 ? {
+                                '@type': 'AggregateRating',
+                                ratingValue: biz.avg_rating,
+                                reviewCount: biz.total_reviews,
+                            } : undefined,
+                        },
+                    })),
+                }} />
             </div>
             <style dangerouslySetInnerHTML={{ __html: `
                 .category-biz-card:hover {

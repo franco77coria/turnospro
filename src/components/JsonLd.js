@@ -1,12 +1,31 @@
 /**
  * JSON-LD structured data component for SEO.
  * Renders a <script type="application/ld+json"> tag.
+ *
+ * The serialized payload escapes `<` so a malicious value containing
+ * `</script>` (e.g. injected via a user-editable business name) cannot
+ * break out of the script tag and execute arbitrary JS. We also escape
+ * U+2028 / U+2029 because some older parsers treated them as line
+ * terminators inside string literals.
  */
+
+// Build the line-separator regex at runtime so the source file contains no
+// raw U+2028/U+2029 characters (which break some lint parsers).
+const LINE_SEP_REGEX = new RegExp('[\\u2028\\u2029]', 'g')
+
+function safeStringify(data) {
+    return JSON.stringify(data)
+        .replace(/</g, '\\u003c')
+        .replace(/>/g, '\\u003e')
+        .replace(/&/g, '\\u0026')
+        .replace(LINE_SEP_REGEX, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'))
+}
+
 export default function JsonLd({ data }) {
     return (
         <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+            dangerouslySetInnerHTML={{ __html: safeStringify(data) }}
         />
     )
 }
