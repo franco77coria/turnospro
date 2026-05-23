@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -30,10 +30,6 @@ export function useBookingFlow() {
     const [closureDates, setClosureDates] = useState([])
     const [teamAbsences, setTeamAbsences] = useState([])
 
-    useEffect(() => {
-        loadBusiness()
-    }, [id])
-
     // Auto-fill form from logged-in user
     useEffect(() => {
         if (user && !form.name && !form.email) {
@@ -43,9 +39,9 @@ export function useBookingFlow() {
                 email: user.email || prev.email,
             }))
         }
-    }, [user])
+    }, [user, form.name, form.email])
 
-    async function loadBusiness() {
+    const loadBusiness = useCallback(async () => {
         if (!supabase) { setLoading(false); return }
         const { data } = await supabase
             .from('businesses')
@@ -93,7 +89,11 @@ export function useBookingFlow() {
             }
         }
         setLoading(false)
-    }
+    }, [id])
+
+    useEffect(() => {
+        loadBusiness()
+    }, [loadBusiness])
 
     // Load occupied slots when date changes
     useEffect(() => {
@@ -260,13 +260,15 @@ export function useBookingFlow() {
             setError(phoneResult.error)
             return
         }
-        // Use formatted phone
-        form.phone = phoneResult.formatted
+        const formattedPhone = phoneResult.formatted
 
         setSubmitting(true)
 
         try {
-            // Create or find client
+            // 1. Upsert client. We keep this client-side because the user is
+            //    authenticated and the RLS policies (post phase1) require auth.uid()
+            //    to insert into `clients`. The server-side /api/appointments will
+            //    still verify the client belongs to business_id.
             let clientId
             const { data: existingClient } = await supabase
                 .from('clients')
@@ -279,7 +281,7 @@ export function useBookingFlow() {
                 clientId = existingClient.id
                 await supabase.from('clients').update({
                     name: form.name,
-                    phone: form.phone,
+                    phone: formattedPhone,
                     last_visit: new Date().toISOString(),
                 }).eq('id', clientId)
             } else {
@@ -289,7 +291,7 @@ export function useBookingFlow() {
                         business_id: business.id,
                         name: form.name,
                         email: form.email,
-                        phone: form.phone,
+                        phone: formattedPhone,
                         first_visit: new Date().toISOString(),
                         last_visit: new Date().toISOString(),
                         total_visits: 0,
@@ -299,7 +301,8 @@ export function useBookingFlow() {
                 clientId = newClient?.id
             }
 
-            // Server-side availability check
+            // 2. Server-side availability check (atomic with the booking RPC,
+            //    but this gives the user a friendly message before the POST).
             const checkRes = await fetch('/api/appointments/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -317,111 +320,47 @@ export function useBookingFlow() {
                 return
             }
 
-            // Create appointment
+            // 3. Final price (server validates it via Zod, but trust-but-verify).
             const finalPrice = appliedCoupon ? (
                 appliedCoupon.discount_type === 'percentage'
-                ? selectedService.price * (1 - appliedCoupon.discount_value / 100)
-                : Math.max(0, selectedService.price - appliedCoupon.discount_value)
-            ) : selectedService.price;
+                    ? selectedService.price * (1 - appliedCoupon.discount_value / 100)
+                    : Math.max(0, selectedService.price - appliedCoupon.discount_value)
+            ) : selectedService.price
 
-            const { data: createdAppointment, error: insertError } = await supabase.from('appointments').insert([{
-                business_id: business.id,
-                client_id: clientId,
-                team_member_id: selectedProfessional?.id || null,
-                service_name: selectedService.name,
-                date: selectedDate,
-                time: selectedTime,
-                duration: selectedService.duration,
-                price: finalPrice,
-                status: 'confirmed',
-                notes: form.note?.trim() || null,
-            }]).select('id').single()
+            // 4. Create the appointment via the hardened endpoint. The server
+            //    enforces auth, validates the payload with Zod, verifies that
+            //    the caller is allowed to book for this client_id, sends the
+            //    confirmation + business-notify emails, creates the in-app
+            //    notification and consumes the coupon — all in one transaction.
+            const res = await fetch('/api/appointments', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: business.id,
+                    client_id: clientId,
+                    team_member_id: selectedProfessional?.id || null,
+                    service_name: selectedService.name,
+                    date: selectedDate,
+                    time: selectedTime,
+                    duration: selectedService.duration,
+                    price: finalPrice,
+                    notes: form.note?.trim() || null,
+                    send_emails: true,
+                    coupon_id: appliedCoupon?.id || null,
+                }),
+            })
 
-            if (insertError) throw insertError
-
-            // Increment coupon uses count if a coupon was used
-            if (appliedCoupon) {
-                await supabase.rpc('increment_coupon_uses', { coupon_id: appliedCoupon.id })
-                    .catch(e => console.error('Non-critical coupon increment error:', e))
-            }
-
-            // Send confirmation email to client
-            const formattedDate = new Date(selectedDate).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
-            try {
-                await fetch('/api/email', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: 'confirmation',
-                        to: form.email,
-                        data: {
-                            clientName: form.name,
-                            serviceName: selectedService.name,
-                            date: formattedDate,
-                            time: selectedTime,
-                            duration: selectedService.duration,
-                            businessName: business.name,
-                            businessType: business.business_type,
-                            businessPhone: business.phone,
-                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/my-appointments`,
-                            appointmentId: createdAppointment?.id,
-                        }
-                    })
-                })
-            } catch (emailErr) {
-                console.error('Email error (non-critical):', emailErr)
-            }
-
-            // Send notification email to business owner
-            try {
-                if (business.owner_id) {
-                    // Get the owner's email
-                    const { data: ownerProfile } = await supabase
-                        .from('profiles')
-                        .select('email')
-                        .eq('id', business.owner_id)
-                        .single()
-
-                    if (ownerProfile?.email) {
-                        await fetch('/api/email', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                type: 'new_booking_notify',
-                                to: ownerProfile.email,
-                                data: {
-                                    clientName: form.name,
-                                    clientEmail: form.email,
-                                    clientPhone: form.phone,
-                                    serviceName: selectedService.name,
-                                    date: formattedDate,
-                                    time: selectedTime,
-                                    duration: selectedService.duration,
-                                    businessName: business.name,
-                                    businessType: business.business_type,
-                                    dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
-                                }
-                            })
-                        })
-                    }
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) {
+                if (res.status === 409) {
+                    setError('Este horario ya fue reservado. Elegi otro horario.')
+                } else if (res.status === 401) {
+                    setError('Tu sesion expiro. Iniciá sesion para reservar.')
+                } else {
+                    setError(data?.error || 'Error al reservar el turno. Intenta de nuevo.')
                 }
-            } catch (emailErr) {
-                console.error('Business notify email error (non-critical):', emailErr)
-            }
-
-            // Create in-app notification for business owner
-            try {
-                if (business.owner_id) {
-                    await supabase.from('notifications').insert([{
-                        user_id: business.owner_id,
-                        business_id: business.id,
-                        type: 'appointment_booked',
-                        title: 'Nuevo turno reservado',
-                        message: `${form.name} reservo ${selectedService.name} para el ${new Date(selectedDate).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} a las ${selectedTime}.`,
-                    }])
-                }
-            } catch (notifErr) {
-                // non-critical
+                setSubmitting(false)
+                return
             }
 
             setSuccess(true)

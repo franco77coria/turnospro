@@ -20,6 +20,10 @@ export const BookingSchema = z.object({
     duration: z.number().int().min(5).max(480).optional().default(30),
     price: z.number().nonnegative().max(10_000_000).optional().default(0),
     notes: optionalShortText(1000),
+    // Optional: opt in to confirmation email + business notify on success.
+    send_emails: z.boolean().optional().default(false),
+    // Optional coupon to atomically consume.
+    coupon_id: uuid.nullish(),
 })
 
 export const CancelTokenSchema = z.object({
