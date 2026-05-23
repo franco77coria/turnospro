@@ -1,26 +1,51 @@
 import { NextResponse } from 'next/server'
+import crypto from 'crypto'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { notifyWaitlist } from '@/lib/waitlist'
 
 export const dynamic = 'force-dynamic'
 
-// Webhook verification (GET)
+// Webhook verification (GET) — Meta hub challenge
 export async function GET(request) {
   const { searchParams } = new URL(request.url)
   const mode = searchParams.get('hub.mode')
   const token = searchParams.get('hub.verify_token')
   const challenge = searchParams.get('hub.challenge')
 
-  if (mode === 'subscribe' && token === process.env.WHATSAPP_VERIFY_TOKEN) {
+  const expected = process.env.WHATSAPP_VERIFY_TOKEN
+  if (mode === 'subscribe' && expected && token && token.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected))) {
     return new Response(challenge, { status: 200 })
   }
   return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 }
 
-// Receive messages (POST)
+// Verify Meta webhook signature using App Secret (HMAC-SHA256)
+function verifyMetaSignature(rawBody, signatureHeader) {
+  const appSecret = process.env.WHATSAPP_APP_SECRET
+  if (!appSecret || !signatureHeader) return false
+  if (!signatureHeader.startsWith('sha256=')) return false
+
+  const expected = 'sha256=' + crypto.createHmac('sha256', appSecret).update(rawBody, 'utf8').digest('hex')
+  const a = Buffer.from(signatureHeader)
+  const b = Buffer.from(expected)
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
+
+// Receive messages (POST) — only after verifying Meta signature
 export async function POST(request) {
   try {
-    const body = await request.json()
+    const rawBody = await request.text()
+    const signature = request.headers.get('x-hub-signature-256')
+
+    if (!verifyMetaSignature(rawBody, signature)) {
+      console.warn('WhatsApp webhook: invalid or missing signature')
+      return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
+    }
+
+    let body
+    try { body = JSON.parse(rawBody) } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
     const entry = body.entry?.[0]
     const changes = entry?.changes?.[0]
@@ -34,11 +59,11 @@ export async function POST(request) {
     const supabase = createSupabaseAdmin()
 
     for (const message of messages) {
-      const from = message.from // phone number
-      const text = message.text?.body?.trim().toUpperCase()
+      const from = typeof message.from === 'string' ? message.from.replace(/[^0-9+]/g, '').slice(0, 20) : ''
+      const text = typeof message.text?.body === 'string' ? message.text.body.trim().toUpperCase().slice(0, 32) : ''
+      if (!from) continue
 
       if (text === 'CANCELAR') {
-        // Find the next upcoming appointment for this phone number
         const today = new Date().toISOString().split('T')[0]
 
         const { data: client } = await supabase
@@ -50,7 +75,7 @@ export async function POST(request) {
         if (client) {
           const { data: appointment } = await supabase
             .from('appointments')
-            .select('id, service_name, date, time, business_id')
+            .select('id, service_name, date, time, business_id, team_member_id')
             .eq('client_id', client.id)
             .in('status', ['pending', 'confirmed'])
             .gte('date', today)
@@ -83,7 +108,6 @@ export async function POST(request) {
               }
             } catch (_) {}
 
-            // Send confirmation of cancellation
             const { sendWhatsAppText } = await import('@/lib/whatsapp')
             await sendWhatsAppText({
               to: from,
@@ -91,7 +115,6 @@ export async function POST(request) {
               text: `Tu turno de ${appointment.service_name} del ${appointment.date} a las ${appointment.time} fue cancelado exitosamente.`
             }).catch(() => {})
 
-            // Notify waitlist
             const { data: biz } = await supabase
               .from('businesses')
               .select('name, slug, settings')
@@ -121,7 +144,6 @@ export async function POST(request) {
           .single()
 
         if (client) {
-          // Clear confirmation flags and confirm appointment
           await supabase
             .from('appointments')
             .update({
@@ -133,7 +155,6 @@ export async function POST(request) {
             .in('status', ['pending', 'confirmed'])
             .gte('date', today)
 
-          // Send confirmation ack
           const { sendWhatsAppText } = await import('@/lib/whatsapp')
           await sendWhatsAppText({
             to: from,
