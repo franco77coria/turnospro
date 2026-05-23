@@ -1,13 +1,20 @@
 import { NextResponse } from 'next/server'
 import { isBusinessClosed, isTeamMemberAbsent } from '@/lib/availability'
+import { applyRateLimit } from '@/lib/rate-limit'
+import { AvailabilityCheckSchema, parseBody } from '@/lib/schemas'
 
 export async function POST(request) {
     try {
-        const { business_id, date, time, duration, team_member_id, buffer_time } = await request.json()
+        // Rate limit per IP — availability checks are public but cheap to abuse for enumeration
+        const rateLimited = applyRateLimit(request, { prefix: 'check', limit: 60, windowMs: 60000 })
+        if (rateLimited) return rateLimited
 
-        if (!business_id || !date || !time) {
-            return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(AvailabilityCheckSchema, raw)
+        if (!parsed.ok) {
+            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
+        const { business_id, date, time, duration, team_member_id, buffer_time } = parsed.data
 
         // Use anon-level query — this is a public availability check, no RLS bypass needed
         const { createClient } = await import('@supabase/supabase-js')
@@ -16,13 +23,11 @@ export async function POST(request) {
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
 
-        // Check if business is closed on this date
         const closed = await isBusinessClosed(supabase, business_id, date)
         if (closed) {
             return NextResponse.json({ available: false, reason: 'El negocio está cerrado en esta fecha' })
         }
 
-        // Check if team member is absent
         if (team_member_id) {
             const absent = await isTeamMemberAbsent(supabase, team_member_id, business_id, date)
             if (absent) {
@@ -32,12 +37,10 @@ export async function POST(request) {
 
         const bufferMinutes = buffer_time || 0
 
-        // Parse time to minutes
         const [h, m] = time.split(':').map(Number)
         const slotStart = h * 60 + m
         const slotEnd = slotStart + (duration || 30)
 
-        // Fetch active appointments for that date
         let query = supabase
             .from('appointments')
             .select('time, duration, team_member_id')
@@ -52,7 +55,6 @@ export async function POST(request) {
         const { data: appointments, error } = await query
         if (error) throw error
 
-        // Check for overlap (including buffer time between appointments)
         const conflict = (appointments || []).find(apt => {
             const [ah, am] = apt.time.split(':').map(Number)
             const aptStart = ah * 60 + am

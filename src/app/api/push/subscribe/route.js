@@ -4,8 +4,9 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { cookies } from 'next/headers'
+import { PushSubscriptionSchema, PushUnsubscribeSchema, parseBody } from '@/lib/schemas'
 
-// POST: Registrar o actualizar una suscripción push
+// POST: Register / update a push subscription for the authenticated user.
 export async function POST(request) {
     try {
         const cookieStore = await cookies()
@@ -16,17 +17,15 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const body = await request.json()
-        const { subscription } = body
-
-        if (!subscription || !subscription.endpoint || !subscription.keys || !subscription.keys.p256dh || !subscription.keys.auth) {
-            return NextResponse.json({ error: 'Suscripción inválida' }, { status: 400 })
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(PushSubscriptionSchema, raw)
+        if (!parsed.ok) {
+            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
+        const { subscription } = parsed.data
 
         const supabase = createSupabaseAdmin()
 
-        // Guardar o actualizar la suscripción para el usuario
-        // Usamos upsert basado en el endpoint que es único
         const { data, error } = await supabase
             .from('push_subscriptions')
             .upsert({
@@ -52,7 +51,7 @@ export async function POST(request) {
     }
 }
 
-// DELETE: Desuscribir / eliminar una suscripción específica
+// DELETE: remove a specific subscription for the authenticated user.
 export async function DELETE(request) {
     try {
         const cookieStore = await cookies()
@@ -63,12 +62,12 @@ export async function DELETE(request) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const body = await request.json()
-        const { endpoint } = body
-
-        if (!endpoint) {
-            return NextResponse.json({ error: 'endpoint requerido' }, { status: 400 })
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(PushUnsubscribeSchema, raw)
+        if (!parsed.ok) {
+            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
+        const { endpoint } = parsed.data
 
         const supabase = createSupabaseAdmin()
 

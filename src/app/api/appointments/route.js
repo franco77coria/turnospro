@@ -3,6 +3,7 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { applyRateLimit } from '@/lib/rate-limit'
+import { BookingSchema, parseBody } from '@/lib/schemas'
 
 // Helper para enviar confirmación de turno vía WhatsApp al cliente
 async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time) {
@@ -38,11 +39,9 @@ async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client
     }
 }
 
-// Helper para enviar notificación push al cliente
 async function notifyPush(supabase, business_id, client_id, service_name, date, time) {
     if (!client_id) return
     try {
-        // Obtener email del cliente
         const { data: client } = await supabase
             .from('clients')
             .select('email')
@@ -51,7 +50,6 @@ async function notifyPush(supabase, business_id, client_id, service_name, date, 
 
         if (!client?.email) return
 
-        // Buscar perfil del usuario con ese email
         const { data: profile } = await supabase
             .from('profiles')
             .select('id')
@@ -68,8 +66,6 @@ async function notifyPush(supabase, business_id, client_id, service_name, date, 
 
         const { sendPushNotification } = await import('@/lib/push')
         const bizName = business?.name || 'el negocio'
-        
-        // Formatear fecha legible
         const formattedDate = date.split('-').reverse().join('/')
 
         await sendPushNotification(profile.id, {
@@ -83,7 +79,6 @@ async function notifyPush(supabase, business_id, client_id, service_name, date, 
     }
 }
 
-// Helper para enviar notificación push al negocio (dueño y profesional)
 async function notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id) {
     try {
         const { data: business } = await supabase
@@ -125,7 +120,7 @@ async function notifyBusinessPush(supabase, business_id, team_member_id, service
         const { sendPushNotification } = await import('@/lib/push')
         const formattedDate = date.split('-').reverse().join('/')
 
-        const promises = Array.from(recipients).map(userId => 
+        const promises = Array.from(recipients).map(userId =>
             sendPushNotification(userId, {
                 title: 'Nuevo Turno Reservado 📅',
                 body: `${clientName} reservó ${service_name} para el ${formattedDate} a las ${time} hs.`,
@@ -141,20 +136,76 @@ async function notifyBusinessPush(supabase, business_id, team_member_id, service
 
 export async function POST(request) {
     try {
-        // Rate limit: 5 bookings/minute per IP
-        const rateLimited = applyRateLimit(request, { prefix: 'booking', limit: 5, windowMs: 60000 })
+        // 1. Require authentication (closes spam/abuse vector).
+        const cookieStore = await cookies()
+        const authClient = createSupabaseServerClient(cookieStore)
+        const { data: { user } } = await authClient.auth.getUser()
+        if (!user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        // 2. Rate-limit per user — 10/min/user (more generous than per-IP since each user is identified)
+        const rateLimited = applyRateLimit(request, {
+            prefix: `booking:${user.id}`,
+            limit: 10,
+            windowMs: 60000,
+        })
         if (rateLimited) return rateLimited
 
-        const body = await request.json()
-        const { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes } = body
-
-        if (!business_id || !date || !time || !service_name) {
-            return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+        // 3. Validate input with Zod
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(BookingSchema, raw)
+        if (!parsed.ok) {
+            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
+        const { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes } = parsed.data
 
         const supabase = createSupabaseAdmin()
 
-        // Try using the atomic RPC function for race-condition safety
+        // 4. If a client_id is provided, verify the caller is allowed to book for them.
+        //    Either:
+        //      - The client belongs to a business the user owns (staff booking flow), OR
+        //      - The client's email matches the caller's email (self-booking flow).
+        if (client_id) {
+            const { data: client } = await supabase
+                .from('clients')
+                .select('id, business_id, email')
+                .eq('id', client_id)
+                .single()
+            if (!client) {
+                return NextResponse.json({ error: 'Cliente inválido' }, { status: 400 })
+            }
+            const isSelf = client.email && user.email && client.email.toLowerCase() === user.email.toLowerCase()
+            let isStaff = false
+            if (!isSelf) {
+                const { data: biz } = await supabase
+                    .from('businesses')
+                    .select('owner_id')
+                    .eq('id', client.business_id)
+                    .single()
+                if (biz?.owner_id === user.id) {
+                    isStaff = true
+                } else {
+                    const { data: member } = await supabase
+                        .from('team_members')
+                        .select('id')
+                        .eq('business_id', client.business_id)
+                        .eq('user_id', user.id)
+                        .eq('active', true)
+                        .maybeSingle()
+                    isStaff = !!member
+                }
+            }
+            if (!isSelf && !isStaff) {
+                return NextResponse.json({ error: 'No tenés permisos para reservar para este cliente' }, { status: 403 })
+            }
+            // Ensure the client belongs to the same business as the booking
+            if (client.business_id !== business_id) {
+                return NextResponse.json({ error: 'El cliente no pertenece a este negocio' }, { status: 400 })
+            }
+        }
+
+        // 5. Atomic booking RPC (race-condition safe) — with fallback to insert.
         try {
             const { data: appointmentId, error: rpcError } = await supabase.rpc('book_appointment', {
                 p_business_id: business_id,
@@ -175,14 +226,12 @@ export async function POST(request) {
                 throw rpcError
             }
 
-            // Notificar asincrónicamente
             notifyPush(supabase, business_id, client_id, service_name, date, time)
             notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
             sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
 
             return NextResponse.json({ success: true, appointmentId })
         } catch (rpcErr) {
-            // Fallback: if RPC doesn't exist yet, use direct insert (unique index will prevent duplicates)
             if (rpcErr.message?.includes('function') && rpcErr.message?.includes('does not exist')) {
                 const { data: created, error: insertErr } = await supabase
                     .from('appointments')
@@ -202,14 +251,12 @@ export async function POST(request) {
                     .single()
 
                 if (insertErr) {
-                    // Unique index violation = double booking attempt
                     if (insertErr.code === '23505') {
                         return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
                     }
                     throw insertErr
                 }
 
-                // Notificar asincrónicamente
                 notifyPush(supabase, business_id, client_id, service_name, date, time)
                 notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
                 sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)

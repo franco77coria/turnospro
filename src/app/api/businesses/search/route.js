@@ -6,13 +6,16 @@ export const dynamic = 'force-dynamic'
 export async function GET(request) {
     try {
         const { searchParams } = new URL(request.url)
-        const q = searchParams.get('q') || ''
-        const type = searchParams.get('type') || ''
+        // Trim and cap q + type to defend against memory exhaustion / weird inputs.
+        // Strip Postgres ILIKE wildcards so users can't smuggle them into the pattern.
+        const q = (searchParams.get('q') || '').slice(0, 100).replace(/[%_]/g, '')
+        const type = (searchParams.get('type') || '').slice(0, 40)
         const limit = Math.min(parseInt(searchParams.get('limit')) || 20, 50)
 
+        // Public marketplace search — use anon key so RLS policies are enforced.
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         )
 
         let query = supabase

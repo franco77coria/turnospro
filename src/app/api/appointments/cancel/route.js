@@ -3,8 +3,9 @@ import { verifyCancelToken } from '@/lib/cancel-token'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { sendEmail } from '@/lib/send-email'
 import { notifyWaitlist } from '@/lib/waitlist'
+import { applyRateLimit } from '@/lib/rate-limit'
+import { CancelTokenSchema, parseBody } from '@/lib/schemas'
 
-// Helper para enviar notificaciones push por cancelación
 async function sendCancellationPush(supabase, appointment) {
     try {
         const { sendPushNotification } = await import('@/lib/push')
@@ -13,7 +14,6 @@ async function sendCancellationPush(supabase, appointment) {
         const clientName = appointment.clients?.name || 'Un cliente'
         const bizName = appointment.businesses?.name || 'el negocio'
 
-        // 1. Notificar al cliente
         if (appointment.clients?.email) {
             const { data: profile } = await supabase
                 .from('profiles')
@@ -31,7 +31,6 @@ async function sendCancellationPush(supabase, appointment) {
             }
         }
 
-        // 2. Notificar al negocio
         const recipients = new Set()
         if (appointment.businesses?.owner_id) {
             recipients.add(appointment.businesses.owner_id)
@@ -48,7 +47,7 @@ async function sendCancellationPush(supabase, appointment) {
             }
         }
 
-        const promises = Array.from(recipients).map(userId => 
+        const promises = Array.from(recipients).map(userId =>
             sendPushNotification(userId, {
                 title: 'Turno Cancelado por Cliente ❌',
                 body: `${clientName} canceló su turno para ${appointment.service_name} el ${formattedDate} a las ${formattedTime} hs.`,
@@ -64,10 +63,17 @@ async function sendCancellationPush(supabase, appointment) {
 
 export async function POST(request) {
     try {
-        const { token } = await request.json()
-        if (!token) {
+        // Rate limit cancel attempts: 20/min/IP. HMAC token already makes guessing
+        // infeasible; this just prevents enumeration noise.
+        const rateLimited = applyRateLimit(request, { prefix: 'cancel', limit: 20, windowMs: 60000 })
+        if (rateLimited) return rateLimited
+
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(CancelTokenSchema, raw)
+        if (!parsed.ok) {
             return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
         }
+        const { token } = parsed.data
 
         const { valid, appointmentId } = await verifyCancelToken(token)
         if (!valid || !appointmentId) {
@@ -76,7 +82,6 @@ export async function POST(request) {
 
         const supabase = createSupabaseAdmin()
 
-        // Fetch appointment with business settings and client info
         const { data: appointment, error: fetchErr } = await supabase
             .from('appointments')
             .select('*, businesses:business_id (name, business_type, phone, settings, owner_id), clients:client_id (name, email)')
@@ -95,7 +100,6 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No se puede cancelar un turno completado' }, { status: 400 })
         }
 
-        // Check cancellation policy (min hours before appointment)
         const minCancelHours = appointment.businesses?.settings?.min_cancel_hours ?? 2
         const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}:00`)
         const now = new Date()
@@ -107,7 +111,6 @@ export async function POST(request) {
             }, { status: 400 })
         }
 
-        // Cancel the appointment
         const { error: updateErr } = await supabase
             .from('appointments')
             .update({ status: 'cancelled' })
@@ -115,10 +118,9 @@ export async function POST(request) {
 
         if (updateErr) throw updateErr
 
-        // Track monthly cancellations for CRM
         if (appointment.client_id) {
             try {
-                const currentMonth = new Date().toISOString().slice(0, 7) // "YYYY-MM"
+                const currentMonth = new Date().toISOString().slice(0, 7)
                 const { data: clientData } = await supabase
                     .from('clients')
                     .select('monthly_cancellations, last_cancellation_month')
@@ -128,7 +130,7 @@ export async function POST(request) {
                 if (clientData) {
                     const count = clientData.last_cancellation_month === currentMonth
                         ? (clientData.monthly_cancellations || 0) + 1
-                        : 1 // reset if new month
+                        : 1
 
                     await supabase
                         .from('clients')
@@ -144,7 +146,6 @@ export async function POST(request) {
         const formattedTime = appointment.time?.slice(0, 5)
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
 
-        // Send cancellation email to client (direct call, no internal fetch)
         if (appointment.clients?.email) {
             try {
                 await sendEmail({
@@ -166,10 +167,8 @@ export async function POST(request) {
             }
         }
 
-        // Send notification email to business owner + in-app notification
         const ownerId = appointment.businesses?.owner_id
         if (ownerId) {
-            // Get owner email
             const { data: ownerProfile } = await supabase
                 .from('profiles')
                 .select('email')
@@ -197,20 +196,17 @@ export async function POST(request) {
                 }
             }
 
-            // In-app notification
             await supabase.from('notifications').insert([{
                 user_id: ownerId,
                 business_id: appointment.business_id,
                 type: 'appointment_cancelled',
                 title: 'Turno cancelado',
                 message: `${appointment.clients?.name || 'Un cliente'} canceló ${appointment.service_name} del ${formattedDate} a las ${formattedTime}.`,
-            }]).catch(() => {}) // non-critical
+            }]).catch(() => {})
 
-            // Web Push notification
             sendCancellationPush(supabase, appointment)
         }
 
-        // Notify waitlist entries for this date
         try {
             await notifyWaitlist(supabase, {
                 businessId: appointment.business_id,
