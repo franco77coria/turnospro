@@ -1,11 +1,30 @@
 // Email HTML templates for GLOWUP
 // Minimalist, professional, themed by business type
+// All user-controlled fields MUST be escaped via escapeHtml or safeUrl.
 
 /**
- * Escape HTML special chars to prevent XSS in email content
+ * Escape HTML special chars to prevent XSS in email content.
+ * Returns empty string for nullish input.
  */
-export function escapeHtml(str) {
-    return str?.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])) || ''
+export function escapeHtml(value) {
+    if (value == null) return ''
+    return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+}
+
+/**
+ * Validate that a URL is safe to embed in an email link.
+ * Allows only http/https/mailto with a parseable URL, and the configured app host.
+ * Returns the sanitized URL string, or '#' if unsafe.
+ */
+export function safeUrl(value) {
+    if (!value) return '#'
+    try {
+        const u = new URL(String(value))
+        if (!['http:', 'https:', 'mailto:'].includes(u.protocol)) return '#'
+        return escapeHtml(u.toString())
+    } catch {
+        return '#'
+    }
 }
 
 
@@ -25,6 +44,8 @@ function getTheme(businessType) {
 }
 
 function baseLayout(content, theme, businessName) {
+    const safeBiz = escapeHtml(businessName)
+    const appHref = safeUrl(process.env.NEXT_PUBLIC_APP_URL || '#')
     return `
 <!DOCTYPE html>
 <html>
@@ -38,7 +59,7 @@ function baseLayout(content, theme, businessName) {
         <tr>
             <td align="center">
                 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
-                    
+
                     <!-- Header -->
                     <tr>
                         <td style="background:${theme.accent};padding:24px 32px;">
@@ -46,7 +67,7 @@ function baseLayout(content, theme, businessName) {
                                 <tr>
                                     <td>
                                         <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.02em;">
-                                            ${businessName}
+                                            ${safeBiz}
                                         </span>
                                     </td>
                                     <td align="right">
@@ -58,25 +79,25 @@ function baseLayout(content, theme, businessName) {
                             </table>
                         </td>
                     </tr>
-                    
+
                     <!-- Content -->
                     <tr>
                         <td style="padding:32px;">
                             ${content}
                         </td>
                     </tr>
-                    
+
                     <!-- Footer -->
                     <tr>
                         <td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#fafafa;">
                             <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.6;">
-                                Este email fue enviado por ${businessName} a través de 
-                                <a href="${process.env.NEXT_PUBLIC_APP_URL || '#'}" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
+                                Este email fue enviado por ${safeBiz} a través de
+                                <a href="${appHref}" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
                                 Si no solicitaste este turno, podés ignorar este email.
                             </p>
                         </td>
                     </tr>
-                    
+
                 </table>
             </td>
         </tr>
@@ -87,15 +108,26 @@ function baseLayout(content, theme, businessName) {
 
 export function confirmationEmail({ clientName, serviceName, date, time, duration, professional, businessName, businessType, businessPhone, appointmentUrl, cancelUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        serviceName: escapeHtml(serviceName),
+        date: escapeHtml(date),
+        time: escapeHtml(time),
+        duration: duration != null ? escapeHtml(duration) : null,
+        professional: escapeHtml(professional),
+        businessPhone: escapeHtml(businessPhone),
+        appointmentUrl: appointmentUrl ? safeUrl(appointmentUrl) : null,
+        cancelUrl: cancelUrl ? safeUrl(cancelUrl) : null,
+    }
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
             Turno confirmado
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${clientName}</strong>, tu turno fue agendado exitosamente.
+            Hola <strong>${c.clientName}</strong>, tu turno fue agendado exitosamente.
         </p>
-        
+
         <!-- Appointment details card -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
             <tr>
@@ -104,7 +136,7 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
                         <tr>
                             <td style="padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${serviceName}</span>
+                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
@@ -113,60 +145,60 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
                                     <tr>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${date}</span>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date}</span>
                                         </td>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${time}</span>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.time}</span>
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
-                        ${duration ? `
+                        ${c.duration ? `
                         <tr>
                             <td style="padding-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Duración</span><br>
-                                <span style="font-size:14px;color:#475569;">${duration} minutos</span>
+                                <span style="font-size:14px;color:#475569;">${c.duration} minutos</span>
                             </td>
                         </tr>` : ''}
-                        ${professional ? `
+                        ${c.professional ? `
                         <tr>
                             <td style="padding-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Profesional</span><br>
-                                <span style="font-size:14px;color:#475569;">${professional}</span>
+                                <span style="font-size:14px;color:#475569;">${c.professional}</span>
                             </td>
                         </tr>` : ''}
                     </table>
                 </td>
             </tr>
         </table>
-        
-        ${appointmentUrl ? `
+
+        ${c.appointmentUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
             <tr>
                 <td align="center">
-                    <a href="${appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Ver mi turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
-        
-        ${cancelUrl ? `
+
+        ${c.cancelUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
             <tr>
                 <td align="center">
-                    <a href="${cancelUrl}" style="display:inline-block;color:${theme.accent};text-decoration:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #e2e8f0;">
+                    <a href="${c.cancelUrl}" style="display:inline-block;color:${theme.accent};text-decoration:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #e2e8f0;">
                         Cancelar turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
 
-        ${businessPhone ? `
+        ${c.businessPhone ? `
         <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${businessPhone}</strong>
+            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
         </p>` : ''}
     `
 
@@ -175,16 +207,25 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
 
 export function reminderEmail({ clientName, serviceName, date, time, hoursUntil, businessName, businessType, businessPhone, appointmentUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        serviceName: escapeHtml(serviceName),
+        date: escapeHtml(date),
+        time: escapeHtml(time),
+        businessPhone: escapeHtml(businessPhone),
+        appointmentUrl: appointmentUrl ? safeUrl(appointmentUrl) : null,
+    }
+    const safeHours = Number.isFinite(hoursUntil) ? Math.max(0, Math.floor(hoursUntil)) : 0
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
             Recordatorio de turno
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${clientName}</strong>, te recordamos que tenés un turno 
-            ${hoursUntil <= 1 ? '<strong style="color:#f59e0b;">en menos de 1 hora</strong>' : `en <strong>${hoursUntil} horas</strong>`}.
+            Hola <strong>${c.clientName}</strong>, te recordamos que tenés un turno
+            ${safeHours <= 1 ? '<strong style="color:#f59e0b;">en menos de 1 hora</strong>' : `en <strong>${safeHours} horas</strong>`}.
         </p>
-        
+
         <!-- Appointment card -->
         <table width="100%" cellpadding="0" cellspacing="0" style="background:${theme.accent};border-radius:10px;overflow:hidden;">
             <tr>
@@ -193,7 +234,7 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
                         <tr>
                             <td>
                                 <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:18px;font-weight:700;color:#ffffff;">${serviceName}</span>
+                                <span style="font-size:18px;font-weight:700;color:#ffffff;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
@@ -202,11 +243,11 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
                                     <tr>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${date}</span>
+                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${c.date}</span>
                                         </td>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${time}</span>
+                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${c.time}</span>
                                         </td>
                                     </tr>
                                 </table>
@@ -216,21 +257,21 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
                 </td>
             </tr>
         </table>
-        
-        ${appointmentUrl ? `
+
+        ${c.appointmentUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
             <tr>
                 <td align="center">
-                    <a href="${appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Ver detalles del turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
-        
-        ${businessPhone ? `
+
+        ${c.businessPhone ? `
         <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿No podés asistir? Avisanos al <strong style="color:#64748b;">${businessPhone}</strong>
+            ¿No podés asistir? Avisanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
         </p>` : ''}
     `
 
@@ -239,22 +280,26 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
 
 export function welcomeEmail({ clientName, businessName, businessType, webUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        webUrl: webUrl ? safeUrl(webUrl) : null,
+    }
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
             Bienvenido/a
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
-            Hola <strong>${clientName}</strong>, fuiste registrado/a como cliente de 
-            <strong>${businessName}</strong>. A partir de ahora vas a recibir confirmaciones 
+            Hola <strong>${c.clientName}</strong>, fuiste registrado/a como cliente de
+            <strong>${escapeHtml(businessName)}</strong>. A partir de ahora vas a recibir confirmaciones
             y recordatorios de tus turnos por email.
         </p>
-        
-        ${webUrl ? `
+
+        ${c.webUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
             <tr>
                 <td align="center">
-                    <a href="${webUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.webUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Reservar un turno
                     </a>
                 </td>
@@ -265,18 +310,27 @@ export function welcomeEmail({ clientName, businessName, businessType, webUrl })
     return baseLayout(content, theme, businessName)
 }
 
-// ─── Notify business owner of a new booking ───
 export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, serviceName, date, time, duration, businessName, businessType, dashboardUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        clientEmail: escapeHtml(clientEmail),
+        clientPhone: escapeHtml(clientPhone),
+        serviceName: escapeHtml(serviceName),
+        date: escapeHtml(date),
+        time: escapeHtml(time),
+        duration: duration != null ? escapeHtml(duration) : null,
+        dashboardUrl: dashboardUrl ? safeUrl(dashboardUrl) : null,
+    }
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
             Nueva reserva
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            <strong>${clientName}</strong> reservó un turno en tu negocio.
+            <strong>${c.clientName}</strong> reservó un turno en tu negocio.
         </p>
-        
+
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
             <tr>
                 <td style="padding:20px 24px;">
@@ -284,7 +338,7 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
                         <tr>
                             <td style="padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${serviceName}</span>
+                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
@@ -293,29 +347,29 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
                                     <tr>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${date}</span>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date}</span>
                                         </td>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${time}</span>
+                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.time}</span>
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
-                        ${duration ? `
+                        ${c.duration ? `
                         <tr>
                             <td style="padding-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Duración</span><br>
-                                <span style="font-size:14px;color:#475569;">${duration} minutos</span>
+                                <span style="font-size:14px;color:#475569;">${c.duration} minutos</span>
                             </td>
                         </tr>` : ''}
                         <tr>
                             <td style="padding-top:14px;border-top:1px solid #e2e8f0;margin-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
-                                <span style="font-size:14px;color:#475569;">${clientName}</span><br>
-                                ${clientEmail ? `<span style="font-size:13px;color:#94a3b8;">${clientEmail}</span><br>` : ''}
-                                ${clientPhone ? `<span style="font-size:13px;color:#94a3b8;">${clientPhone}</span>` : ''}
+                                <span style="font-size:14px;color:#475569;">${c.clientName}</span><br>
+                                ${c.clientEmail ? `<span style="font-size:13px;color:#94a3b8;">${c.clientEmail}</span><br>` : ''}
+                                ${c.clientPhone ? `<span style="font-size:13px;color:#94a3b8;">${c.clientPhone}</span>` : ''}
                             </td>
                         </tr>
                     </table>
@@ -323,11 +377,11 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
             </tr>
         </table>
 
-        ${dashboardUrl ? `
+        ${c.dashboardUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
             <tr>
                 <td align="center">
-                    <a href="${dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Ver en el dashboard
                     </a>
                 </td>
@@ -338,18 +392,25 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
     return baseLayout(content, theme, businessName)
 }
 
-// ─── Cancellation confirmation to client ───
 export function cancellationEmail({ clientName, serviceName, date, time, businessName, businessType, businessPhone, bookUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        serviceName: escapeHtml(serviceName),
+        date: escapeHtml(date),
+        time: escapeHtml(time),
+        businessPhone: escapeHtml(businessPhone),
+        bookUrl: bookUrl ? safeUrl(bookUrl) : null,
+    }
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
             Turno cancelado
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${clientName}</strong>, tu turno fue cancelado correctamente.
+            Hola <strong>${c.clientName}</strong>, tu turno fue cancelado correctamente.
         </p>
-        
+
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
             <tr>
                 <td style="padding:20px 24px;">
@@ -357,7 +418,7 @@ export function cancellationEmail({ clientName, serviceName, date, time, busines
                         <tr>
                             <td>
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio cancelado</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#DC2626;text-decoration:line-through;">${serviceName}</span>
+                                <span style="font-size:16px;font-weight:600;color:#DC2626;text-decoration:line-through;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
@@ -366,11 +427,11 @@ export function cancellationEmail({ clientName, serviceName, date, time, busines
                                     <tr>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${date}</span>
+                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${c.date}</span>
                                         </td>
                                         <td width="50%">
                                             <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${time}</span>
+                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${c.time}</span>
                                         </td>
                                     </tr>
                                 </table>
@@ -380,39 +441,46 @@ export function cancellationEmail({ clientName, serviceName, date, time, busines
                 </td>
             </tr>
         </table>
-        
-        ${bookUrl ? `
+
+        ${c.bookUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
             <tr>
                 <td align="center">
-                    <a href="${bookUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.bookUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Reservar otro turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
 
-        ${businessPhone ? `
+        ${c.businessPhone ? `
         <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${businessPhone}</strong>
+            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
         </p>` : ''}
     `
 
     return baseLayout(content, theme, businessName)
 }
 
-// ─── Notify business when client cancels ───
 export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, date, time, businessName, businessType, dashboardUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        clientEmail: escapeHtml(clientEmail),
+        serviceName: escapeHtml(serviceName),
+        date: escapeHtml(date),
+        time: escapeHtml(time),
+        dashboardUrl: dashboardUrl ? safeUrl(dashboardUrl) : null,
+    }
 
     const content = `
         <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#DC2626;letter-spacing:-0.02em;">
             Turno cancelado
         </h1>
         <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            <strong>${clientName}</strong> canceló su turno.
+            <strong>${c.clientName}</strong> canceló su turno.
         </p>
-        
+
         <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
             <tr>
                 <td style="padding:20px 24px;">
@@ -420,19 +488,19 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
                         <tr>
                             <td>
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#DC2626;">${serviceName}</span>
+                                <span style="font-size:16px;font-weight:600;color:#DC2626;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha y hora</span><br>
-                                <span style="font-size:15px;font-weight:600;color:#1e293b;">${date} — ${time}</span>
+                                <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date} — ${c.time}</span>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top:14px;">
                                 <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
-                                <span style="font-size:14px;color:#475569;">${clientName} ${clientEmail ? `(${clientEmail})` : ''}</span>
+                                <span style="font-size:14px;color:#475569;">${c.clientName} ${c.clientEmail ? `(${c.clientEmail})` : ''}</span>
                             </td>
                         </tr>
                     </table>
@@ -440,11 +508,11 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
             </tr>
         </table>
 
-        ${dashboardUrl ? `
+        ${c.dashboardUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
             <tr>
                 <td align="center">
-                    <a href="${dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
+                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
                         Ver en el dashboard
                     </a>
                 </td>
@@ -457,6 +525,11 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
 
 export function reviewRequestEmail({ clientName, serviceName, businessName, businessType, reviewUrl }) {
     const theme = getTheme(businessType)
+    const c = {
+        clientName: escapeHtml(clientName),
+        serviceName: escapeHtml(serviceName || 'turno'),
+        reviewUrl: reviewUrl ? safeUrl(reviewUrl) : null,
+    }
 
     const content = `
         <table width="100%" cellpadding="0" cellspacing="0">
@@ -467,17 +540,17 @@ export function reviewRequestEmail({ clientName, serviceName, businessName, busi
             </tr>
             <tr>
                 <td style="font-size:14px;color:#64748b;line-height:1.6;padding-bottom:20px;">
-                    Hola ${escapeHtml(clientName)}, gracias por visitarnos.
-                    Tu opinion nos ayuda a mejorar. Dejanos una resena sobre tu ${escapeHtml(serviceName || 'turno')}.
+                    Hola ${c.clientName}, gracias por visitarnos.
+                    Tu opinion nos ayuda a mejorar. Dejanos una resena sobre tu ${c.serviceName}.
                 </td>
             </tr>
         </table>
 
-        ${reviewUrl ? `
+        ${c.reviewUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
             <tr>
                 <td align="center">
-                    <a href="${reviewUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
+                    <a href="${c.reviewUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
                         Dejar mi resena
                     </a>
                 </td>

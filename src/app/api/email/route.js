@@ -1,43 +1,46 @@
 import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
-import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail } from '@/lib/email-templates'
+import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { applyRateLimit } from '@/lib/rate-limit'
+import { EmailRequestSchema, parseBody } from '@/lib/schemas'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
+// All email types require an authenticated session. Public booking flows
+// send confirmations server-side via lib/send-email.js, not via this endpoint.
 export async function POST(request) {
     try {
-        // Rate limit: max 10 emails per minute per IP
-        const rateLimited = applyRateLimit(request, { prefix: 'email', limit: 10, windowMs: 60000 })
+        // Authenticate first — closes the open phishing/spam vector that existed
+        // when 'confirmation' was a public type.
+        const cookieStore = await cookies()
+        const supabase = createSupabaseServerClient(cookieStore)
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+
+        // Rate limit per user (10/min) — bound to authenticated identity
+        const rateLimited = applyRateLimit(request, {
+            prefix: `email:${user.id}`,
+            limit: 10,
+            windowMs: 60000,
+        })
         if (rateLimited) return rateLimited
 
-        const body = await request.json()
-        const { type, to, data } = body
-
-        if (!to || !type || !data) {
-            return NextResponse.json({ error: 'Faltan campos requeridos' }, { status: 400 })
+        const raw = await request.json().catch(() => null)
+        const parsed = parseBody(EmailRequestSchema, raw)
+        if (!parsed.ok) {
+            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
-
-        // Auth check: confirmation emails from booking are allowed without auth
-        // (guest users can book), but other types require authentication
-        const publicTypes = ['confirmation']
-        if (!publicTypes.includes(type)) {
-            const cookieStore = await cookies()
-            const supabase = createSupabaseServerClient(cookieStore)
-            const { data: { user } } = await supabase.auth.getUser()
-            if (!user) {
-                return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-            }
-        }
+        const { type, to, data } = parsed.data
 
         let html, subject
 
         switch (type) {
             case 'confirmation':
-                // Generate cancel link if appointment ID is available
                 if (data.appointmentId) {
                     const cancelToken = await generateCancelToken(data.appointmentId)
                     const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
@@ -72,12 +75,15 @@ export async function POST(request) {
                 subject = `Turno cancelado — ${data.clientName} canceló ${data.serviceName}`
                 break
 
+            case 'review_request':
+                html = reviewRequestEmail(data)
+                subject = `¿Cómo fue tu experiencia? — ${data.businessName}`
+                break
+
             default:
                 return NextResponse.json({ error: 'Tipo de email no válido' }, { status: 400 })
         }
 
-        // Use onboarding@resend.dev — the only allowed sender on Resend free tier
-        // To use a custom sender, verify a domain at resend.com/domains
         const { data: emailData, error } = await resend.emails.send({
             from: `${data.businessName || 'GLOWUP'} <onboarding@resend.dev>`,
             to: [to],
