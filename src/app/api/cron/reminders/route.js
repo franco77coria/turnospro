@@ -4,16 +4,14 @@ import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { reminderEmail } from '@/lib/email-templates'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 // This endpoint is called by Vercel Cron
 // Runs every hour to check for upcoming appointments in the next 2 hours
 // Timezone-aware: converts UTC to Argentina timezone before comparing
 export async function GET(request) {
-    // Verify cron secret for security
-    const authHeader = request.headers.get('authorization')
-    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const unauth = verifyCronAuth(request)
+    if (unauth) return unauth
 
     const supabase = createSupabaseAdmin()
     const resend = new Resend(process.env.RESEND_API_KEY)

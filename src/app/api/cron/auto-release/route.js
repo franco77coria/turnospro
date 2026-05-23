@@ -3,15 +3,14 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { notifyWaitlist } from '@/lib/waitlist'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
 // Runs every 30 minutes via Vercel Cron
 // Finds appointments where confirmation_deadline has passed
 // and the client didn't confirm → cancels them and notifies waitlist
 export async function GET(request) {
-    const authHeader = request.headers.get('authorization')
-    if (!process.env.CRON_SECRET || authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const unauth = verifyCronAuth(request)
+    if (unauth) return unauth
 
     const supabase = createSupabaseAdmin()
 

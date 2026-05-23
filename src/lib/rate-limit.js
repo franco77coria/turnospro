@@ -1,29 +1,37 @@
 import { NextResponse } from 'next/server'
 
+/**
+ * In-memory rate limiter.
+ *
+ * IMPORTANT: This is a single-instance limiter and only works reliably within
+ * one warm serverless instance. In production on Vercel with multiple regions
+ * or cold starts, attackers can partially evade it. For full protection move
+ * to Upstash Redis (vars already documented in .env.example). This helper still
+ * provides meaningful per-instance protection and surfaces obvious abuse.
+ */
 const rateMap = new Map()
+const MAX_ENTRIES = 10_000
 
-// Clean up old entries every 5 minutes to prevent memory leaks
-setInterval(() => {
+function cleanupIfNeeded() {
+    if (rateMap.size < MAX_ENTRIES) return
     const now = Date.now()
     for (const [key, record] of rateMap) {
         if (now - record.start > record.windowMs * 2) {
             rateMap.delete(key)
         }
     }
-}, 5 * 60 * 1000)
+    // If still too big, drop the oldest entries
+    if (rateMap.size >= MAX_ENTRIES) {
+        const toDrop = rateMap.size - Math.floor(MAX_ENTRIES * 0.8)
+        const it = rateMap.keys()
+        for (let i = 0; i < toDrop; i++) rateMap.delete(it.next().value)
+    }
+}
 
-/**
- * Check if a request is within rate limits
- * @param {string} key - Unique identifier (e.g., IP, user ID)
- * @param {number} limit - Max requests allowed in the window
- * @param {number} windowMs - Time window in milliseconds (default: 60s)
- * @returns {{ success: boolean, remaining: number, reset: number }}
- */
 export function checkRate(key, limit = 10, windowMs = 60000) {
     const now = Date.now()
     const record = rateMap.get(key) || { count: 0, start: now, windowMs }
 
-    // Reset window if expired
     if (now - record.start > windowMs) {
         record.count = 0
         record.start = now
@@ -32,6 +40,7 @@ export function checkRate(key, limit = 10, windowMs = 60000) {
     record.count++
     record.windowMs = windowMs
     rateMap.set(key, record)
+    cleanupIfNeeded()
 
     return {
         success: record.count <= limit,
@@ -41,19 +50,16 @@ export function checkRate(key, limit = 10, windowMs = 60000) {
 }
 
 /**
- * Get rate limit key from request
- * Uses X-Forwarded-For header (Vercel sets this) or falls back to a default
+ * Build a rate-limit key from the request. Combines prefix + IP. Caller can
+ * already embed a user id into the prefix (e.g. `booking:${user.id}`) for
+ * per-user limits that still degrade gracefully if a user shares an IP.
  */
 export function getRateLimitKey(request, prefix = '') {
     const forwarded = request.headers.get('x-forwarded-for')
-    const ip = forwarded?.split(',')[0]?.trim() || 'unknown'
+    const ip = forwarded?.split(',')[0]?.trim() || request.headers.get('x-real-ip') || 'unknown'
     return `${prefix}:${ip}`
 }
 
-/**
- * Apply rate limiting to a request and return error response if exceeded
- * @returns {Response|null} - Returns error response if rate limited, null if OK
- */
 export function applyRateLimit(request, { prefix = 'api', limit = 10, windowMs = 60000 } = {}) {
     const key = getRateLimitKey(request, prefix)
     const result = checkRate(key, limit, windowMs)
@@ -73,5 +79,5 @@ export function applyRateLimit(request, { prefix = 'api', limit = 10, windowMs =
         )
     }
 
-    return null // Not rate limited
+    return null
 }
