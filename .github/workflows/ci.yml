@@ -24,3 +24,21 @@ jobs:
           RESEND_API_KEY: placeholder
           CRON_SECRET: placeholder
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+  security-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      # Fail the build only on high/critical advisories. We surface moderate
+      # advisories in the log as a warning so noise doesn't block PRs, but they
+      # remain visible.
+      - name: Audit (high+critical = fail)
+        run: npm audit --audit-level=high
+      - name: Audit (full report, informational)
+        if: always()
+        run: npm audit || true

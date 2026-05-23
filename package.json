@@ -16,16 +16,17 @@
     "dotenv": "^17.3.1",
     "glob": "^13.0.6",
     "lucide-react": "^0.575.0",
-    "next": "16.1.6",
+    "next": "^16.2.6",
     "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.2",
-    "web-push": "^3.6.7"
+    "web-push": "^3.6.7",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "eslint": "^9",
-    "eslint-config-next": "16.1.6",
+    "eslint-config-next": "^16.2.6",
     "sharp": "^0.34.5",
     "vitest": "^3.2.1"
   }
