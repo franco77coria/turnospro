@@ -100,27 +100,18 @@ export default function ConfirmStep({
                 <ArrowLeft size={14} /> Cambiar fecha
             </button>
 
-            {!user ? (
-                <>
-                    <h2>Inicia sesion para confirmar</h2>
-                    <div style={{ textAlign: 'center', padding: 'var(--space-6) 0' }}>
-                        <LogIn size={32} style={{ color: 'var(--accent)', marginBottom: 'var(--space-3)' }} />
-                        <p style={{ marginBottom: 'var(--space-4)', color: 'var(--text-secondary)' }}>
-                            Para confirmar tu turno necesitas una cuenta en GLOWUP.
-                        </p>
-                        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            <Link href={`/login?redirect=/book/${id}`} className="btn btn-primary">
-                                Iniciar sesion
-                            </Link>
-                            <Link href={`/register?redirect=/book/${id}`} className="btn btn-secondary">
-                                Crear cuenta
-                            </Link>
-                        </div>
-                    </div>
-                </>
-            ) : (
-                <>
-                    <h2>Tus datos</h2>
+            {!user && (
+                <div style={{ background: 'var(--bg-secondary)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--space-4)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)' }}>
+                        ¿Tenés cuenta en Tu GlowUp?
+                    </span>
+                    <Link href={`/login?redirect=/book/${id}`} style={{ fontSize: 'var(--font-size-xs)', fontWeight: 600, color: 'var(--accent)', textDecoration: 'none' }}>
+                        Iniciar sesión (opcional) →
+                    </Link>
+                </div>
+            )}
+
+            <h2>Completá tus datos</h2>
 
                     <div className={styles.bookingSummary}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-2)' }}>
@@ -208,8 +199,6 @@ export default function ConfirmStep({
                             )}
                         </button>
                     </form>
-                </>
-            )}
         </div>
     )
 }

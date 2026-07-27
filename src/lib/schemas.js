@@ -24,6 +24,10 @@ export const BookingSchema = z.object({
     send_emails: z.boolean().optional().default(false),
     // Optional coupon to atomically consume.
     coupon_id: uuid.nullish(),
+    // Guest info fields when booking without an account:
+    guest_name: optionalShortText(200),
+    guest_email: emailStr.nullish(),
+    guest_phone: z.string().max(30).nullish(),
 })
 
 export const CancelTokenSchema = z.object({

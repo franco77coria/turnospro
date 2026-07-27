@@ -265,44 +265,41 @@ export function useBookingFlow() {
         setSubmitting(true)
 
         try {
-            // 1. Upsert client. We keep this client-side because the user is
-            //    authenticated and the RLS policies (post phase1) require auth.uid()
-            //    to insert into `clients`. The server-side /api/appointments will
-            //    still verify the client belongs to business_id.
-            let clientId
-            const { data: existingClient } = await supabase
-                .from('clients')
-                .select('id')
-                .eq('business_id', business.id)
-                .eq('email', form.email)
-                .single()
-
-            if (existingClient) {
-                clientId = existingClient.id
-                await supabase.from('clients').update({
-                    name: form.name,
-                    phone: formattedPhone,
-                    last_visit: new Date().toISOString(),
-                }).eq('id', clientId)
-            } else {
-                const { data: newClient } = await supabase
+            let clientId = null
+            if (user) {
+                const { data: existingClient } = await supabase
                     .from('clients')
-                    .insert([{
-                        business_id: business.id,
+                    .select('id')
+                    .eq('business_id', business.id)
+                    .eq('email', form.email)
+                    .maybeSingle()
+
+                if (existingClient) {
+                    clientId = existingClient.id
+                    await supabase.from('clients').update({
                         name: form.name,
-                        email: form.email,
                         phone: formattedPhone,
-                        first_visit: new Date().toISOString(),
                         last_visit: new Date().toISOString(),
-                        total_visits: 0,
-                    }])
-                    .select()
-                    .single()
-                clientId = newClient?.id
+                    }).eq('id', clientId)
+                } else {
+                    const { data: newClient } = await supabase
+                        .from('clients')
+                        .insert([{
+                            business_id: business.id,
+                            name: form.name,
+                            email: form.email,
+                            phone: formattedPhone,
+                            first_visit: new Date().toISOString(),
+                            last_visit: new Date().toISOString(),
+                            total_visits: 0,
+                        }])
+                        .select()
+                        .maybeSingle()
+                    clientId = newClient?.id
+                }
             }
 
-            // 2. Server-side availability check (atomic with the booking RPC,
-            //    but this gives the user a friendly message before the POST).
+            // 2. Server-side availability check
             const checkRes = await fetch('/api/appointments/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -315,29 +312,28 @@ export function useBookingFlow() {
             })
             const checkData = await checkRes.json()
             if (!checkData.available) {
-                setError('Este horario ya fue reservado. Elegi otro horario.')
+                setError('Este horario ya fue reservado. Elegí otro horario.')
                 setSubmitting(false)
                 return
             }
 
-            // 3. Final price (server validates it via Zod, but trust-but-verify).
+            // 3. Final price
             const finalPrice = appliedCoupon ? (
                 appliedCoupon.discount_type === 'percentage'
                     ? selectedService.price * (1 - appliedCoupon.discount_value / 100)
                     : Math.max(0, selectedService.price - appliedCoupon.discount_value)
             ) : selectedService.price
 
-            // 4. Create the appointment via the hardened endpoint. The server
-            //    enforces auth, validates the payload with Zod, verifies that
-            //    the caller is allowed to book for this client_id, sends the
-            //    confirmation + business-notify emails, creates the in-app
-            //    notification and consumes the coupon — all in one transaction.
+            // 4. Create the appointment (works for logged in users OR guest users)
             const res = await fetch('/api/appointments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     business_id: business.id,
                     client_id: clientId,
+                    guest_name: form.name,
+                    guest_email: form.email,
+                    guest_phone: formattedPhone,
                     team_member_id: selectedProfessional?.id || null,
                     service_name: selectedService.name,
                     date: selectedDate,

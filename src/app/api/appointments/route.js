@@ -109,37 +109,75 @@ async function notifyBusinessPush(supabase, business_id, team_member_id, service
 
 export async function POST(request) {
     try {
-        // 1. Require authentication (closes spam/abuse vector).
         const cookieStore = await cookies()
         const authClient = createSupabaseServerClient(cookieStore)
         const { data: { user } } = await authClient.auth.getUser()
-        if (!user) {
-            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-        }
 
-        // 2. Rate-limit per user — 10/min/user (more generous than per-IP since each user is identified)
+        // 1. Rate-limit (por ID si está autenticado, o por IP si es invitado)
+        const rateLimitKey = user ? `booking:${user.id}` : 'booking:guest'
         const rateLimited = await applyRateLimit(request, {
-            prefix: `booking:${user.id}`,
+            prefix: rateLimitKey,
             limit: 10,
             windowMs: 60000,
         })
         if (rateLimited) return rateLimited
 
-        // 3. Validate input with Zod
+        // 2. Validate input with Zod
         const raw = await request.json().catch(() => null)
         const parsed = parseBody(BookingSchema, raw)
         if (!parsed.ok) {
             return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
-        const { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id } = parsed.data
+        let { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id, guest_name, guest_email, guest_phone } = parsed.data
 
         const supabase = createSupabaseAdmin()
 
-        // 4. If a client_id is provided, verify the caller is allowed to book for them.
-        //    Either:
-        //      - The client belongs to a business the user owns (staff booking flow), OR
-        //      - The client's email matches the caller's email (self-booking flow).
-        if (client_id) {
+        // 3. Flujo de Invitado (Guest Booking): Si no hay cliente logueado, crear/vincular cliente por email o teléfono
+        if (!client_id && (guest_email || guest_phone || guest_name)) {
+            let existingClient = null
+            if (guest_email) {
+                const { data: foundByEmail } = await supabase
+                    .from('clients')
+                    .select('id')
+                    .eq('business_id', business_id)
+                    .ilike('email', guest_email.trim())
+                    .limit(1)
+                    .maybeSingle()
+                existingClient = foundByEmail
+            }
+            if (!existingClient && guest_phone) {
+                const { data: foundByPhone } = await supabase
+                    .from('clients')
+                    .select('id')
+                    .eq('business_id', business_id)
+                    .eq('phone', guest_phone.trim())
+                    .limit(1)
+                    .maybeSingle()
+                existingClient = foundByPhone
+            }
+
+            if (existingClient) {
+                client_id = existingClient.id
+            } else {
+                // Registrar nuevo cliente en la base del negocio
+                const { data: newClient, error: createClientErr } = await supabase
+                    .from('clients')
+                    .insert([{
+                        business_id,
+                        name: guest_name || guest_email?.split('@')[0] || 'Cliente',
+                        email: guest_email || null,
+                        phone: guest_phone || null,
+                    }])
+                    .select('id')
+                    .single()
+                if (!createClientErr && newClient) {
+                    client_id = newClient.id
+                }
+            }
+        }
+
+        // 4. Si se provee client_id y hay usuario autenticado, verificar permisos
+        if (client_id && user) {
             const { data: client } = await supabase
                 .from('clients')
                 .select('id, business_id, email')
@@ -172,7 +210,6 @@ export async function POST(request) {
             if (!isSelf && !isStaff) {
                 return NextResponse.json({ error: 'No tenés permisos para reservar para este cliente' }, { status: 403 })
             }
-            // Ensure the client belongs to the same business as the booking
             if (client.business_id !== business_id) {
                 return NextResponse.json({ error: 'El cliente no pertenece a este negocio' }, { status: 400 })
             }
