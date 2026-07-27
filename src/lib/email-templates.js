@@ -1,21 +1,11 @@
-// Email HTML templates for GLOWUP
-// Minimalist, professional, themed by business type
-// All user-controlled fields MUST be escaped via escapeHtml or safeUrl.
+// Templates de Email HTML para TU GLOWUP
+// Diseño ultra-premium, moderno, responsivo y adaptado al rubro comercial.
 
-/**
- * Escape HTML special chars to prevent XSS in email content.
- * Returns empty string for nullish input.
- */
 export function escapeHtml(value) {
     if (value == null) return ''
     return String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
 }
 
-/**
- * Validate that a URL is safe to embed in an email link.
- * Allows only http/https/mailto with a parseable URL, and the configured app host.
- * Returns the sanitized URL string, or '#' if unsafe.
- */
 export function safeUrl(value) {
     if (!value) return '#'
     try {
@@ -27,16 +17,15 @@ export function safeUrl(value) {
     }
 }
 
-
 const RUBRO_THEMES = {
-    barberia: { accent: '#1E293B', name: 'Barbería', icon: '✂️' },
-    peluqueria: { accent: '#7C3AED', name: 'Peluquería', icon: '💇' },
-    unas: { accent: '#EC4899', name: 'Uñas', icon: '💅' },
-    lash: { accent: '#8B5CF6', name: 'Lash & Cejas', icon: '👁️' },
-    spa: { accent: '#14B8A6', name: 'Spa & Estética', icon: '🧖' },
-    consultorio: { accent: '#0EA5E9', name: 'Consultorio', icon: '🏥' },
-    veterinaria: { accent: '#22C55E', name: 'Veterinaria', icon: '🐾' },
-    custom: { accent: '#6366F1', name: 'Negocio', icon: '🏢' },
+    barberia: { accent: '#0F172A', gradient: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)', name: 'Barbería', icon: '✂️' },
+    peluqueria: { accent: '#7C3AED', gradient: 'linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%)', name: 'Peluquería', icon: '💇' },
+    unas: { accent: '#EC4899', gradient: 'linear-gradient(135deg, #DB2777 0%, #F472B6 100%)', name: 'Uñas', icon: '💅' },
+    lash: { accent: '#8B5CF6', gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', name: 'Lash & Cejas', icon: '👁️' },
+    spa: { accent: '#0D9488', gradient: 'linear-gradient(135deg, #0F766E 0%, #2DD4BF 100%)', name: 'Spa & Estética', icon: '🧖' },
+    consultorio: { accent: '#0284C7', gradient: 'linear-gradient(135deg, #0369A1 0%, #38BDF8 100%)', name: 'Consultorio', icon: '🏥' },
+    veterinaria: { accent: '#16A34A', gradient: 'linear-gradient(135deg, #15803D 0%, #4ADE80 100%)', name: 'Veterinaria', icon: '🐾' },
+    custom: { accent: '#4F46E5', gradient: 'linear-gradient(135deg, #4338CA 0%, #6366F1 100%)', name: 'Servicios', icon: '🏢' },
 }
 
 function getTheme(businessType) {
@@ -45,34 +34,48 @@ function getTheme(businessType) {
 
 function baseLayout(content, theme, businessName) {
     const safeBiz = escapeHtml(businessName)
-    const appHref = safeUrl(process.env.NEXT_PUBLIC_APP_URL || '#')
+    const initial = safeBiz ? safeBiz[0].toUpperCase() : 'G'
+    const appHref = safeUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://tu-glowup.com')
+
     return `
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GLOWUP</title>
+    <title>Tu GlowUp</title>
 </head>
-<body style="margin:0;padding:0;background:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;">
-    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;padding:40px 16px;">
+<body style="margin:0;padding:0;background-color:#F1F5F9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F1F5F9;padding:32px 16px;">
         <tr>
             <td align="center">
-                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="max-width:540px;background:#ffffff;border-radius:20px;border:1px solid #E2E8F0;box-shadow:0 10px 30px rgba(0,0,0,0.06);overflow:hidden;">
 
-                    <!-- Header -->
+                    <!-- Entezado Premium -->
                     <tr>
-                        <td style="background:${theme.accent};padding:24px 32px;">
+                        <td style="background:${theme.gradient};padding:32px 32px 28px;">
                             <table width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td>
-                                        <span style="color:#ffffff;font-size:18px;font-weight:700;letter-spacing:-0.02em;">
-                                            ${safeBiz}
-                                        </span>
+                                        <table cellpadding="0" cellspacing="0">
+                                            <tr>
+                                                <td style="width:42px;height:42px;background:rgba(255,255,255,0.2);border-radius:12px;text-align:center;vertical-align:middle;color:#ffffff;font-size:20px;font-weight:800;border:1px solid rgba(255,255,255,0.3);">
+                                                    ${initial}
+                                                </td>
+                                                <td style="padding-left:14px;">
+                                                    <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.02em;display:block;line-height:1.2;">
+                                                        ${safeBiz}
+                                                    </span>
+                                                    <span style="color:rgba(255,255,255,0.75);font-size:12px;font-weight:500;">
+                                                        ${theme.icon} ${theme.name}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        </table>
                                     </td>
-                                    <td align="right">
-                                        <span style="color:rgba(255,255,255,0.7);font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.05em;">
-                                            GLOWUP
+                                    <td align="right" style="vertical-align:top;">
+                                        <span style="background:rgba(255,255,255,0.15);color:#ffffff;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.08em;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.25);">
+                                            TU GLOWUP
                                         </span>
                                     </td>
                                 </tr>
@@ -80,21 +83,29 @@ function baseLayout(content, theme, businessName) {
                         </td>
                     </tr>
 
-                    <!-- Content -->
+                    <!-- Contenido Principal -->
                     <tr>
-                        <td style="padding:32px;">
+                        <td style="padding:32px 32px 24px;">
                             ${content}
                         </td>
                     </tr>
 
-                    <!-- Footer -->
+                    <!-- Pie de página -->
                     <tr>
-                        <td style="padding:20px 32px;border-top:1px solid #f1f5f9;background:#fafafa;">
-                            <p style="margin:0;font-size:11px;color:#94a3b8;text-align:center;line-height:1.6;">
-                                Este email fue enviado por ${safeBiz} a través de
-                                <a href="${appHref}" style="color:${theme.accent};text-decoration:none;">GLOWUP</a>.<br>
-                                Si no solicitaste este turno, podés ignorar este email.
-                            </p>
+                        <td style="padding:24px 32px;border-top:1px solid #F1F5F9;background-color:#F8FAFC;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center">
+                                        <p style="margin:0 0 6px;font-size:12px;color:#64748B;font-weight:500;">
+                                            Enviado por <strong>${safeBiz}</strong> a través de
+                                            <a href="${appHref}" style="color:${theme.accent};font-weight:700;text-decoration:none;">Tu GlowUp</a>
+                                        </p>
+                                        <p style="margin:0;font-size:11px;color:#94A3B8;">
+                                            Agenda online y gestión de turnos 24/7.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </table>
                         </td>
                     </tr>
 
@@ -121,52 +132,66 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
     }
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
-            Turno confirmado
+        <!-- Badge Estado -->
+        <table cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+            <tr>
+                <td style="background:#ECFDF5;border:1px solid #A7F3D0;color:#047857;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;">
+                    ✓ TURNO CONFIRMADO
+                </td>
+            </tr>
+        </table>
+
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            ¡Todo listo para tu visita!
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${c.clientName}</strong>, tu turno fue agendado exitosamente.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.5;">
+            Hola <strong style="color:#0F172A;">${c.clientName}</strong>, tu reserva fue agendada exitosamente en <strong>${escapeHtml(businessName)}</strong>.
         </p>
 
-        <!-- Appointment details card -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+        <!-- Tarjeta de Detalles del Turno -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border-radius:16px;border:1px solid #E2E8F0;padding:24px;margin-bottom:24px;">
             <tr>
-                <td style="padding:20px 24px;">
+                <td>
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td style="padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${c.serviceName}</span>
+                            <td style="padding-bottom:16px;border-bottom:1px solid #E2E8F0;">
+                                <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Servicio contratado</span><br>
+                                <span style="font-size:18px;font-weight:800;color:#0F172A;display:inline-block;margin-top:2px;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top:14px;">
+                            <td style="padding-top:16px;">
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
-                                        <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date}</span>
+                                        <td width="50%" style="vertical-align:top;">
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">📅 Fecha</span><br>
+                                            <span style="font-size:15px;font-weight:700;color:#0F172A;display:inline-block;margin-top:2px;">${c.date}</span>
                                         </td>
-                                        <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.time}</span>
+                                        <td width="50%" style="vertical-align:top;">
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">🕒 Hora</span><br>
+                                            <span style="font-size:15px;font-weight:700;color:#0F172A;display:inline-block;margin-top:2px;">${c.time} hs</span>
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
-                        ${c.duration ? `
+                        ${c.duration || c.professional ? `
                         <tr>
-                            <td style="padding-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Duración</span><br>
-                                <span style="font-size:14px;color:#475569;">${c.duration} minutos</span>
-                            </td>
-                        </tr>` : ''}
-                        ${c.professional ? `
-                        <tr>
-                            <td style="padding-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Profesional</span><br>
-                                <span style="font-size:14px;color:#475569;">${c.professional}</span>
+                            <td style="padding-top:16px;border-top:1px solid #E2E8F0;margin-top:16px;">
+                                <table width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        ${c.duration ? `
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Duración</span><br>
+                                            <span style="font-size:14px;font-weight:600;color:#475569;">${c.duration} min</span>
+                                        </td>` : ''}
+                                        ${c.professional ? `
+                                        <td width="50%">
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Atendido por</span><br>
+                                            <span style="font-size:14px;font-weight:600;color:#475569;">${c.professional}</span>
+                                        </td>` : ''}
+                                    </tr>
+                                </table>
                             </td>
                         </tr>` : ''}
                     </table>
@@ -174,31 +199,32 @@ export function confirmationEmail({ clientName, serviceName, date, time, duratio
             </tr>
         </table>
 
-        ${c.appointmentUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+        <!-- Botones de Acción -->
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
             <tr>
                 <td align="center">
-                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Ver mi turno
-                    </a>
+                    ${c.appointmentUrl ? `
+                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(15,23,42,0.18);">
+                        Ver mi turno en Tu GlowUp
+                    </a>` : ''}
                 </td>
             </tr>
-        </table>` : ''}
+        </table>
 
         ${c.cancelUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:16px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.cancelUrl}" style="display:inline-block;color:${theme.accent};text-decoration:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #e2e8f0;">
-                        Cancelar turno
+                    <a href="${c.cancelUrl}" style="display:inline-block;color:#94A3B8;text-decoration:none;padding:8px 16px;font-size:12px;font-weight:500;">
+                        ¿Necesitás cancelar? Hacé clic acá
                     </a>
                 </td>
             </tr>
         </table>` : ''}
 
         ${c.businessPhone ? `
-        <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
+        <p style="margin:20px 0 0;font-size:13px;color:#64748B;text-align:center;">
+            ¿Dudas o consultas? Contactanos al <strong style="color:#0F172A;">${c.businessPhone}</strong>
         </p>` : ''}
     `
 
@@ -218,36 +244,43 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
     const safeHours = Number.isFinite(hoursUntil) ? Math.max(0, Math.floor(hoursUntil)) : 0
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
-            Recordatorio de turno
+        <table cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+            <tr>
+                <td style="background:#FFFBEB;border:1px solid #FDE68A;color:#B45309;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;">
+                    ⏰ RECORDATORIO PRÓXIMO
+                </td>
+            </tr>
+        </table>
+
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            Tu turno es muy pronto
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${c.clientName}</strong>, te recordamos que tenés un turno
-            ${safeHours <= 1 ? '<strong style="color:#f59e0b;">en menos de 1 hora</strong>' : `en <strong>${safeHours} horas</strong>`}.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.5;">
+            Hola <strong>${c.clientName}</strong>, te recordamos que tenés un turno reservado en <strong>${escapeHtml(businessName)}</strong>
+            ${safeHours <= 1 ? '<strong style="color:#D97706;">en menos de 1 hora</strong>' : `en <strong>${safeHours} horas</strong>`}.
         </p>
 
-        <!-- Appointment card -->
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:${theme.accent};border-radius:10px;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:${theme.gradient};border-radius:16px;padding:24px;margin-bottom:24px;box-shadow:0 8px 24px rgba(0,0,0,0.08);">
             <tr>
-                <td style="padding:24px;">
+                <td>
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td>
-                                <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:18px;font-weight:700;color:#ffffff;">${c.serviceName}</span>
+                            <td style="padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,0.2);">
+                                <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.06em;">Servicio</span><br>
+                                <span style="font-size:18px;font-weight:800;color:#ffffff;display:inline-block;margin-top:2px;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
-                            <td style="padding-top:16px;">
+                            <td style="padding-top:14px;">
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${c.date}</span>
+                                            <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.06em;">Fecha</span><br>
+                                            <span style="font-size:16px;font-weight:800;color:#ffffff;">${c.date}</span>
                                         </td>
                                         <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:16px;font-weight:700;color:#ffffff;">${c.time}</span>
+                                            <span style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.06em;">Hora</span><br>
+                                            <span style="font-size:16px;font-weight:800;color:#ffffff;">${c.time} hs</span>
                                         </td>
                                     </tr>
                                 </table>
@@ -259,19 +292,19 @@ export function reminderEmail({ clientName, serviceName, date, time, hoursUntil,
         </table>
 
         ${c.appointmentUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Ver detalles del turno
+                    <a href="${c.appointmentUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(15,23,42,0.18);">
+                        Ver mi turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
 
         ${c.businessPhone ? `
-        <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿No podés asistir? Avisanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
+        <p style="margin:20px 0 0;font-size:13px;color:#64748B;text-align:center;">
+            ¿No podés asistir? Avisanos al <strong style="color:#0F172A;">${c.businessPhone}</strong>
         </p>` : ''}
     `
 
@@ -286,21 +319,19 @@ export function welcomeEmail({ clientName, businessName, businessType, webUrl })
     }
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
-            Bienvenido/a
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            ¡Bienvenido/a!
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.6;">
-            Hola <strong>${c.clientName}</strong>, fuiste registrado/a como cliente de
-            <strong>${escapeHtml(businessName)}</strong>. A partir de ahora vas a recibir confirmaciones
-            y recordatorios de tus turnos por email.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+            Hola <strong>${c.clientName}</strong>, tu cuenta fue registrada exitosamente en <strong>${escapeHtml(businessName)}</strong>. A partir de ahora podés reservar turnos online en segundos y recibirás notificaciones en tiempo real por email.
         </p>
 
         ${c.webUrl ? `
         <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
             <tr>
                 <td align="center">
-                    <a href="${c.webUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Reservar un turno
+                    <a href="${c.webUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;">
+                        Reservar mi primer turno
                     </a>
                 </td>
             </tr>
@@ -324,21 +355,29 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
     }
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
-            Nueva reserva
+        <table cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+            <tr>
+                <td style="background:#EFF6FF;border:1px solid #BFDBFE;color:#1D4ED8;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;">
+                    🔔 NUEVA RESERVA RECIBIDA
+                </td>
+            </tr>
+        </table>
+
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            Tenés un nuevo turno agendado
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            <strong>${c.clientName}</strong> reservó un turno en tu negocio.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.5;">
+            El cliente <strong style="color:#0F172A;">${c.clientName}</strong> reservó un turno en <strong>${escapeHtml(businessName)}</strong>.
         </p>
 
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border-radius:10px;border:1px solid #e2e8f0;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;border-radius:16px;border:1px solid #E2E8F0;padding:24px;margin-bottom:24px;">
             <tr>
-                <td style="padding:20px 24px;">
+                <td>
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
-                            <td style="padding-bottom:14px;border-bottom:1px solid #e2e8f0;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#1e293b;">${c.serviceName}</span>
+                            <td style="padding-bottom:14px;border-bottom:1px solid #E2E8F0;">
+                                <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Servicio</span><br>
+                                <span style="font-size:17px;font-weight:800;color:#0F172A;display:inline-block;margin-top:2px;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
@@ -346,30 +385,23 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
                                 <table width="100%" cellpadding="0" cellspacing="0">
                                     <tr>
                                         <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date}</span>
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Fecha</span><br>
+                                            <span style="font-size:15px;font-weight:700;color:#0F172A;">${c.date}</span>
                                         </td>
                                         <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.time}</span>
+                                            <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Hora</span><br>
+                                            <span style="font-size:15px;font-weight:700;color:#0F172A;">${c.time} hs</span>
                                         </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
-                        ${c.duration ? `
                         <tr>
-                            <td style="padding-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Duración</span><br>
-                                <span style="font-size:14px;color:#475569;">${c.duration} minutos</span>
-                            </td>
-                        </tr>` : ''}
-                        <tr>
-                            <td style="padding-top:14px;border-top:1px solid #e2e8f0;margin-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
-                                <span style="font-size:14px;color:#475569;">${c.clientName}</span><br>
-                                ${c.clientEmail ? `<span style="font-size:13px;color:#94a3b8;">${c.clientEmail}</span><br>` : ''}
-                                ${c.clientPhone ? `<span style="font-size:13px;color:#94a3b8;">${c.clientPhone}</span>` : ''}
+                            <td style="padding-top:14px;border-top:1px solid #E2E8F0;margin-top:14px;">
+                                <span style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.06em;">Datos del cliente</span><br>
+                                <span style="font-size:14px;font-weight:700;color:#0F172A;">${c.clientName}</span><br>
+                                ${c.clientEmail ? `<span style="font-size:13px;color:#64748B;">${c.clientEmail}</span><br>` : ''}
+                                ${c.clientPhone ? `<span style="font-size:13px;color:#64748B;">${c.clientPhone}</span>` : ''}
                             </td>
                         </tr>
                     </table>
@@ -378,11 +410,11 @@ export function newBookingNotifyEmail({ clientName, clientEmail, clientPhone, se
         </table>
 
         ${c.dashboardUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Ver en el dashboard
+                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(15,23,42,0.18);">
+                        Ver en mi Dashboard
                     </a>
                 </td>
             </tr>
@@ -404,37 +436,35 @@ export function cancellationEmail({ clientName, serviceName, date, time, busines
     }
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#1e293b;letter-spacing:-0.02em;">
-            Turno cancelado
+        <table cellpadding="0" cellspacing="0" style="margin-bottom:16px;">
+            <tr>
+                <td style="background:#FEF2F2;border:1px solid #FECACA;color:#DC2626;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;display:inline-block;">
+                    ✕ TURNO CANCELADO
+                </td>
+            </tr>
+        </table>
+
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            Tu turno fue cancelado
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            Hola <strong>${c.clientName}</strong>, tu turno fue cancelado correctamente.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.5;">
+            Hola <strong>${c.clientName}</strong>, tu reserva en <strong>${escapeHtml(businessName)}</strong> fue cancelada.
         </p>
 
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:16px;border:1px solid #FECACA;padding:24px;margin-bottom:24px;">
             <tr>
-                <td style="padding:20px 24px;">
+                <td>
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td>
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio cancelado</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#DC2626;text-decoration:line-through;">${c.serviceName}</span>
+                                <span style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase;letter-spacing:0.06em;">Servicio cancelado</span><br>
+                                <span style="font-size:17px;font-weight:700;color:#DC2626;text-decoration:line-through;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top:14px;">
-                                <table width="100%" cellpadding="0" cellspacing="0">
-                                    <tr>
-                                        <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha</span><br>
-                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${c.date}</span>
-                                        </td>
-                                        <td width="50%">
-                                            <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Hora</span><br>
-                                            <span style="font-size:15px;color:#94a3b8;text-decoration:line-through;">${c.time}</span>
-                                        </td>
-                                    </tr>
-                                </table>
+                                <span style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase;letter-spacing:0.06em;">Fecha y Hora</span><br>
+                                <span style="font-size:15px;color:#991B1B;text-decoration:line-through;">${c.date} — ${c.time} hs</span>
                             </td>
                         </tr>
                     </table>
@@ -443,20 +473,15 @@ export function cancellationEmail({ clientName, serviceName, date, time, busines
         </table>
 
         ${c.bookUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.bookUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Reservar otro turno
+                    <a href="${c.bookUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;">
+                        Reservar un nuevo turno
                     </a>
                 </td>
             </tr>
         </table>` : ''}
-
-        ${c.businessPhone ? `
-        <p style="margin:24px 0 0;font-size:13px;color:#94a3b8;text-align:center;">
-            ¿Necesitás ayuda? Contactanos al <strong style="color:#64748b;">${c.businessPhone}</strong>
-        </p>` : ''}
     `
 
     return baseLayout(content, theme, businessName)
@@ -474,33 +499,27 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
     }
 
     const content = `
-        <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#DC2626;letter-spacing:-0.02em;">
-            Turno cancelado
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#DC2626;letter-spacing:-0.02em;">
+            Turno cancelado por el cliente
         </h1>
-        <p style="margin:0 0 24px;font-size:14px;color:#64748b;line-height:1.5;">
-            <strong>${c.clientName}</strong> canceló su turno.
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.5;">
+            El cliente <strong>${c.clientName}</strong> canceló su reserva en tu agenda.
         </p>
 
-        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:10px;border:1px solid #FECACA;overflow:hidden;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background:#FEF2F2;border-radius:16px;border:1px solid #FECACA;padding:24px;margin-bottom:24px;">
             <tr>
-                <td style="padding:20px 24px;">
+                <td>
                     <table width="100%" cellpadding="0" cellspacing="0">
                         <tr>
                             <td>
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Servicio</span><br>
-                                <span style="font-size:16px;font-weight:600;color:#DC2626;">${c.serviceName}</span>
+                                <span style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase;">Servicio</span><br>
+                                <span style="font-size:16px;font-weight:700;color:#DC2626;">${c.serviceName}</span>
                             </td>
                         </tr>
                         <tr>
                             <td style="padding-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Fecha y hora</span><br>
-                                <span style="font-size:15px;font-weight:600;color:#1e293b;">${c.date} — ${c.time}</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td style="padding-top:14px;">
-                                <span style="font-size:11px;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:0.05em;">Cliente</span><br>
-                                <span style="font-size:14px;color:#475569;">${c.clientName} ${c.clientEmail ? `(${c.clientEmail})` : ''}</span>
+                                <span style="font-size:11px;font-weight:700;color:#991B1B;text-transform:uppercase;">Fecha liberada</span><br>
+                                <span style="font-size:15px;font-weight:700;color:#0F172A;">${c.date} — ${c.time} hs</span>
                             </td>
                         </tr>
                     </table>
@@ -509,11 +528,11 @@ export function cancellationNotifyEmail({ clientName, clientEmail, serviceName, 
         </table>
 
         ${c.dashboardUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-                        Ver en el dashboard
+                    <a href="${c.dashboardUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:14px;font-weight:700;">
+                        Ver agenda en el Dashboard
                     </a>
                 </td>
             </tr>
@@ -532,26 +551,19 @@ export function reviewRequestEmail({ clientName, serviceName, businessName, busi
     }
 
     const content = `
-        <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-                <td style="font-size:20px;font-weight:700;color:#1e293b;padding-bottom:8px;">
-                    ¿Como fue tu experiencia?
-                </td>
-            </tr>
-            <tr>
-                <td style="font-size:14px;color:#64748b;line-height:1.6;padding-bottom:20px;">
-                    Hola ${c.clientName}, gracias por visitarnos.
-                    Tu opinion nos ayuda a mejorar. Dejanos una resena sobre tu ${c.serviceName}.
-                </td>
-            </tr>
-        </table>
+        <h1 style="margin:0 0 8px;font-size:24px;font-weight:800;color:#0F172A;letter-spacing:-0.02em;">
+            ¿Cómo fue tu experiencia? ⭐
+        </h1>
+        <p style="margin:0 0 24px;font-size:15px;color:#475569;line-height:1.6;">
+            Hola <strong>${c.clientName}</strong>, gracias por visitarnos en <strong>${escapeHtml(businessName)}</strong>. Tu opinión es súper importante para nosotros. ¿Podrías dejarnos una breve reseña de tu ${c.serviceName}?
+        </p>
 
         ${c.reviewUrl ? `
-        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td align="center">
-                    <a href="${c.reviewUrl}" style="display:inline-block;background:${theme.accent};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;">
-                        Dejar mi resena
+                    <a href="${c.reviewUrl}" style="display:inline-block;background:${theme.gradient};color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:50px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(15,23,42,0.18);">
+                        Dejar mi opinión
                     </a>
                 </td>
             </tr>
