@@ -344,12 +344,16 @@ async function sendBookingSideEffects(supabase, {
 
         // 4. In-app notification
         if (business?.owner_id) {
-            const formattedShort = dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-            await supabase.from('notifications').insert([{
-                user_id: business.owner_id, business_id,
-                type: 'appointment_booked', title: 'Nuevo turno reservado',
-                message: `${clientName} reservó ${service_name} para el ${formattedShort} a las ${time}.`,
-            }]).catch(() => {})
+            try {
+                const formattedShort = dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+                await supabase.from('notifications').insert([{
+                    user_id: business.owner_id, business_id,
+                    type: 'appointment_booked', title: 'Nuevo turno reservado',
+                    message: `${clientName} reservó ${service_name} para el ${formattedShort} a las ${time}.`,
+                }])
+            } catch (notifErr) {
+                log(`In-app notification error: ${notifErr.message}`)
+            }
         }
 
         // 5. SEND EMAILS — directo con await, sin Promise chains
