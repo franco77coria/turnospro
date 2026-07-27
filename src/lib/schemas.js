@@ -21,7 +21,7 @@ export const BookingSchema = z.object({
     price: z.number().nonnegative().max(10_000_000).optional().default(0),
     notes: optionalShortText(1000),
     // Optional: opt in to confirmation email + business notify on success.
-    send_emails: z.boolean().optional().default(false),
+    send_emails: z.boolean().optional().default(true),
     // Optional coupon to atomically consume.
     coupon_id: uuid.nullish(),
     // Guest info fields when booking without an account:

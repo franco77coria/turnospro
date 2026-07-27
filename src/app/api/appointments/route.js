@@ -348,7 +348,7 @@ async function sendBookingSideEffects(supabase, {
         }
 
         // Send Emails (Client + Owner)
-        if (send_emails) {
+        if (send_emails !== false) {
             const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
             const emailPromises = []
 

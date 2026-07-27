@@ -94,23 +94,47 @@ export default function AppointmentsPage() {
 
         if (status === 'cancelled') {
             const apt = appointments.find(a => a.id === id)
-            if (apt?.client_id) {
-                try {
-                    const currentMonth = new Date().toISOString().slice(0, 7)
-                    const { data: clientInfo } = await supabase
-                        .from('clients')
-                        .select('monthly_cancellations, last_cancellation_month')
-                        .eq('id', apt.client_id)
-                        .single()
-                    if (clientInfo) {
-                        const count = clientInfo.last_cancellation_month === currentMonth
-                            ? (clientInfo.monthly_cancellations || 0) + 1
-                            : 1
-                        await supabase.from('clients')
-                            .update({ monthly_cancellations: count, last_cancellation_month: currentMonth })
+            if (apt) {
+                if (apt.client_id) {
+                    try {
+                        const currentMonth = new Date().toISOString().slice(0, 7)
+                        const { data: clientInfo } = await supabase
+                            .from('clients')
+                            .select('monthly_cancellations, last_cancellation_month, email, name')
                             .eq('id', apt.client_id)
-                    }
-                } catch (_) {}
+                            .single()
+
+                        if (clientInfo) {
+                            const count = clientInfo.last_cancellation_month === currentMonth
+                                ? (clientInfo.monthly_cancellations || 0) + 1
+                                : 1
+                            await supabase.from('clients')
+                                .update({ monthly_cancellations: count, last_cancellation_month: currentMonth })
+                                .eq('id', apt.client_id)
+
+                            if (clientInfo.email) {
+                                const formattedDate = new Date(apt.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                                fetch('/api/email', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        type: 'cancellation',
+                                        to: clientInfo.email,
+                                        data: {
+                                            clientName: clientInfo.name || 'Cliente',
+                                            serviceName: apt.service_name,
+                                            date: formattedDate,
+                                            time: apt.time,
+                                            businessName: business?.name || 'Tu GlowUp',
+                                            businessType: business?.business_type || 'custom',
+                                            businessPhone: business?.phone,
+                                        }
+                                    })
+                                }).catch(() => {})
+                            }
+                        }
+                    } catch (_) {}
+                }
             }
         }
 
