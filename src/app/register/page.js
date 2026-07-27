@@ -242,7 +242,7 @@ export default function RegisterPage() {
                             <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={loading}>
                                 {loading ? <div className="loading-spinner" /> : (
                                     <>
-                                        {accountType === 'business' ? 'Enviar solicitud' : 'Crear mi cuenta'}
+                                        {accountType === 'business' ? 'Crear mi negocio (7 días gratis)' : 'Crear mi cuenta'}
                                         <ArrowRight size={16} />
                                     </>
                                 )}
