@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
-import { Check, X as XIcon, Plus, User } from 'lucide-react'
+import { Check, X as XIcon, Plus, User, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
 import styles from './appointments.module.css'
@@ -166,8 +166,47 @@ export default function AppointmentsPage() {
         return s ? <span className={`badge badge-${s.color}`}>{s.label}</span> : null
     }
 
+    const [editingApt, setEditingApt] = useState(null)
+    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', notes: '', status: '' })
+    const [savingEdit, setSavingEdit] = useState(false)
+
+    function handleOpenEdit(apt) {
+        setEditingApt(apt)
+        setEditForm({
+            date: apt.date || '',
+            time: apt.time?.slice(0, 5) || '',
+            service_name: apt.service_name || '',
+            notes: apt.notes || '',
+            status: apt.status || 'pending',
+        })
+    }
+
+    async function handleSaveEdit(e) {
+        e.preventDefault()
+        if (!editingApt) return
+        setSavingEdit(true)
+        try {
+            const res = await fetch(`/api/appointments/${editingApt.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editForm),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Error al guardar')
+            setEditingApt(null)
+            loadAppointments()
+        } catch (err) {
+            alert(err.message || 'Error al guardar los cambios')
+        } finally {
+            setSavingEdit(false)
+        }
+    }
+
     const renderActions = (apt) => (
         <div className={styles.statusActions}>
+            <button className="btn btn-ghost btn-sm" title="Editar turno" onClick={() => handleOpenEdit(apt)}>
+                <Pencil size={14} /> Editar
+            </button>
             {apt.status === 'pending' && (
                 <button className="btn btn-ghost btn-sm" onClick={() => updateStatus(apt.id, 'confirmed')}>
                     <Check size={14} />
@@ -302,6 +341,55 @@ export default function AppointmentsPage() {
                         <div className="modal-body">
                             <ClientProfileCard clientId={selectedClientId} businessId={business.id} />
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {editingApt && (
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditingApt(null)}>
+                    <div className="modal" style={{ maxWidth: 450 }}>
+                        <div className="modal-header">
+                            <h3><Pencil size={16} /> Editar turno</h3>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setEditingApt(null)}><XIcon size={16} /></button>
+                        </div>
+                        <form onSubmit={handleSaveEdit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                            <div className="form-group">
+                                <label className="label">Cliente</label>
+                                <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                                <div className="form-group">
+                                    <label className="label">Fecha</label>
+                                    <input className="input" type="date" value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Hora</label>
+                                    <input className="input" type="time" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Servicio</label>
+                                <input className="input" type="text" value={editForm.service_name} onChange={e => setEditForm(p => ({ ...p, service_name: e.target.value }))} required />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Estado</label>
+                                <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
+                                    {Object.values(APPOINTMENT_STATUS).map(s => (
+                                        <option key={s.id} value={s.id}>{s.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Notas</label>
+                                <textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Detalles o notas..." />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                                <button type="button" className="btn btn-ghost" onClick={() => setEditingApt(null)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={savingEdit}>
+                                    {savingEdit ? <div className="loading-spinner" /> : 'Guardar cambios'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
