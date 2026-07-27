@@ -241,13 +241,13 @@ export async function POST(request) {
             notifyPush(supabase, business_id, client_id, service_name, date, time)
             notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
             sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
-            await sendBookingSideEffects(supabase, {
+            const _emailDebug = await sendBookingSideEffects(supabase, {
                 appointmentId, business_id, client_id, team_member_id,
                 service_name, date, time, duration, send_emails, coupon_id,
                 guest_name, guest_email, guest_phone, user_email: user?.email,
             })
 
-            return NextResponse.json({ success: true, appointmentId })
+            return NextResponse.json({ success: true, appointmentId, _emailDebug })
         } catch (rpcErr) {
             if (rpcErr.message?.includes('function') && rpcErr.message?.includes('does not exist')) {
                 const { data: created, error: insertErr } = await supabase
@@ -277,13 +277,13 @@ export async function POST(request) {
                 notifyPush(supabase, business_id, client_id, service_name, date, time)
                 notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
                 sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
-                await sendBookingSideEffects(supabase, {
+                const _emailDebug = await sendBookingSideEffects(supabase, {
                     appointmentId: created.id, business_id, client_id, team_member_id,
                     service_name, date, time, duration, send_emails, coupon_id,
                     guest_name, guest_email, guest_phone, user_email: user?.email,
                 })
 
-                return NextResponse.json({ success: true, appointmentId: created.id })
+                return NextResponse.json({ success: true, appointmentId: created.id, _emailDebug })
             }
             throw rpcErr
         }
@@ -293,168 +293,139 @@ export async function POST(request) {
     }
 }
 
-// Server-side side effects for a successful booking — replaces the
-// client-side fan-out of email + notification + coupon increment that used
-// to live in useBookingFlow.js. Doing it here keeps everything behind the
-// authenticated + validated endpoint.
 async function sendBookingSideEffects(supabase, {
     appointmentId, business_id, client_id, team_member_id,
     service_name, date, time, duration, send_emails, coupon_id,
     guest_name, guest_email, guest_phone, user_email,
 }) {
-    console.log('[SideEffects] START', JSON.stringify({ appointmentId, business_id, client_id, send_emails, guest_email, user_email, guest_name }))
+    const debug = { steps: [] }
+    const log = (msg) => { debug.steps.push(msg); console.log('[SideEffects]', msg) }
+
+    log(`START appointmentId=${appointmentId} guest_email=${guest_email} user_email=${user_email} send_emails=${send_emails} client_id=${client_id}`)
 
     // Atomically consume coupon if provided
     if (coupon_id) {
-        try {
-            await supabase.rpc('increment_coupon_uses', { coupon_id })
-        } catch (e) {
-            console.error('Coupon increment failed (non-critical):', e)
-        }
+        try { await supabase.rpc('increment_coupon_uses', { coupon_id }) } catch (e) { log(`Coupon failed: ${e.message}`) }
     }
 
     try {
+        // 1. Get business info
         const { data: business, error: bizErr } = await supabase
             .from('businesses')
             .select('owner_id, name, business_type, phone')
             .eq('id', business_id)
             .maybeSingle()
+        log(`Business: ${business ? business.name : 'NOT FOUND'} ${bizErr ? 'ERR:' + bizErr.message : ''}`)
 
-        console.log('[SideEffects] business query:', business ? `✅ ${business.name}` : `❌ null`, bizErr ? `ERR: ${bizErr.message}` : '')
-
+        // 2. Resolve client info
         let clientName = guest_name || 'Un cliente'
         let clientEmail = guest_email || user_email || null
         let clientPhone = guest_phone || null
 
-        console.log('[SideEffects] initial clientEmail:', clientEmail, '| client_id:', client_id)
-
         if (client_id) {
-            const { data: c, error: cErr } = await supabase
-                .from('clients')
-                .select('name, email, phone')
-                .eq('id', client_id)
-                .maybeSingle()
-            console.log('[SideEffects] client lookup:', c, cErr ? `ERR: ${cErr.message}` : '')
-            if (c) {
-                if (c.name) clientName = c.name
-                if (c.email) clientEmail = c.email
-                if (c.phone) clientPhone = c.phone
-            }
+            const { data: c } = await supabase.from('clients').select('name, email, phone').eq('id', client_id).maybeSingle()
+            log(`Client lookup: ${JSON.stringify(c)}`)
+            if (c?.name) clientName = c.name
+            if (c?.email) clientEmail = c.email
+            if (c?.phone) clientPhone = c.phone
         }
 
-        if (!clientEmail && user_email) {
-            clientEmail = user_email
-        }
-        if (!clientEmail && guest_email) {
-            clientEmail = guest_email
-        }
+        // Triple fallback
+        if (!clientEmail) clientEmail = user_email || guest_email || null
+        log(`RESOLVED clientEmail=${clientEmail} clientName=${clientName}`)
+        debug.clientEmail = clientEmail
 
-        console.log('[SideEffects] FINAL clientEmail:', clientEmail, '| clientName:', clientName)
-
-        // Parsear fecha YYYY-MM-DD sin desfase horario UTC
+        // 3. Parse date
         let dateObj = new Date()
         if (date && date.includes('-')) {
             const [y, m, d] = date.split('-').map(Number)
             dateObj = new Date(y, m - 1, d)
         }
 
-        // In-app notification for owner
+        // 4. In-app notification
         if (business?.owner_id) {
             const formattedShort = dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
             await supabase.from('notifications').insert([{
-                user_id: business.owner_id,
-                business_id,
-                type: 'appointment_booked',
-                title: 'Nuevo turno reservado',
+                user_id: business.owner_id, business_id,
+                type: 'appointment_booked', title: 'Nuevo turno reservado',
                 message: `${clientName} reservó ${service_name} para el ${formattedShort} a las ${time}.`,
             }]).catch(() => {})
         }
 
-        // Send Emails (Client + Owner)
-        console.log('[SideEffects] send_emails value:', send_emails, '| typeof:', typeof send_emails, '| check (send_emails !== false):', send_emails !== false)
-        if (send_emails !== false) {
-            const formattedLong = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
-            const emailPromises = []
+        // 5. SEND EMAILS — directo con await, sin Promise chains
+        if (send_emails === false) {
+            log('send_emails is false — SKIP')
+            debug.emailsSent = 0
+            return debug
+        }
 
-            // 1) Email al Cliente
-            console.log('[SideEffects] clientEmail for sending:', clientEmail, '| truthy:', !!clientEmail)
-            if (clientEmail) {
-                console.log('[SideEffects] ✉️ QUEUEING client confirmation email to:', clientEmail)
-                emailPromises.push(
-                    sendEmail({
-                        type: 'confirmation',
-                        to: clientEmail,
-                        data: {
-                            clientName,
-                            serviceName: service_name,
-                            date: formattedLong,
-                            time,
-                            duration,
-                            businessName: business?.name || 'Tu GlowUp',
-                            businessType: business?.business_type || 'custom',
-                            businessPhone: business?.phone,
-                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
-                            appointmentId,
-                        }
-                    }).then(result => {
-                        console.log('[SideEffects] ✅ Client email RESULT:', JSON.stringify(result))
-                        return result
-                    }).catch(e => {
-                        console.error('[SideEffects] ❌ Client email FAILED:', e?.message || e)
-                        return { error: e?.message }
-                    })
-                )
-            } else {
-                console.log('[SideEffects] ⚠️ NO clientEmail — SKIPPING confirmation email')
-            }
+        const formattedLong = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+        debug.emailsSent = 0
 
-            // 2) Email al Dueño del Negocio
-            if (business?.owner_id) {
-                try {
-                    const { data: ownerProfile } = await supabase
-                        .from('profiles')
-                        .select('email')
-                        .eq('id', business.owner_id)
-                        .maybeSingle()
-
-                    console.log('[SideEffects] ownerProfile:', ownerProfile)
-
-                    if (ownerProfile?.email) {
-                        emailPromises.push(
-                            sendEmail({
-                                type: 'new_booking_notify',
-                                to: ownerProfile.email,
-                                data: {
-                                    clientName,
-                                    clientEmail,
-                                    clientPhone,
-                                    serviceName: service_name,
-                                    date: formattedLong,
-                                    time,
-                                    duration,
-                                    businessName: business?.name || 'Tu GlowUp',
-                                    businessType: business?.business_type || 'custom',
-                                    dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
-                                }
-                            }).catch(e => console.error('[Owner Email Failed]:', e))
-                        )
+        // 5a. Email al CLIENTE — await directo
+        if (clientEmail) {
+            log(`SENDING confirmation email to ${clientEmail}...`)
+            try {
+                const result = await sendEmail({
+                    type: 'confirmation',
+                    to: clientEmail,
+                    data: {
+                        clientName,
+                        serviceName: service_name,
+                        date: formattedLong,
+                        time,
+                        duration,
+                        businessName: business?.name || 'Tu GlowUp',
+                        businessType: business?.business_type || 'custom',
+                        businessPhone: business?.phone,
+                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                        appointmentId,
                     }
-                } catch (ownerErr) {
-                    console.error('Owner profile query failed:', ownerErr)
-                }
-            }
-
-            // Esperar activamente a que los correos se envíen antes de cerrar la función serverless de Vercel
-            console.log('[SideEffects] emailPromises.length:', emailPromises.length)
-            if (emailPromises.length > 0) {
-                const results = await Promise.allSettled(emailPromises)
-                console.log('[SideEffects] Promise.allSettled results:', JSON.stringify(results))
+                })
+                log(`Client email result: ${JSON.stringify(result)}`)
+                debug.clientEmailResult = result
+                if (result?.success || result?.id) debug.emailsSent++
+            } catch (e) {
+                log(`Client email EXCEPTION: ${e.message}`)
+                debug.clientEmailError = e.message
             }
         } else {
-            console.log('[SideEffects] ⚠️ send_emails is false — SKIPPING all emails')
+            log('NO clientEmail — SKIPPING confirmation')
         }
-        console.log('[SideEffects] END — completed successfully')
+
+        // 5b. Email al DUEÑO — await directo
+        if (business?.owner_id) {
+            try {
+                const { data: ownerProfile } = await supabase
+                    .from('profiles').select('email').eq('id', business.owner_id).maybeSingle()
+                log(`Owner profile: ${JSON.stringify(ownerProfile)}`)
+
+                if (ownerProfile?.email) {
+                    const ownerResult = await sendEmail({
+                        type: 'new_booking_notify',
+                        to: ownerProfile.email,
+                        data: {
+                            clientName, clientEmail, clientPhone,
+                            serviceName: service_name, date: formattedLong, time, duration,
+                            businessName: business?.name || 'Tu GlowUp',
+                            businessType: business?.business_type || 'custom',
+                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
+                        }
+                    })
+                    log(`Owner email result: ${JSON.stringify(ownerResult)}`)
+                    debug.ownerEmailResult = ownerResult
+                    if (ownerResult?.success || ownerResult?.id) debug.emailsSent++
+                }
+            } catch (e) {
+                log(`Owner email error: ${e.message}`)
+            }
+        }
+
+        log(`END — emailsSent: ${debug.emailsSent}`)
+        return debug
     } catch (e) {
-        console.error('[SideEffects] ❌ OUTER CATCH ERROR:', e?.message || e, e?.stack)
+        log(`OUTER ERROR: ${e.message}`)
+        debug.error = e.message
+        return debug
     }
 }
