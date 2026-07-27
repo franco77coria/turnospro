@@ -73,8 +73,7 @@ export async function middleware(request) {
             return NextResponse.redirect(new URL('/book', request.url))
         }
 
-        const isClient = profile.role === 'user' && !profile.business_id
-        const redirectUrl = new URL(isClient ? '/book' : '/dashboard', request.url)
+        const redirectUrl = new URL('/dashboard', request.url)
         return NextResponse.redirect(redirectUrl)
     }
 

@@ -50,8 +50,8 @@ export default function DashboardLayout({ children }) {
         creatingBusinessRef.current = false
       })
     } else if (profile.role === 'user') {
-      // Client users don't belong in dashboard
-      router.replace('/book')
+      // Client users CAN access dashboard — they see a client-adapted view
+      // No redirect needed
     } else if (!profile.business_id) {
       // Business user without business (pending_business) → onboarding
       router.replace('/onboarding')

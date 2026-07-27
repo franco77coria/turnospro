@@ -8,7 +8,267 @@ import { Icons } from '@/components/Icons'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
 
+// ── CLIENT DASHBOARD ──
+function ClientDashboard() {
+  const { user, profile } = useAuth()
+  const [appointments, setAppointments] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [greeting, setGreeting] = useState('')
+  const [formattedDate, setFormattedDate] = useState('')
+  const [filter, setFilter] = useState('upcoming')
+
+  useEffect(() => {
+    const now = new Date()
+    const h = now.getHours()
+    setGreeting(h < 12 ? 'Hola' : h < 18 ? 'Buenas tardes' : 'Buenas noches')
+    setFormattedDate(new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(now))
+  }, [])
+
+  useEffect(() => {
+    if (!user?.email) return
+    loadMyAppointments()
+  }, [user])
+
+  async function loadMyAppointments() {
+    try {
+      const { data: clientRecords } = await supabase
+        .from('clients')
+        .select('id, business_id')
+        .eq('email', user.email)
+
+      if (!clientRecords?.length) {
+        setAppointments([])
+        setLoading(false)
+        return
+      }
+
+      const clientIds = clientRecords.map(c => c.id)
+      const businessIds = [...new Set(clientRecords.map(c => c.business_id))]
+
+      const { data: appts } = await supabase
+        .from('appointments')
+        .select('*')
+        .in('client_id', clientIds)
+        .order('date', { ascending: true })
+
+      const { data: businesses } = await supabase
+        .from('businesses')
+        .select('id, name, slug, address, phone, business_type, logo_url')
+        .in('id', businessIds)
+
+      const bizMap = {}
+      businesses?.forEach(b => { bizMap[b.id] = b })
+
+      setAppointments((appts || []).map(a => ({ ...a, business: bizMap[a.business_id] || null })))
+    } catch (err) {
+      console.error('Client dashboard load error:', err)
+    }
+    setLoading(false)
+  }
+
+  const today = new Date().toISOString().split('T')[0]
+  const now = new Date()
+
+  const upcoming = appointments.filter(a => a.date >= today && a.status !== 'cancelled')
+  const past = appointments.filter(a => new Date(`${a.date}T${a.time || '23:59'}`) < now && a.status !== 'cancelled')
+  const cancelled = appointments.filter(a => a.status === 'cancelled')
+
+  const filtered = filter === 'upcoming' ? upcoming : filter === 'past' ? past : filter === 'cancelled' ? cancelled : appointments
+
+  const nextAppointment = upcoming[0]
+
+  function getCountdown(date, time) {
+    const apt = new Date(`${date}T${time}`)
+    const diffMs = apt - now
+    if (diffMs <= 0) return null
+    const todayStr = now.toISOString().split('T')[0]
+    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0]
+    if (date === todayStr) {
+      const mins = Math.floor(diffMs / 60000)
+      if (mins < 60) return `En ${mins} min`
+      return `Hoy a las ${time.slice(0, 5)}`
+    }
+    if (date === tomorrowStr) return 'Mañana'
+    return `En ${Math.ceil(diffMs / 86400000)} días`
+  }
+
+  return (
+    <div>
+      {/* TOPBAR */}
+      <div className="dash-topbar">
+        <div>
+          <h1 className="dash-greeting">
+            {greeting} {profile?.full_name?.split(' ')[0] || 'Cliente'}, <em>bienvenido.</em>
+          </h1>
+          <div className="dash-date">{formattedDate}</div>
+        </div>
+        <div className="dash-actions">
+          <Link href="/explore" className="gu-btn gu-btn-pink">
+            <Icons.Search size={16}/> Buscar negocios
+          </Link>
+        </div>
+      </div>
+
+      {/* KPIS ROW */}
+      <div className="dash-kpis">
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">
+            <span style={{ background: 'var(--pink-tint)', color: 'var(--pink-deep)', width: '28px', height: '28px', borderRadius: '10px', display: 'grid', placeItems: 'center' }}>
+              <Icons.Calendar size={16} />
+            </span>
+            Próximos turnos
+          </div>
+          <div className="dash-kpi-value">{upcoming.length}</div>
+          <div className="dash-kpi-trend up"><Icons.Check size={10} stroke={3} /> Programados</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">
+            <span style={{ background: 'var(--mint-soft)', color: '#008C66', width: '28px', height: '28px', borderRadius: '10px', display: 'grid', placeItems: 'center' }}>
+              <Icons.Check size={16} />
+            </span>
+            Completados
+          </div>
+          <div className="dash-kpi-value">{past.length}</div>
+          <div className="dash-kpi-trend up"><Icons.Check size={10} stroke={3} /> Historial</div>
+        </div>
+        <div className="dash-kpi">
+          <div className="dash-kpi-label">
+            <span style={{ background: 'var(--yellow-soft)', color: '#B47E00', width: '28px', height: '28px', borderRadius: '10px', display: 'grid', placeItems: 'center' }}>
+              <Icons.Clock size={16} />
+            </span>
+            Cancelados
+          </div>
+          <div className="dash-kpi-value">{cancelled.length}</div>
+          <div className="dash-kpi-trend up"><Icons.Check size={10} stroke={3} /> Total</div>
+        </div>
+      </div>
+
+      {/* DASHBOARD GRID */}
+      <div className="dash-grid-2">
+
+        {/* PRÓXIMO TURNO */}
+        <div className="dash-card">
+          <div className="dash-card-head">
+            <div>
+              <div className="dash-card-title">Próximo turno</div>
+              <div className="dash-card-sub">{nextAppointment ? getCountdown(nextAppointment.date, nextAppointment.time) || 'Pronto' : 'Sin turnos agendados'}</div>
+            </div>
+            <Link href="/dashboard/appointments" className="gu-btn gu-btn-ghost gu-btn-sm">
+              Ver todos <Icons.ArrowRight size={14}/>
+            </Link>
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '48px 24px' }}>
+              <div className="loading-spinner" style={{ width: '32px', height: '32px', margin: '0 auto', border: '3px solid var(--line)', borderTopColor: 'var(--pink)', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            </div>
+          ) : nextAppointment ? (
+            <div className="dash-schedule">
+              <div className="dash-schedule-item">
+                <div className="dash-schedule-time">
+                  {nextAppointment.time?.slice(0, 5)}
+                  <small>{nextAppointment.duration} min</small>
+                </div>
+                <span className="dash-schedule-bar pink"></span>
+                <div className="dash-schedule-info">
+                  <b>{nextAppointment.service_name}</b>
+                  <small>{nextAppointment.business?.name || 'Negocio'} · {new Date(nextAppointment.date + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}</small>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  {nextAppointment.price > 0 && (
+                    <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '15px' }}>
+                      ${nextAppointment.price?.toLocaleString()}
+                    </span>
+                  )}
+                  <span className="dash-schedule-status confirmed">Confirmado</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--ink-mute)' }}>
+              <Icons.Calendar size={36} style={{ margin: '0 auto 12px', opacity: 0.5 }} />
+              <p style={{ fontWeight: 600 }}>No tenés turnos agendados</p>
+              <p style={{ fontSize: '13px', marginTop: '4px' }}>Buscá un negocio y reservá tu turno.</p>
+              <Link href="/explore" className="gu-btn gu-btn-pink" style={{ marginTop: '16px' }}>
+                <Icons.Search size={16}/> Explorar negocios
+              </Link>
+            </div>
+          )}
+        </div>
+
+        {/* ACCIONES RAPIDAS */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="dash-card">
+            <div className="dash-card-head">
+              <div className="dash-card-title">Acciones rápidas</div>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <Link href="/dashboard/appointments" className="gu-btn gu-btn-ghost gu-btn-block" style={{ height: '52px', fontSize: '14px', borderRadius: 'var(--r-md)', justifyContent: 'flex-start' }}>
+                <Icons.Calendar size={16} /> Mis Turnos
+              </Link>
+              <Link href="/explore" className="gu-btn gu-btn-ghost gu-btn-block" style={{ height: '52px', fontSize: '14px', borderRadius: 'var(--r-md)', justifyContent: 'flex-start' }}>
+                <Icons.Search size={16} /> Buscar
+              </Link>
+              <Link href="/book/favorites" className="gu-btn gu-btn-ghost gu-btn-block" style={{ height: '52px', fontSize: '14px', borderRadius: 'var(--r-md)', justifyContent: 'flex-start' }}>
+                <Icons.Heart size={16} /> Favoritos
+              </Link>
+              <Link href="/book/profile" className="gu-btn gu-btn-ghost gu-btn-block" style={{ height: '52px', fontSize: '14px', borderRadius: 'var(--r-md)', justifyContent: 'flex-start' }}>
+                <Icons.User size={16} /> Mi Perfil
+              </Link>
+            </div>
+          </div>
+
+          {/* Historial reciente */}
+          <div className="dash-card">
+            <div className="dash-card-head">
+              <div>
+                <div className="dash-card-title">Historial reciente</div>
+                <div className="dash-card-sub">{past.length} turnos completados</div>
+              </div>
+            </div>
+            <div className="dash-schedule">
+              {past.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '24px', color: 'var(--ink-mute)', fontSize: '13px' }}>
+                  Aún no tenés turnos completados.
+                </div>
+              ) : (
+                past.slice(0, 4).map(appt => (
+                  <div key={appt.id} className="dash-schedule-item">
+                    <div className="dash-schedule-time">
+                      {new Date(appt.date + 'T12:00:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
+                    </div>
+                    <span className="dash-schedule-bar mint"></span>
+                    <div className="dash-schedule-info">
+                      <b>{appt.service_name}</b>
+                      <small>{appt.business?.name || 'Negocio'}</small>
+                    </div>
+                    <span className="dash-schedule-status confirmed">Completado</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── BUSINESS OWNER DASHBOARD ──
 export default function DashboardPage() {
+  const { profile, business, loading: authLoading } = useAuth()
+
+  const isClient = profile?.role === 'user' && !profile?.business_id
+
+  // If client, render client dashboard
+  if (!authLoading && isClient) {
+    return <ClientDashboard />
+  }
+
+  return <OwnerDashboard />
+}
+
+function OwnerDashboard() {
   const { profile, business, loading: authLoading } = useAuth()
   const [stats, setStats] = useState({ todayAppointments: 0, newClients: 0, revenue: 0, attendance: 0 })
   const [todayAppointmentsList, setTodayAppointmentsList] = useState([])

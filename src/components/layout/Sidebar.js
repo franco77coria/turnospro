@@ -19,6 +19,12 @@ const NAV_ITEMS = [
   { href: '/dashboard/analytics', label: 'Estadísticas', icon: 'BarChart' },
 ]
 
+const CLIENT_NAV_ITEMS = [
+  { href: '/dashboard', label: 'Inicio', icon: 'Sparkles' },
+  { href: '/dashboard/appointments', label: 'Mis Turnos', icon: 'Calendar' },
+  { href: '/explore', label: 'Buscar', icon: 'Search' },
+]
+
 const BOTTOM_ITEMS = [
   { href: '/dashboard/subscription', label: 'Suscripción', icon: 'CreditCard' },
   { href: '/dashboard/settings', label: 'Configuración', icon: 'Palette' },
@@ -28,6 +34,8 @@ export default function Sidebar() {
   const pathname = usePathname()
   const { user, profile, business, signOut } = useAuth()
 
+  const isClient = profile?.role === 'user' && !profile?.business_id
+
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard'
     return pathname.startsWith(href)
@@ -35,8 +43,8 @@ export default function Sidebar() {
 
   const showAdmin = user && isSuperAdmin(user.email)
   const userRole = profile?.role || 'Profesional'
-  const visibleNavItems = filterNavByRole(NAV_ITEMS, userRole)
-  const visibleBottomItems = filterNavByRole(BOTTOM_ITEMS, userRole)
+  const visibleNavItems = isClient ? CLIENT_NAV_ITEMS : filterNavByRole(NAV_ITEMS, userRole)
+  const visibleBottomItems = isClient ? [] : filterNavByRole(BOTTOM_ITEMS, userRole)
 
   const handleSignOut = async () => {
     try {
@@ -55,14 +63,17 @@ export default function Sidebar() {
         <span>GLOWUP</span>
       </div>
 
-      {/* Business Info Card */}
+      {/* Business / User Info Card */}
       <div className="dash-biz">
         <div className="dash-biz-thumb">
-          {business?.name?.[0]?.toUpperCase() || 'G'}
+          {isClient
+            ? (profile?.full_name?.[0]?.toUpperCase() || 'U')
+            : (business?.name?.[0]?.toUpperCase() || 'G')
+          }
         </div>
         <div>
-          <div className="dash-biz-name">{business?.name || 'Mi Negocio'}</div>
-          <div className="dash-biz-role">{profile?.role || 'Administrador'}</div>
+          <div className="dash-biz-name">{isClient ? (profile?.full_name || 'Mi Cuenta') : (business?.name || 'Mi Negocio')}</div>
+          <div className="dash-biz-role">{isClient ? 'Cliente' : (profile?.role || 'Administrador')}</div>
         </div>
       </div>
 
