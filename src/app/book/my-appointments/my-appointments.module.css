@@ -269,6 +269,71 @@
     background: var(--danger-light);
 }
 
+.rescheduleBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: var(--space-1) var(--space-3);
+    border: 1px solid var(--accent);
+    border-radius: var(--radius-full);
+    background: rgba(255, 46, 142, 0.06);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    color: var(--accent);
+    cursor: pointer;
+    font-family: inherit;
+    min-height: 32px;
+    transition: all var(--transition);
+    white-space: nowrap;
+}
+
+.rescheduleBtn:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.slotGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: var(--space-2);
+    max-height: 220px;
+    overflow-y: auto;
+    padding: var(--space-1);
+    margin-top: var(--space-2);
+}
+
+.slotBtn {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition);
+    font-family: inherit;
+    text-align: center;
+}
+
+.slotBtn:hover:not(:disabled) {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.slotBtn.selectedSlot {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.slotBtn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: var(--bg-tertiary);
+}
+
 /* ── Responsive ── */
 @media (max-width: 480px) {
     .container {
@@ -280,6 +345,11 @@
     }
 
     .rebookBtn {
+        font-size: 11px;
+        padding: var(--space-1) var(--space-2);
+    }
+
+    .rescheduleBtn {
         font-size: 11px;
         padding: var(--space-1) var(--space-2);
     }

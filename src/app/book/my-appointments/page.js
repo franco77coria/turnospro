@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { CalendarDays, Clock, MapPin, X, RotateCcw, Store, History, AlertTriangle, Search } from 'lucide-react'
+import { CalendarDays, Clock, MapPin, X, RotateCcw, Store, History, AlertTriangle, Search, Calendar, RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
@@ -33,6 +33,15 @@ function getEndTime(time, duration) {
     return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
+function generateDefaultSlots() {
+    const times = []
+    for (let h = 9; h <= 19; h++) {
+        const hh = String(h).padStart(2, '0')
+        times.push(`${hh}:00`, `${hh}:30`)
+    }
+    return times
+}
+
 export default function MyAppointmentsPage() {
     const toast = useToast()
     const { user, loading: authLoading } = useAuth()
@@ -41,6 +50,7 @@ export default function MyAppointmentsPage() {
     const [filter, setFilter] = useState('all')
     const [cancelling, setCancelling] = useState(null)
     const [cancelModal, setCancelModal] = useState(null)
+    const [rescheduleModal, setRescheduleModal] = useState(null)
 
     async function loadAppointments() {
         if (!supabase || !user) { setLoading(false); return }
@@ -80,6 +90,90 @@ export default function MyAppointmentsPage() {
     useEffect(() => {
         if (user) loadAppointments()
     }, [user])
+
+    async function openReschedule(apt) {
+        const tomorrow = new Date()
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const dateStr = tomorrow.toISOString().split('T')[0]
+
+        setRescheduleModal({
+            appointment: apt,
+            newDate: dateStr,
+            newTime: '',
+            slots: generateDefaultSlots(),
+            loadingSlots: true,
+            saving: false,
+        })
+
+        fetchSlotsForDate(apt.business_id, dateStr)
+    }
+
+    async function fetchSlotsForDate(businessId, dateStr) {
+        try {
+            // Consultar turnos ocupados ese día
+            const { data: booked } = await supabase
+                .from('appointments')
+                .select('time')
+                .eq('business_id', businessId)
+                .eq('date', dateStr)
+                .neq('status', 'cancelled')
+
+            const bookedSet = new Set((booked || []).map(b => b.time.slice(0, 5)))
+            const allTimes = generateDefaultSlots()
+            const available = allTimes.filter(t => !bookedSet.has(t))
+
+            setRescheduleModal(prev => prev ? {
+                ...prev,
+                slots: available.length > 0 ? available : allTimes,
+                loadingSlots: false,
+            } : null)
+        } catch {
+            setRescheduleModal(prev => prev ? { ...prev, loadingSlots: false } : null)
+        }
+    }
+
+    function handleRescheduleDateChange(newDate) {
+        if (!rescheduleModal) return
+        setRescheduleModal(prev => ({ ...prev, newDate, newTime: '', loadingSlots: true }))
+        fetchSlotsForDate(rescheduleModal.appointment.business_id, newDate)
+    }
+
+    async function handleSaveReschedule() {
+        if (!rescheduleModal || !rescheduleModal.newDate || !rescheduleModal.newTime) return
+
+        setRescheduleModal(prev => ({ ...prev, saving: true }))
+        try {
+            const res = await fetch(`/api/appointments/${rescheduleModal.appointment.id}/reschedule`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: rescheduleModal.newDate,
+                    time: rescheduleModal.newTime,
+                })
+            })
+
+            const data = await res.json()
+            if (!res.ok) {
+                toast.error(data.error || 'Error al reprogramar el turno')
+                setRescheduleModal(prev => ({ ...prev, saving: false }))
+                return
+            }
+
+            // Actualizar lista local
+            setAppointments(prev => prev.map(a => a.id === rescheduleModal.appointment.id ? {
+                ...a,
+                date: rescheduleModal.newDate,
+                time: rescheduleModal.newTime,
+            } : a))
+
+            toast.success('🎉 Turno reprogramado exitosamente. Se envió la confirmación por email.')
+            setRescheduleModal(null)
+        } catch (err) {
+            console.error('Reschedule error:', err)
+            toast.error('Error al reprogramar el turno')
+            setRescheduleModal(prev => ({ ...prev, saving: false }))
+        }
+    }
 
     function tryCancel(appointmentId, businessSettings) {
         const minHours = businessSettings?.min_cancel_hours ?? 2
@@ -230,6 +324,14 @@ export default function MyAppointmentsPage() {
                                                 </span>
                                             </div>
                                             <div className={styles.aptAction}>
+                                                {isUpcoming && (
+                                                    <button
+                                                        className={styles.rescheduleBtn}
+                                                        onClick={() => openReschedule(apt)}
+                                                    >
+                                                        <Calendar size={13} /> Cambiar horario
+                                                    </button>
+                                                )}
                                                 {(isPast || filter === 'all') && apt.status !== 'cancelled' && biz && (
                                                     <Link
                                                         href={biz.slug ? `/book/s/${biz.slug}` : `/book/${apt.business_id}`}
@@ -258,6 +360,90 @@ export default function MyAppointmentsPage() {
                         </div>
                     )}
                 </div>
+
+                {/* Reschedule Modal */}
+                {rescheduleModal && (
+                    <div className="modal-overlay">
+                        <div className="modal" style={{ maxWidth: 440, padding: 'var(--space-5)' }}>
+                            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-3)' }}>
+                                <h3 style={{ fontWeight: 700, margin: 0, fontSize: 'var(--font-size-md)' }}>Reprogramar Turno</h3>
+                                <button onClick={() => setRescheduleModal(null)} className="btn btn-ghost btn-sm" style={{ padding: 4 }}>
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                <div style={{ background: 'var(--bg-secondary)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)' }}>
+                                    <div style={{ fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                                        {rescheduleModal.appointment.business?.name || 'Negocio'}
+                                    </div>
+                                    <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: 2 }}>
+                                        {rescheduleModal.appointment.service_name} — Horario actual: {rescheduleModal.appointment.date} a las {rescheduleModal.appointment.time} hs
+                                    </div>
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="label" style={{ fontSize: 'var(--font-size-xs)' }}>Seleccionar nueva fecha *</label>
+                                    <input
+                                        className="input"
+                                        type="date"
+                                        min={new Date().toISOString().split('T')[0]}
+                                        value={rescheduleModal.newDate}
+                                        onChange={e => handleRescheduleDateChange(e.target.value)}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="label" style={{ fontSize: 'var(--font-size-xs)', display: 'flex', justifyContent: 'space-between' }}>
+                                        <span>Seleccionar nuevo horario *</span>
+                                        {rescheduleModal.newTime && (
+                                            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                                                Seleccionado: {rescheduleModal.newTime} hs
+                                            </span>
+                                        )}
+                                    </label>
+
+                                    {rescheduleModal.loadingSlots ? (
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-2)', padding: 'var(--space-4)', color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>
+                                            <RefreshCw size={14} className="spin" /> Buscando disponibilidad...
+                                        </div>
+                                    ) : (
+                                        <div className={styles.slotGrid}>
+                                            {rescheduleModal.slots.map(t => (
+                                                <button
+                                                    key={t}
+                                                    type="button"
+                                                    className={`${styles.slotBtn} ${rescheduleModal.newTime === t ? styles.selectedSlot : ''}`}
+                                                    onClick={() => setRescheduleModal(prev => ({ ...prev, newTime: t }))}
+                                                >
+                                                    {t}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="modal-footer" style={{ marginTop: 'var(--space-4)', display: 'flex', gap: 'var(--space-2)' }}>
+                                <button onClick={() => setRescheduleModal(null)} className="btn btn-secondary" style={{ flex: 1 }}>
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleSaveReschedule}
+                                    disabled={!rescheduleModal.newDate || !rescheduleModal.newTime || rescheduleModal.saving}
+                                    className="btn btn-primary"
+                                    style={{ flex: 1 }}
+                                >
+                                    {rescheduleModal.saving ? (
+                                        <div className="loading-spinner" style={{ width: 16, height: 16, borderColor: 'rgba(255,255,255,0.3)', borderTopColor: 'white' }} />
+                                    ) : (
+                                        'Confirmar cambio'
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Cancel Modal */}
                 {cancelModal && (
