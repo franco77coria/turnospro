@@ -99,8 +99,12 @@ export async function sendEmail({ type, to, data }) {
 export async function sendAppointmentConfirmation({ appointment, client, business, service, professional }) {
     if (!client?.email) return { error: 'Cliente sin email' }
 
-    const date = new Date(appointment.date)
-    const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    let dateObj = new Date(appointment.date)
+    if (typeof appointment.date === 'string' && appointment.date.includes('-')) {
+        const [y, m, d] = appointment.date.split('-').map(Number)
+        dateObj = new Date(y, m - 1, d)
+    }
+    const formattedDate = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'confirmation',
@@ -115,7 +119,8 @@ export async function sendAppointmentConfirmation({ appointment, client, busines
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/my-appointments`,
+            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+            appointmentId: appointment.id || appointment.appointmentId,
         }
     })
 }

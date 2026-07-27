@@ -335,9 +335,6 @@ async function sendBookingSideEffects(supabase, {
             }
         }
 
-        if (!clientEmail && user?.email) {
-            clientEmail = user.email
-        }
         if (!clientEmail && guest_email) {
             clientEmail = guest_email
         }

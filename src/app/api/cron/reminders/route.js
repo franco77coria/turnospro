@@ -161,7 +161,7 @@ export async function GET(request) {
                     })
 
                     await resend.emails.send({
-                        from: 'GLOWUP <onboarding@resend.dev>',
+                        from: `${apt.businesses?.name || 'Tu GlowUp'} <notificaciones@tu-glowup.com>`,
                         to: [apt.clients.email],
                         subject: `Recordatorio — Tu turno es ${hoursUntil <= 1 ? 'en menos de 1 hora' : `en ${hoursUntil} horas`} | ${apt.businesses?.name}`,
                         html,
