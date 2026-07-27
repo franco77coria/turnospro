@@ -85,7 +85,7 @@ export async function POST(request) {
         }
 
         const { data: emailData, error } = await resend.emails.send({
-            from: `${data.businessName || 'GLOWUP'} <onboarding@resend.dev>`,
+            from: `${data.businessName || 'Tu GlowUp'} <notificaciones@tu-glowup.com>`,
             to: [to],
             subject,
             html,
