@@ -104,17 +104,6 @@ export default function Landing() {
                 Tengo un negocio
               </a>
             </Reveal>
-            <Reveal as="div" delay={320} className="gu-hero-proof">
-              <div className="gu-avatars">
-                <span className="gu-av">M</span>
-                <span className="gu-av">L</span>
-                <span className="gu-av">J</span>
-                <span className="gu-av">+</span>
-              </div>
-              <div className="gu-proof-text">
-                <strong>+12.000 personas</strong> ya reservan acá esta semana.
-              </div>
-            </Reveal>
           </div>
 
           {/* Phone visual */}
