@@ -335,9 +335,20 @@ async function sendBookingSideEffects(supabase, {
             }
         }
 
+        if (!clientEmail && guest_email) {
+            clientEmail = guest_email
+        }
+
+        // Parsear fecha YYYY-MM-DD sin desfase horario UTC
+        let dateObj = new Date()
+        if (date && date.includes('-')) {
+            const [y, m, d] = date.split('-').map(Number)
+            dateObj = new Date(y, m - 1, d)
+        }
+
         // In-app notification for owner
         if (business?.owner_id) {
-            const formattedShort = new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
+            const formattedShort = dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
             await supabase.from('notifications').insert([{
                 user_id: business.owner_id,
                 business_id,
@@ -349,7 +360,7 @@ async function sendBookingSideEffects(supabase, {
 
         // Send Emails (Client + Owner)
         if (send_emails !== false) {
-            const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+            const formattedLong = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
             const emailPromises = []
 
             // 1) Email al Cliente

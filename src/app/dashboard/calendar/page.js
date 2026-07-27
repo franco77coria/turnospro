@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { sendAppointmentConfirmation } from '@/lib/send-email'
-import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, User, Check, ArrowRight, ArrowLeft } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, User, Check, ArrowRight, ArrowLeft, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import styles from './calendar.module.css'
 
@@ -52,6 +52,64 @@ export default function CalendarPage() {
     const [loadingSlots, setLoadingSlots] = useState(false)
     const [filterProfessional, setFilterProfessional] = useState(null)
     const [currentMember, setCurrentMember] = useState(null)
+
+    const [editingApt, setEditingApt] = useState(null)
+    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', notes: '', status: '' })
+    const [savingEdit, setSavingEdit] = useState(false)
+
+    function handleOpenEdit(apt) {
+        setEditingApt(apt)
+        setEditForm({
+            date: apt.date || '',
+            time: apt.time?.slice(0, 5) || '',
+            service_name: apt.service_name || '',
+            notes: apt.notes || '',
+            status: apt.status || 'pending',
+        })
+    }
+
+    async function handleSaveEdit(e) {
+        e.preventDefault()
+        if (!editingApt) return
+        setSavingEdit(true)
+        try {
+            const res = await fetch(`/api/appointments/${editingApt.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editForm),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Error al guardar')
+
+            // Send cancellation email if status changed to cancelled
+            if (editForm.status === 'cancelled' && editingApt.clients?.email) {
+                fetch('/api/email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'cancellation',
+                        to: editingApt.clients.email,
+                        data: {
+                            clientName: editingApt.clients.name || 'Cliente',
+                            serviceName: editForm.service_name || editingApt.service_name,
+                            date: editForm.date || editingApt.date,
+                            time: editForm.time || editingApt.time,
+                            businessName: business?.name || 'Tu GlowUp',
+                            businessType: business?.business_type || 'custom',
+                            businessPhone: business?.phone,
+                        }
+                    })
+                }).catch(() => {})
+            }
+
+            setEditingApt(null)
+            loadAppointments()
+        } catch (err) {
+            alert(err.message || 'Error al guardar los cambios')
+        } finally {
+            setSavingEdit(false)
+        }
+    }
 
     // Load active employee data if current profile is a Professional
     useEffect(() => {
@@ -451,7 +509,11 @@ export default function CalendarPage() {
                                             <div
                                                 key={apt.id}
                                                 className={styles.aptBlock}
-                                                style={{ borderLeftColor: statusColor(apt.status) }}
+                                                style={{ borderLeftColor: statusColor(apt.status), cursor: 'pointer' }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleOpenEdit(apt)
+                                                }}
                                             >
                                                 <span className={styles.aptBlockName}>{apt.clients?.name || apt.service_name}</span>
                                                 <span className={styles.aptBlockService}>{apt.time?.slice(0, 5)}</span>
@@ -487,7 +549,15 @@ export default function CalendarPage() {
                                 <span className={styles.mobileSlotTime}>{hour}</span>
                                 <div className={styles.mobileSlotContent}>
                                     {slotApts.length > 0 ? slotApts.map(apt => (
-                                        <div key={apt.id} className={styles.mobileApt} style={{ borderLeftColor: statusColor(apt.status) }}>
+                                        <div
+                                            key={apt.id}
+                                            className={styles.mobileApt}
+                                            style={{ borderLeftColor: statusColor(apt.status), cursor: 'pointer' }}
+                                            onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleOpenEdit(apt)
+                                            }}
+                                        >
                                             <span className={styles.mobileAptName}>{apt.clients?.name || apt.service_name}</span>
                                             <span className={styles.mobileAptService}>{apt.service_name} - {apt.time?.slice(0, 5)}</span>
                                         </div>
@@ -813,6 +883,53 @@ export default function CalendarPage() {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+                <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditingApt(null)}>
+                    <div className="modal" style={{ maxWidth: 450 }}>
+                        <div className="modal-header">
+                            <h3><Pencil size={16} /> Editar turno</h3>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setEditingApt(null)}><X size={16} /></button>
+                        </div>
+                        <form onSubmit={handleSaveEdit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                            <div className="form-group">
+                                <label className="label">Cliente</label>
+                                <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                                <div className="form-group">
+                                    <label className="label">Fecha</label>
+                                    <input className="input" type="date" value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} required />
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Hora</label>
+                                    <input className="input" type="time" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                </div>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Servicio</label>
+                                <input className="input" type="text" value={editForm.service_name} onChange={e => setEditForm(p => ({ ...p, service_name: e.target.value }))} required />
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Estado</label>
+                                <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
+                                    {Object.values(APPOINTMENT_STATUS).map(s => (
+                                        <option key={s.id} value={s.id}>{s.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Notas</label>
+                                <textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Detalles o notas..." />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                                <button type="button" className="btn btn-ghost" onClick={() => setEditingApt(null)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={savingEdit}>
+                                    {savingEdit ? <div className="loading-spinner" /> : 'Guardar cambios'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
