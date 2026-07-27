@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['dotenv/config'],
   },
   resolve: {
     alias: {

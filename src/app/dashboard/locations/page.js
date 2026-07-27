@@ -97,6 +97,18 @@ function LocationsContent() {
     }
 
     function openNew() {
+        const planId = business?.plan_id || 'trial'
+        const maxLocations = business?.max_locations || (planId === 'multi' ? 3 : 1)
+
+        if (locations.length >= maxLocations) {
+            if (maxLocations < 3) {
+                toast.info('Tu plan actual permite 1 sucursal. Actualizá a Plan Múltiples Sucursales ($30.000/mes) para habilitar hasta 3 sucursales.')
+            } else {
+                toast.info('Has alcanzado el límite de 3 sucursales de tu plan. Contactanos para solicitar un Plan Personalizado.')
+            }
+            return
+        }
+
         setEditLocation(null)
         // If it's the first one, default to primary
         setForm({ name: '', address: '', phone: '', active: true, is_primary: locations.length === 0 })

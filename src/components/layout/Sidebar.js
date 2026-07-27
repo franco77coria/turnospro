@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 ]
 
 const BOTTOM_ITEMS = [
+  { href: '/dashboard/subscription', label: 'Suscripción', icon: 'CreditCard' },
   { href: '/dashboard/settings', label: 'Configuración', icon: 'Palette' },
 ]
 

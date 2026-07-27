@@ -26,6 +26,7 @@ export const PAGE_PERMISSIONS = {
     '/dashboard/inventory': PERMISSIONS.MANAGE_INVENTORY,
     '/dashboard/pos': PERMISSIONS.VIEW_FINANCE,
     '/dashboard/locations': PERMISSIONS.EDIT_SETTINGS,
+    '/dashboard/subscription': PERMISSIONS.EDIT_SETTINGS,
 }
 
 /**

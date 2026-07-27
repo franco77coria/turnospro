@@ -166,8 +166,8 @@ export default function RegisterPage() {
                             <button className={styles.typeCard} onClick={() => handleSelectType('business')}>
                                 <Store size={28} />
                                 <h3>Negocio</h3>
-                                <p>Quiero gestionar mi negocio con GLOWUP</p>
-                                <span className={styles.approvalBadge}>Requiere aprobación</span>
+                                <p>Quiero gestionar mi negocio con TurnosPro</p>
+                                <span className={styles.approvalBadge} style={{ background: '#ECFDF5', color: '#047857', borderColor: '#A7F3D0' }}>7 días gratis</span>
                             </button>
                         </div>
 

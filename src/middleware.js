@@ -32,6 +32,13 @@ export async function middleware(request) {
     const { data: { user } } = await supabase.auth.getUser()
 
     const pathname = request.nextUrl.pathname
+    const host = request.headers.get('host') || ''
+
+    // Redirección canónica: Si ingresan por .vercel.app en producción, redirigir a tu-glowup.com
+    if (host.includes('vercel.app')) {
+        const redirectUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://tu-glowup.com')
+        return NextResponse.redirect(redirectUrl, 301)
+    }
 
     // Protect dashboard routes — redirect to login if not authenticated
     if (!user && pathname.startsWith('/dashboard')) {

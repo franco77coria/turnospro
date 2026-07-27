@@ -6,38 +6,10 @@ import { applyRateLimit } from '@/lib/rate-limit'
 import { BookingSchema, parseBody } from '@/lib/schemas'
 import { sendEmail } from '@/lib/send-email'
 
-// Helper para enviar confirmación de turno vía WhatsApp al cliente
+// Helper para enviar confirmación de turno vía WhatsApp al cliente (Desactivado temporalmente - Uso exclusivo de Email)
 async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time) {
-    if (!client_id) return
-    try {
-        const { data: client } = await supabase
-            .from('clients')
-            .select('name, phone')
-            .eq('id', client_id)
-            .single()
-
-        if (!client?.phone) return
-
-        const { data: business } = await supabase
-            .from('businesses')
-            .select('name, settings')
-            .eq('id', business_id)
-            .single()
-
-        const bizName = business?.name || 'GLOWUP'
-        const phoneNumberId = business?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID
-
-        const formattedDate = date.split('-').reverse().join('/')
-
-        const { sendWhatsAppText } = await import('@/lib/whatsapp')
-        await sendWhatsAppText({
-            to: client.phone,
-            phoneNumberId,
-            text: `¡Hola ${client.name || 'Cliente'}! Tu turno ha sido reservado con éxito 🎉\n\n📅 Servicio: ${service_name}\n🕒 Fecha: ${formattedDate} a las ${time} hs\n🏢 Local: ${bizName}\n\n¡Te esperamos!`
-        })
-    } catch (e) {
-        console.error('Error in sendAppointmentWhatsAppConfirmation helper:', e)
-    }
+    // Canal de WhatsApp desactivado por requerimiento (uso exclusivo de Email via Resend)
+    return
 }
 
 async function notifyPush(supabase, business_id, client_id, service_name, date, time) {

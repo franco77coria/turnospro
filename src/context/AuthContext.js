@@ -235,34 +235,58 @@ export function AuthProvider({ children }) {
         if (existing) {
             // Already have a business, just link and use it
             if (!profile?.business_id || profile.business_id !== existing.id) {
-                await supabase.from('profiles').update({ business_id: existing.id }).eq('id', user.id)
-                setProfile(prev => ({ ...prev, business_id: existing.id }))
+                await supabase.from('profiles').update({ business_id: existing.id, role: 'Dueño', approved: true }).eq('id', user.id)
+                setProfile(prev => ({ ...prev, business_id: existing.id, role: 'Dueño', approved: true }))
             }
             setBusiness(existing)
             return existing
         }
 
+        const trialExpires = new Date()
+        trialExpires.setDate(trialExpires.getDate() + 7)
+
         const { data, error } = await supabase
             .from('businesses')
             .insert([{
                 ...businessData,
-                owner_id: user.id
+                owner_id: user.id,
+                plan_id: 'trial',
+                plan_status: 'trialing',
+                plan_expires_at: trialExpires.toISOString(),
+                max_locations: 1,
             }])
             .select()
             .single()
 
         if (error) throw error
 
+        // Auto-crear la primera sucursal principal en la tabla locations
+        try {
+            await supabase.from('locations').insert([{
+                business_id: data.id,
+                name: businessData.name || 'Sede Principal',
+                address: businessData.address || '',
+                phone: businessData.phone || '',
+                is_primary: true,
+                active: true,
+            }])
+        } catch (locErr) {
+            console.error('Error al auto-crear sucursal inicial:', locErr)
+        }
+
+        // Auto-aprobar y actualizar perfil del dueño
         await supabase
             .from('profiles')
             .update({
                 business_id: data.id,
-                role: 'Dueño'
+                role: 'Dueño',
+                account_type: 'business',
+                approved: true,
             })
             .eq('id', user.id)
 
         setBusiness(data)
-        setProfile(prev => ({ ...prev, business_id: data.id, role: 'Dueño' }))
+        setProfile(prev => ({ ...prev, business_id: data.id, role: 'Dueño', account_type: 'business', approved: true }))
         return data
     }
 
