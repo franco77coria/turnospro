@@ -306,39 +306,8 @@ export function useBookingFlow() {
                 }
             }
 
+            // La búsqueda y creación/vinculación del cliente se realiza de manera atómica en el servidor (/api/appointments)
             let clientId = null
-            if (user) {
-                const { data: existingClient } = await supabase
-                    .from('clients')
-                    .select('id')
-                    .eq('business_id', business.id)
-                    .eq('email', form.email)
-                    .maybeSingle()
-
-                if (existingClient) {
-                    clientId = existingClient.id
-                    await supabase.from('clients').update({
-                        name: form.name,
-                        phone: formattedPhone,
-                        last_visit: new Date().toISOString(),
-                    }).eq('id', clientId)
-                } else {
-                    const { data: newClient } = await supabase
-                        .from('clients')
-                        .insert([{
-                            business_id: business.id,
-                            name: form.name,
-                            email: form.email,
-                            phone: formattedPhone,
-                            first_visit: new Date().toISOString(),
-                            last_visit: new Date().toISOString(),
-                            total_visits: 0,
-                        }])
-                        .select()
-                        .maybeSingle()
-                    clientId = newClient?.id
-                }
-            }
 
             // 2. Server-side availability check
             const checkRes = await fetch('/api/appointments/check', {
