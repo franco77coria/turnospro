@@ -348,25 +348,28 @@ async function sendBookingSideEffects(supabase, {
         // Send Emails (Client + Owner)
         if (send_emails) {
             const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+            const emailPromises = []
 
             // 1) Email al Cliente
             if (clientEmail) {
-                sendEmail({
-                    type: 'confirmation',
-                    to: clientEmail,
-                    data: {
-                        clientName,
-                        serviceName: service_name,
-                        date: formattedLong,
-                        time,
-                        duration,
-                        businessName: business?.name || 'Tu GlowUp',
-                        businessType: business?.business_type || 'custom',
-                        businessPhone: business?.phone,
-                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
-                        appointmentId,
-                    }
-                }).catch(e => console.error('Confirmation email failed:', e))
+                emailPromises.push(
+                    sendEmail({
+                        type: 'confirmation',
+                        to: clientEmail,
+                        data: {
+                            clientName,
+                            serviceName: service_name,
+                            date: formattedLong,
+                            time,
+                            duration,
+                            businessName: business?.name || 'Tu GlowUp',
+                            businessType: business?.business_type || 'custom',
+                            businessPhone: business?.phone,
+                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                            appointmentId,
+                        }
+                    }).catch(e => console.error('[Client Email Failed]:', e))
+                )
             }
 
             // 2) Email al Dueño del Negocio
@@ -378,23 +381,30 @@ async function sendBookingSideEffects(supabase, {
                     .single()
 
                 if (ownerProfile?.email) {
-                    sendEmail({
-                        type: 'new_booking_notify',
-                        to: ownerProfile.email,
-                        data: {
-                            clientName,
-                            clientEmail,
-                            clientPhone,
-                            serviceName: service_name,
-                            date: formattedLong,
-                            time,
-                            duration,
-                            businessName: business?.name || 'Tu GlowUp',
-                            businessType: business?.business_type || 'custom',
-                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
-                        }
-                    }).catch(e => console.error('Owner-notify email failed:', e))
+                    emailPromises.push(
+                        sendEmail({
+                            type: 'new_booking_notify',
+                            to: ownerProfile.email,
+                            data: {
+                                clientName,
+                                clientEmail,
+                                clientPhone,
+                                serviceName: service_name,
+                                date: formattedLong,
+                                time,
+                                duration,
+                                businessName: business?.name || 'Tu GlowUp',
+                                businessType: business?.business_type || 'custom',
+                                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
+                            }
+                        }).catch(e => console.error('[Owner Email Failed]:', e))
+                    )
                 }
+            }
+
+            // Esperar activamente a que los correos se envíen antes de cerrar la función serverless de Vercel
+            if (emailPromises.length > 0) {
+                await Promise.allSettled(emailPromises)
             }
         }
     } catch (e) {

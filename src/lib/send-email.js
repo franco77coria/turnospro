@@ -11,20 +11,26 @@ import { generateCancelToken } from '@/lib/cancel-token'
  */
 export async function sendEmail({ type, to, data }) {
     try {
-        // Detect if we're on the server (process.env.RESEND_API_KEY available)
-        const isServer = typeof window === 'undefined' && process.env.RESEND_API_KEY
+        // Detect if we're on the server
+        const isServer = typeof window === 'undefined'
 
         if (isServer) {
+            const apiKey = process.env.RESEND_API_KEY
+            if (!apiKey) {
+                console.error('[sendEmail Error]: RESEND_API_KEY no está configurada en las variables de entorno de Vercel!')
+                return { error: 'RESEND_API_KEY no configurada en servidor' }
+            }
+
             // Server-side: send directly via Resend
             const { Resend } = await import('resend')
-            const resend = new Resend(process.env.RESEND_API_KEY)
+            const resend = new Resend(apiKey)
 
             let html, subject
             switch (type) {
                 case 'confirmation':
                     if (data.appointmentId) {
                         const cancelToken = await generateCancelToken(data.appointmentId)
-                        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+                        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'
                         data.cancelUrl = `${appUrl}/cancel/${cancelToken}`
                     }
                     html = confirmationEmail(data)
@@ -65,7 +71,11 @@ export async function sendEmail({ type, to, data }) {
                 html,
             })
 
-            if (error) throw new Error(error.message || 'Error enviando email')
+            if (error) {
+                console.error('[Resend Error]:', error)
+                throw new Error(error.message || 'Error enviando email')
+            }
+            console.log('[Resend Success]: Email enviado exitosamente a', to, 'ID:', emailData?.id)
             return { success: true, id: emailData?.id }
         }
 
