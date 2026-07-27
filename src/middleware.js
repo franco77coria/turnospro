@@ -34,9 +34,9 @@ export async function middleware(request) {
     const pathname = request.nextUrl.pathname
     const host = request.headers.get('host') || ''
 
-    // Redirección canónica: Si ingresan por .vercel.app en producción, redirigir a tu-glowup.com
-    if (host.includes('vercel.app')) {
-        const redirectUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://tu-glowup.com')
+    // Redirección canónica: Si ingresan por .vercel.app en producción, redirigir a tu-glowup.com (excepto /api/ para webhooks)
+    if (host.includes('vercel.app') && !pathname.startsWith('/api/')) {
+        const redirectUrl = new URL(request.nextUrl.pathname + request.nextUrl.search, 'https://www.tu-glowup.com')
         return NextResponse.redirect(redirectUrl, 301)
     }
 
