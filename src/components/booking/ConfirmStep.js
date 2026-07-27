@@ -193,9 +193,41 @@ export default function ConfirmStep({
                             />
                         </div>
 
+                        {!user && (
+                            <div style={{ marginTop: 'var(--space-4)', marginBottom: 'var(--space-5)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer', fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={form.createAccount || false}
+                                        onChange={e => setForm(p => ({ ...p, createAccount: e.target.checked }))}
+                                        style={{ width: 18, height: 18, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                                    />
+                                    Crear mi cuenta en Tu GlowUp para gestionar mis turnos
+                                </label>
+
+                                {form.createAccount && (
+                                    <div className="form-group" style={{ marginTop: 'var(--space-3)', marginBottom: 0 }}>
+                                        <label className="label" style={{ fontSize: 'var(--font-size-xs)' }}>Crear una contraseña *</label>
+                                        <input
+                                            className="input"
+                                            type="password"
+                                            placeholder="Mínimo 6 caracteres"
+                                            value={form.password || ''}
+                                            onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                                            required={form.createAccount}
+                                            minLength={6}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <button type="submit" className="btn btn-primary btn-lg" style={{ width: '100%' }} disabled={submitting}>
                             {submitting ? <div className="loading-spinner" /> : (
-                                <><CalendarDays size={16} /> Confirmar turno</>
+                                <>
+                                    <CalendarDays size={16} />
+                                    {form.createAccount ? 'Confirmar turno y crear mi cuenta' : 'Confirmar turno'}
+                                </>
                             )}
                         </button>
                     </form>

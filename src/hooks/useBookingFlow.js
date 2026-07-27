@@ -265,6 +265,42 @@ export function useBookingFlow() {
         setSubmitting(true)
 
         try {
+            // Si el invitado eligió crear cuenta al agendar, registrarlo automáticamente
+            if (!user && form.createAccount) {
+                if (!form.password || form.password.length < 6) {
+                    setError('La contraseña debe tener al menos 6 caracteres')
+                    setSubmitting(false)
+                    return
+                }
+
+                const { data: authData, error: signUpErr } = await supabase.auth.signUp({
+                    email: form.email,
+                    password: form.password,
+                    options: { data: { full_name: form.name, account_type: 'user' } }
+                })
+                if (signUpErr && !signUpErr.message?.includes('already registered')) {
+                    setError(signUpErr.message || 'Error al crear la cuenta')
+                    setSubmitting(false)
+                    return
+                }
+
+                if (authData?.user) {
+                    await supabase.from('profiles').upsert([{
+                        id: authData.user.id,
+                        email: form.email,
+                        full_name: form.name,
+                        phone: formattedPhone,
+                        role: 'user',
+                        account_type: 'user',
+                    }], { onConflict: 'id' })
+
+                    await supabase.auth.signInWithPassword({
+                        email: form.email,
+                        password: form.password,
+                    })
+                }
+            }
+
             let clientId = null
             if (user) {
                 const { data: existingClient } = await supabase
