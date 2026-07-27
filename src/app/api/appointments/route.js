@@ -302,6 +302,8 @@ async function sendBookingSideEffects(supabase, {
     service_name, date, time, duration, send_emails, coupon_id,
     guest_name, guest_email, guest_phone, user_email,
 }) {
+    console.log('[SideEffects] START', JSON.stringify({ appointmentId, business_id, client_id, send_emails, guest_email, user_email, guest_name }))
+
     // Atomically consume coupon if provided
     if (coupon_id) {
         try {
@@ -312,22 +314,27 @@ async function sendBookingSideEffects(supabase, {
     }
 
     try {
-        const { data: business } = await supabase
+        const { data: business, error: bizErr } = await supabase
             .from('businesses')
             .select('owner_id, name, business_type, phone')
             .eq('id', business_id)
             .maybeSingle()
 
+        console.log('[SideEffects] business query:', business ? `✅ ${business.name}` : `❌ null`, bizErr ? `ERR: ${bizErr.message}` : '')
+
         let clientName = guest_name || 'Un cliente'
         let clientEmail = guest_email || user_email || null
         let clientPhone = guest_phone || null
 
+        console.log('[SideEffects] initial clientEmail:', clientEmail, '| client_id:', client_id)
+
         if (client_id) {
-            const { data: c } = await supabase
+            const { data: c, error: cErr } = await supabase
                 .from('clients')
                 .select('name, email, phone')
                 .eq('id', client_id)
                 .maybeSingle()
+            console.log('[SideEffects] client lookup:', c, cErr ? `ERR: ${cErr.message}` : '')
             if (c) {
                 if (c.name) clientName = c.name
                 if (c.email) clientEmail = c.email
@@ -341,6 +348,8 @@ async function sendBookingSideEffects(supabase, {
         if (!clientEmail && guest_email) {
             clientEmail = guest_email
         }
+
+        console.log('[SideEffects] FINAL clientEmail:', clientEmail, '| clientName:', clientName)
 
         // Parsear fecha YYYY-MM-DD sin desfase horario UTC
         let dateObj = new Date()
@@ -362,12 +371,15 @@ async function sendBookingSideEffects(supabase, {
         }
 
         // Send Emails (Client + Owner)
+        console.log('[SideEffects] send_emails value:', send_emails, '| typeof:', typeof send_emails, '| check (send_emails !== false):', send_emails !== false)
         if (send_emails !== false) {
             const formattedLong = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
             const emailPromises = []
 
             // 1) Email al Cliente
+            console.log('[SideEffects] clientEmail for sending:', clientEmail, '| truthy:', !!clientEmail)
             if (clientEmail) {
+                console.log('[SideEffects] ✉️ QUEUEING client confirmation email to:', clientEmail)
                 emailPromises.push(
                     sendEmail({
                         type: 'confirmation',
@@ -384,11 +396,19 @@ async function sendBookingSideEffects(supabase, {
                             appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
                             appointmentId,
                         }
-                    }).catch(e => console.error('[Client Email Failed]:', e))
+                    }).then(result => {
+                        console.log('[SideEffects] ✅ Client email RESULT:', JSON.stringify(result))
+                        return result
+                    }).catch(e => {
+                        console.error('[SideEffects] ❌ Client email FAILED:', e?.message || e)
+                        return { error: e?.message }
+                    })
                 )
+            } else {
+                console.log('[SideEffects] ⚠️ NO clientEmail — SKIPPING confirmation email')
             }
 
-            // 2) Email al Dueño del Negocio (aislado en try/catch para jamás bloquear el mail del cliente)
+            // 2) Email al Dueño del Negocio
             if (business?.owner_id) {
                 try {
                     const { data: ownerProfile } = await supabase
@@ -396,6 +416,8 @@ async function sendBookingSideEffects(supabase, {
                         .select('email')
                         .eq('id', business.owner_id)
                         .maybeSingle()
+
+                    console.log('[SideEffects] ownerProfile:', ownerProfile)
 
                     if (ownerProfile?.email) {
                         emailPromises.push(
@@ -423,11 +445,16 @@ async function sendBookingSideEffects(supabase, {
             }
 
             // Esperar activamente a que los correos se envíen antes de cerrar la función serverless de Vercel
+            console.log('[SideEffects] emailPromises.length:', emailPromises.length)
             if (emailPromises.length > 0) {
-                await Promise.allSettled(emailPromises)
+                const results = await Promise.allSettled(emailPromises)
+                console.log('[SideEffects] Promise.allSettled results:', JSON.stringify(results))
             }
+        } else {
+            console.log('[SideEffects] ⚠️ send_emails is false — SKIPPING all emails')
         }
+        console.log('[SideEffects] END — completed successfully')
     } catch (e) {
-        console.error('sendBookingSideEffects error:', e)
+        console.error('[SideEffects] ❌ OUTER CATCH ERROR:', e?.message || e, e?.stack)
     }
 }
