@@ -250,6 +250,8 @@
 
     .headerActions {
         width: 100%;
+        display: flex;
+        gap: 8px;
     }
 
     .headerActions .btn {
@@ -272,6 +274,26 @@
         min-height: 44px;
         font-size: 14px;
         width: 100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .headerActions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .headerActions .btn {
+        width: 100%;
+        justify-content: center;
+        font-size: 13px;
+        padding: 10px 12px;
+        white-space: nowrap;
+    }
+
+    .headerActions .btn:last-child {
+        grid-column: span 2;
     }
 }
 

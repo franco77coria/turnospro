@@ -1,8 +1,9 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
-import { User, Heart, Settings, HelpCircle, Globe, LogOut, ChevronRight } from 'lucide-react'
+import { User, Heart, Settings, HelpCircle, Globe, LogOut, ChevronRight, Moon } from 'lucide-react'
 import Link from 'next/link'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
+import DarkModeToggle from '@/components/DarkModeToggle'
 import styles from './profile.module.css'
 
 const MENU_ITEMS = [
@@ -89,7 +90,17 @@ export default function ProfilePage() {
                         })}
                     </div>
 
-                    {/* Support */}
+                    {/* Dark mode & Support */}
+                    <div className={styles.menuCard}>
+                        <div className={styles.menuItem} style={{ justifyContent: 'space-between', cursor: 'default' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                <div className={styles.menuIcon}><Moon size={20} /></div>
+                                <span className={styles.menuLabel}>Modo oscuro / claro</span>
+                            </div>
+                            <DarkModeToggle />
+                        </div>
+                    </div>
+
                     <div className={styles.menuCard}>
                         {SUPPORT_ITEMS.map((item, i) => {
                             const Icon = item.icon

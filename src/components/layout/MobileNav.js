@@ -4,7 +4,8 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { filterNavByRole } from '@/lib/permissions'
-import { BarChart3, CalendarDays, Clock, Wallet, Menu, X, Users, Tag, UserCircle, Settings, LogOut } from 'lucide-react'
+import { BarChart3, CalendarDays, Clock, Wallet, Menu, X, Users, Tag, UserCircle, Settings, LogOut, SunMoon } from 'lucide-react'
+import DarkModeToggle from '@/components/DarkModeToggle'
 import styles from './MobileNav.module.css'
 
 const MAIN_ITEMS = [
@@ -19,7 +20,7 @@ const MORE_ITEMS = [
     { href: '/dashboard/services', label: 'Servicios', icon: Tag },
     { href: '/dashboard/team', label: 'Equipo', icon: UserCircle },
     { href: '/dashboard/analytics', label: 'Estadísticas', icon: BarChart3 },
-    { href: '/dashboard/settings', label: 'Configuracion', icon: Settings },
+    { href: '/dashboard/settings', label: 'Configuración', icon: Settings },
 ]
 
 export default function MobileNav() {
@@ -44,10 +45,13 @@ export default function MobileNav() {
                 <div className={styles.moreOverlay} onClick={() => setShowMore(false)}>
                     <div className={styles.moreMenu} onClick={e => e.stopPropagation()}>
                         <div className={styles.moreHeader}>
-                            <span>Mas opciones</span>
-                            <button className={styles.moreClose} onClick={() => setShowMore(false)}>
-                                <X size={18} />
-                            </button>
+                            <span>Más opciones</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <DarkModeToggle />
+                                <button className={styles.moreClose} onClick={() => setShowMore(false)}>
+                                    <X size={18} />
+                                </button>
+                            </div>
                         </div>
                         {visibleMoreItems.map(item => {
                             const Icon = item.icon
@@ -65,7 +69,7 @@ export default function MobileNav() {
                         })}
                         <button className={`${styles.moreItem} ${styles.logoutItem}`} onClick={signOut}>
                             <LogOut size={18} />
-                            <span>Cerrar sesion</span>
+                            <span>Cerrar sesión</span>
                         </button>
                     </div>
                 </div>
