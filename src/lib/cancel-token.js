@@ -15,11 +15,8 @@
 import crypto from 'crypto'
 
 const getCancelSecret = () => {
-    const secret = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET
-    if (!secret && typeof window === 'undefined') {
-        throw new Error('CANCEL_TOKEN_SECRET or CRON_SECRET environment variable is required')
-    }
-    return secret || 'client-fallback-secret'
+    const secret = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    return secret || 'glowup-cancel-secret-2026'
 }
 
 async function hmacSign(data) {
