@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, MapPin, Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, Store, Star, SlidersHorizontal } from 'lucide-react'
+import { Search, MapPin, Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, Store, Star, SlidersHorizontal, ArrowLeft } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './explore.module.css'
@@ -90,6 +90,12 @@ function ExploreContent() {
             <div className={styles.explorePage}>
                 {/* Search section — sticky on mobile */}
                 <div className={styles.searchSection}>
+                    <div className={styles.topHeader}>
+                        <Link href="/dashboard" className={styles.backBtn} aria-label="Volver al Dashboard">
+                            <ArrowLeft size={16} /> Volver al Dashboard
+                        </Link>
+                    </div>
+
                     <form onSubmit={handleSearch} className={styles.searchBar}>
                         <Search size={18} className={styles.searchBarIcon} />
                         <input

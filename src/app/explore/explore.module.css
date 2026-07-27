@@ -17,6 +17,33 @@
     backdrop-filter: blur(10px);
 }
 
+.topHeader {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.backBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--ink);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    padding: 6px 14px;
+    border-radius: var(--r-full);
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    transition: all var(--t-fast);
+}
+
+.backBtn:hover {
+    background: var(--pink-tint);
+    color: var(--pink-deep);
+    border-color: var(--pink);
+}
+
 .searchBar {
     display: flex;
     align-items: center;

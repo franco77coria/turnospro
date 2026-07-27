@@ -6,9 +6,22 @@ import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Check, X as XIcon, Plus, User, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
+import MyAppointmentsPage from '@/app/book/my-appointments/page'
 import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
+    const { user, profile, business, loading: authLoading } = useAuth()
+
+    const isClient = profile?.role === 'user' && !profile?.business_id
+
+    if (!authLoading && isClient) {
+        return <MyAppointmentsPage />
+    }
+
+    return <OwnerAppointmentsPage />
+}
+
+function OwnerAppointmentsPage() {
     const { user, profile, business, loading: authLoading } = useAuth()
     const [selectedClientId, setSelectedClientId] = useState(null)
     const [appointments, setAppointments] = useState([])
@@ -85,7 +98,11 @@ export default function AppointmentsPage() {
     }
 
     useEffect(() => {
-        if (business?.id) loadAppointments()
+        if (business?.id) {
+            loadAppointments()
+        } else {
+            setLoadingApts(false)
+        }
     }, [business?.id, dateFilter, filter, currentMember])
 
     async function updateStatus(id, status) {
