@@ -242,6 +242,7 @@ export async function POST(request) {
             await sendBookingSideEffects(supabase, {
                 appointmentId, business_id, client_id, team_member_id,
                 service_name, date, time, duration, send_emails, coupon_id,
+                guest_name, guest_email, guest_phone,
             })
 
             return NextResponse.json({ success: true, appointmentId })
@@ -277,6 +278,7 @@ export async function POST(request) {
                 await sendBookingSideEffects(supabase, {
                     appointmentId: created.id, business_id, client_id, team_member_id,
                     service_name, date, time, duration, send_emails, coupon_id,
+                    guest_name, guest_email, guest_phone,
                 })
 
                 return NextResponse.json({ success: true, appointmentId: created.id })
