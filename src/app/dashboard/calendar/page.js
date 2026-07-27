@@ -881,9 +881,9 @@ export default function CalendarPage() {
                                         </>
                                     )}
                                 </div>
-                    </div>
-                </div>
-            )}
+                            </div>
+                        </div>
+                    )}
 
             {editingApt && (
                 <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditingApt(null)}>
