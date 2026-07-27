@@ -241,13 +241,13 @@ export async function POST(request) {
             notifyPush(supabase, business_id, client_id, service_name, date, time)
             notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
             sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
-            const _emailDebug = await sendBookingSideEffects(supabase, {
+            await sendBookingSideEffects(supabase, {
                 appointmentId, business_id, client_id, team_member_id,
                 service_name, date, time, duration, send_emails, coupon_id,
                 guest_name, guest_email, guest_phone, user_email: user?.email,
             })
 
-            return NextResponse.json({ success: true, appointmentId, _emailDebug })
+            return NextResponse.json({ success: true, appointmentId })
         } catch (rpcErr) {
             if (rpcErr.message?.includes('function') && rpcErr.message?.includes('does not exist')) {
                 const { data: created, error: insertErr } = await supabase
@@ -277,13 +277,13 @@ export async function POST(request) {
                 notifyPush(supabase, business_id, client_id, service_name, date, time)
                 notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
                 sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
-                const _emailDebug = await sendBookingSideEffects(supabase, {
+                await sendBookingSideEffects(supabase, {
                     appointmentId: created.id, business_id, client_id, team_member_id,
                     service_name, date, time, duration, send_emails, coupon_id,
                     guest_name, guest_email, guest_phone, user_email: user?.email,
                 })
 
-                return NextResponse.json({ success: true, appointmentId: created.id, _emailDebug })
+                return NextResponse.json({ success: true, appointmentId: created.id })
             }
             throw rpcErr
         }
