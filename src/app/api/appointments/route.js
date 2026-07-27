@@ -316,7 +316,7 @@ async function sendBookingSideEffects(supabase, {
             .from('businesses')
             .select('owner_id, name, business_type, phone')
             .eq('id', business_id)
-            .single()
+            .maybeSingle()
 
         let clientName = guest_name || 'Un cliente'
         let clientEmail = guest_email || user_email || null
@@ -327,7 +327,7 @@ async function sendBookingSideEffects(supabase, {
                 .from('clients')
                 .select('name, email, phone')
                 .eq('id', client_id)
-                .single()
+                .maybeSingle()
             if (c) {
                 if (c.name) clientName = c.name
                 if (c.email) clientEmail = c.email
@@ -388,33 +388,37 @@ async function sendBookingSideEffects(supabase, {
                 )
             }
 
-            // 2) Email al Dueño del Negocio
+            // 2) Email al Dueño del Negocio (aislado en try/catch para jamás bloquear el mail del cliente)
             if (business?.owner_id) {
-                const { data: ownerProfile } = await supabase
-                    .from('profiles')
-                    .select('email')
-                    .eq('id', business.owner_id)
-                    .single()
+                try {
+                    const { data: ownerProfile } = await supabase
+                        .from('profiles')
+                        .select('email')
+                        .eq('id', business.owner_id)
+                        .maybeSingle()
 
-                if (ownerProfile?.email) {
-                    emailPromises.push(
-                        sendEmail({
-                            type: 'new_booking_notify',
-                            to: ownerProfile.email,
-                            data: {
-                                clientName,
-                                clientEmail,
-                                clientPhone,
-                                serviceName: service_name,
-                                date: formattedLong,
-                                time,
-                                duration,
-                                businessName: business?.name || 'Tu GlowUp',
-                                businessType: business?.business_type || 'custom',
-                                dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
-                            }
-                        }).catch(e => console.error('[Owner Email Failed]:', e))
-                    )
+                    if (ownerProfile?.email) {
+                        emailPromises.push(
+                            sendEmail({
+                                type: 'new_booking_notify',
+                                to: ownerProfile.email,
+                                data: {
+                                    clientName,
+                                    clientEmail,
+                                    clientPhone,
+                                    serviceName: service_name,
+                                    date: formattedLong,
+                                    time,
+                                    duration,
+                                    businessName: business?.name || 'Tu GlowUp',
+                                    businessType: business?.business_type || 'custom',
+                                    dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
+                                }
+                            }).catch(e => console.error('[Owner Email Failed]:', e))
+                        )
+                    }
+                } catch (ownerErr) {
+                    console.error('Owner profile query failed:', ownerErr)
                 }
             }
 
