@@ -3,6 +3,7 @@
 import Sidebar from '@/components/layout/Sidebar'
 import MobileNav from '@/components/layout/MobileNav'
 import NotificationBell from '@/components/NotificationBell'
+import InstallPrompt from '@/components/InstallPrompt'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
@@ -86,6 +87,7 @@ export default function DashboardLayout({ children }) {
         {children}
       </main>
       <MobileNav />
+      <InstallPrompt />
     </div>
   )
 }
