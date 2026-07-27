@@ -244,7 +244,7 @@ export async function POST(request) {
             await sendBookingSideEffects(supabase, {
                 appointmentId, business_id, client_id, team_member_id,
                 service_name, date, time, duration, send_emails, coupon_id,
-                guest_name, guest_email, guest_phone,
+                guest_name, guest_email, guest_phone, user_email: user?.email,
             })
 
             return NextResponse.json({ success: true, appointmentId })
@@ -280,7 +280,7 @@ export async function POST(request) {
                 await sendBookingSideEffects(supabase, {
                     appointmentId: created.id, business_id, client_id, team_member_id,
                     service_name, date, time, duration, send_emails, coupon_id,
-                    guest_name, guest_email, guest_phone,
+                    guest_name, guest_email, guest_phone, user_email: user?.email,
                 })
 
                 return NextResponse.json({ success: true, appointmentId: created.id })
@@ -300,7 +300,7 @@ export async function POST(request) {
 async function sendBookingSideEffects(supabase, {
     appointmentId, business_id, client_id, team_member_id,
     service_name, date, time, duration, send_emails, coupon_id,
-    guest_name, guest_email, guest_phone,
+    guest_name, guest_email, guest_phone, user_email,
 }) {
     // Atomically consume coupon if provided
     if (coupon_id) {
@@ -319,7 +319,7 @@ async function sendBookingSideEffects(supabase, {
             .single()
 
         let clientName = guest_name || 'Un cliente'
-        let clientEmail = guest_email || null
+        let clientEmail = guest_email || user_email || null
         let clientPhone = guest_phone || null
 
         if (client_id) {
@@ -335,6 +335,9 @@ async function sendBookingSideEffects(supabase, {
             }
         }
 
+        if (!clientEmail && user_email) {
+            clientEmail = user_email
+        }
         if (!clientEmail && guest_email) {
             clientEmail = guest_email
         }
