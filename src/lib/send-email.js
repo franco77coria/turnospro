@@ -59,7 +59,7 @@ export async function sendEmail({ type, to, data }) {
             }
 
             const { data: emailData, error } = await resend.emails.send({
-                from: `${data.businessName || 'GLOWUP'} <onboarding@resend.dev>`,
+                from: `${data.businessName || 'Tu GlowUp'} <notificaciones@tu-glowup.com>`,
                 to: [to],
                 subject,
                 html,
