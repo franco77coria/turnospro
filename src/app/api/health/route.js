@@ -15,6 +15,7 @@ export async function GET() {
         return NextResponse.json({
             status: 'ok',
             db: 'connected',
+            version: '1.0.1',
             timestamp: new Date().toISOString(),
         })
     } catch (err) {
