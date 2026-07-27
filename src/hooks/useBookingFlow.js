@@ -30,16 +30,21 @@ export function useBookingFlow() {
     const [closureDates, setClosureDates] = useState([])
     const [teamAbsences, setTeamAbsences] = useState([])
 
-    // Auto-fill form from logged-in user
+    // Auto-fill form from logged-in user or previous guest bookings saved in localStorage
     useEffect(() => {
-        if (user && !form.name && !form.email) {
+        if (typeof window !== 'undefined') {
+            const savedName = localStorage.getItem('glowup_guest_name') || ''
+            const savedEmail = localStorage.getItem('glowup_guest_email') || ''
+            const savedPhone = localStorage.getItem('glowup_guest_phone') || ''
+
             setForm(prev => ({
                 ...prev,
-                name: user.user_metadata?.full_name || user.user_metadata?.name || prev.name,
-                email: user.email || prev.email,
+                name: user?.user_metadata?.full_name || user?.user_metadata?.name || prev.name || savedName,
+                email: user?.email || prev.email || savedEmail,
+                phone: prev.phone || savedPhone,
             }))
         }
-    }, [user, form.name, form.email])
+    }, [user])
 
     const loadBusiness = useCallback(async () => {
         if (!supabase) { setLoading(false); return }
@@ -393,6 +398,12 @@ export function useBookingFlow() {
                 }
                 setSubmitting(false)
                 return
+            }
+
+            if (typeof window !== 'undefined') {
+                if (form.name) localStorage.setItem('glowup_guest_name', form.name)
+                if (form.email) localStorage.setItem('glowup_guest_email', form.email)
+                if (formattedPhone) localStorage.setItem('glowup_guest_phone', formattedPhone)
             }
 
             setSuccess(true)

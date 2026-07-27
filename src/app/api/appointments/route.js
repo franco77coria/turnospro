@@ -296,6 +296,7 @@ export async function POST(request) {
 async function sendBookingSideEffects(supabase, {
     appointmentId, business_id, client_id, team_member_id,
     service_name, date, time, duration, send_emails, coupon_id,
+    guest_name, guest_email, guest_phone,
 }) {
     // Atomically consume coupon if provided
     if (coupon_id) {
@@ -306,7 +307,6 @@ async function sendBookingSideEffects(supabase, {
         }
     }
 
-    // In-app notification for the owner — failure is non-critical
     try {
         const { data: business } = await supabase
             .from('businesses')
@@ -314,20 +314,26 @@ async function sendBookingSideEffects(supabase, {
             .eq('id', business_id)
             .single()
 
+        let clientName = guest_name || 'Un cliente'
+        let clientEmail = guest_email || null
+        let clientPhone = guest_phone || null
+
+        if (client_id) {
+            const { data: c } = await supabase
+                .from('clients')
+                .select('name, email, phone')
+                .eq('id', client_id)
+                .single()
+            if (c) {
+                if (c.name) clientName = c.name
+                if (c.email) clientEmail = c.email
+                if (c.phone) clientPhone = c.phone
+            }
+        }
+
+        // In-app notification for owner
         if (business?.owner_id) {
             const formattedShort = new Date(date).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })
-            let clientName = 'Un cliente'
-            let client = null
-            if (client_id) {
-                const { data: c } = await supabase
-                    .from('clients')
-                    .select('name, email, phone')
-                    .eq('id', client_id)
-                    .single()
-                client = c
-                if (c?.name) clientName = c.name
-            }
-
             await supabase.from('notifications').insert([{
                 user_id: business.owner_id,
                 business_id,
@@ -335,32 +341,34 @@ async function sendBookingSideEffects(supabase, {
                 title: 'Nuevo turno reservado',
                 message: `${clientName} reservó ${service_name} para el ${formattedShort} a las ${time}.`,
             }]).catch(() => {})
+        }
 
-            // Emails — only when explicitly requested (booking flow opts in).
-            // For dashboard-side bookings the staff usually doesn't want
-            // these duplicates, so the default is false.
-            if (send_emails) {
-                const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+        // Send Emails (Client + Owner)
+        if (send_emails) {
+            const formattedLong = new Date(date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
 
-                if (client?.email) {
-                    sendEmail({
-                        type: 'confirmation',
-                        to: client.email,
-                        data: {
-                            clientName: client.name || 'Cliente',
-                            serviceName: service_name,
-                            date: formattedLong,
-                            time,
-                            duration,
-                            businessName: business.name || 'GLOWUP',
-                            businessType: business.business_type || 'custom',
-                            businessPhone: business.phone,
-                            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/my-appointments`,
-                            appointmentId,
-                        }
-                    }).catch(e => console.error('Confirmation email failed (non-critical):', e))
-                }
+            // 1) Email al Cliente
+            if (clientEmail) {
+                sendEmail({
+                    type: 'confirmation',
+                    to: clientEmail,
+                    data: {
+                        clientName,
+                        serviceName: service_name,
+                        date: formattedLong,
+                        time,
+                        duration,
+                        businessName: business?.name || 'Tu GlowUp',
+                        businessType: business?.business_type || 'custom',
+                        businessPhone: business?.phone,
+                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                        appointmentId,
+                    }
+                }).catch(e => console.error('Confirmation email failed:', e))
+            }
 
+            // 2) Email al Dueño del Negocio
+            if (business?.owner_id) {
                 const { data: ownerProfile } = await supabase
                     .from('profiles')
                     .select('email')
@@ -372,22 +380,22 @@ async function sendBookingSideEffects(supabase, {
                         type: 'new_booking_notify',
                         to: ownerProfile.email,
                         data: {
-                            clientName: client?.name || 'Cliente',
-                            clientEmail: client?.email,
-                            clientPhone: client?.phone,
+                            clientName,
+                            clientEmail,
+                            clientPhone,
                             serviceName: service_name,
                             date: formattedLong,
                             time,
                             duration,
-                            businessName: business.name || 'GLOWUP',
-                            businessType: business.business_type || 'custom',
-                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+                            businessName: business?.name || 'Tu GlowUp',
+                            businessType: business?.business_type || 'custom',
+                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
                         }
-                    }).catch(e => console.error('Owner-notify email failed (non-critical):', e))
+                    }).catch(e => console.error('Owner-notify email failed:', e))
                 }
             }
         }
     } catch (e) {
-        console.error('sendBookingSideEffects error (non-critical):', e)
+        console.error('sendBookingSideEffects error:', e)
     }
 }
