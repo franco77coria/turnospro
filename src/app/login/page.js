@@ -79,7 +79,7 @@ function LoginContent() {
         try {
             if (!supabase) throw new Error('Sistema no disponible')
             const { error: resetError } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
-                redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
+                redirectTo: `${window.location.origin}/auth/callback?type=recovery&next=/auth/reset-password`,
             })
             if (resetError) throw resetError
             setSuccess('Te enviamos un email con instrucciones para restablecer tu contraseña. Revisá tu bandeja de entrada.')

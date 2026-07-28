@@ -1,8 +1,8 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Lock, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react'
+import { Lock, Eye, EyeOff, Check, ArrowLeft, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 import styles from '../../login/login.module.css'
 
@@ -11,8 +11,55 @@ function ResetPasswordContent() {
     const [form, setForm] = useState({ password: '', confirm: '' })
     const [showPassword, setShowPassword] = useState(false)
     const [loading, setLoading] = useState(false)
+    const [checkingAuth, setCheckingAuth] = useState(true)
+    const [hasAuthSession, setHasAuthSession] = useState(false)
     const [error, setError] = useState('')
     const [success, setSuccess] = useState(false)
+
+    useEffect(() => {
+        let isMounted = true
+
+        const verifySession = async () => {
+            if (!supabase) {
+                if (isMounted) setCheckingAuth(false)
+                return
+            }
+
+            // 1. Check if user is already authenticated via session/cookies
+            try {
+                const { data: { session } } = await supabase.auth.getSession()
+                if (session && isMounted) {
+                    setHasAuthSession(true)
+                    setCheckingAuth(false)
+                    return
+                }
+            } catch (err) {
+                console.error('Session check error:', err)
+            }
+
+            // 2. Listen for auth change (e.g. hash fragment token recovery)
+            const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+                if (!isMounted) return
+                if (session || event === 'PASSWORD_RECOVERY') {
+                    setHasAuthSession(true)
+                    setCheckingAuth(false)
+                }
+            })
+
+            // Grace period of 1.5 seconds for hash parsing or session sync
+            const timer = setTimeout(() => {
+                if (isMounted) setCheckingAuth(false)
+            }, 1500)
+
+            return () => {
+                isMounted = false
+                subscription.unsubscribe()
+                clearTimeout(timer)
+            }
+        }
+
+        verifySession()
+    }, [])
 
     const handleReset = async (e) => {
         e.preventDefault()
@@ -43,12 +90,47 @@ function ResetPasswordContent() {
         setLoading(false)
     }
 
+    if (checkingAuth) {
+        return (
+            <div className={styles.loginPage}>
+                <div className={styles.loginCard} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 'var(--space-8)' }}>
+                    <div className="loading-spinner" />
+                    <p style={{ marginTop: 'var(--space-4)', color: 'var(--color-text-muted)', fontSize: '0.9rem' }}>Verificando enlace de recuperación...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (!hasAuthSession && !success) {
+        return (
+            <div className={styles.loginPage}>
+                <div className={styles.loginCard}>
+                    <div className={styles.logo}>
+                        <img src="/logo.png" alt="G" className={styles.logoMark} />
+                    </div>
+                    <div style={{
+                        width: 56, height: 56, borderRadius: '50%', background: '#FEF2F2',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        margin: '0 auto var(--space-4)'
+                    }}>
+                        <AlertCircle size={28} style={{ color: '#EF4444' }} />
+                    </div>
+                    <h1>Enlace no válido o expirado</h1>
+                    <p>El enlace para restablecer tu contraseña ya expiró o no es válido. Por favor, solicitá uno nuevo.</p>
+                    <Link href="/login" className={styles.primaryBtn} style={{ textDecoration: 'none', marginTop: 'var(--space-4)', display: 'block', textAlign: 'center' }}>
+                        Solicitar nuevo enlace
+                    </Link>
+                </div>
+            </div>
+        )
+    }
+
     if (success) {
         return (
             <div className={styles.loginPage}>
                 <div className={styles.loginCard}>
                     <div className={styles.logo}>
-                        <span className={styles.logoMark}>G</span>
+                        <img src="/logo.png" alt="G" className={styles.logoMark} />
                     </div>
                     <div style={{
                         width: 56, height: 56, borderRadius: '50%', background: '#F0FDF4',
@@ -58,8 +140,8 @@ function ResetPasswordContent() {
                         <Check size={28} style={{ color: '#16A34A' }} />
                     </div>
                     <h1>Contraseña actualizada</h1>
-                    <p>Tu contraseña fue cambiada exitosamente. Redirigiendo al login...</p>
-                    <Link href="/login" className={styles.primaryBtn} style={{ textDecoration: 'none', marginTop: 'var(--space-4)' }}>
+                    <p>Tu contraseña fue cambiada exitosamente. Redirigiendo al inicio de sesión...</p>
+                    <Link href="/login" className={styles.primaryBtn} style={{ textDecoration: 'none', marginTop: 'var(--space-4)', display: 'block', textAlign: 'center' }}>
                         Ir a iniciar sesión
                     </Link>
                 </div>
@@ -71,7 +153,7 @@ function ResetPasswordContent() {
         <div className={styles.loginPage}>
             <div className={styles.loginCard}>
                 <div className={styles.logo}>
-                    <span className={styles.logoMark}>G</span>
+                    <img src="/logo.png" alt="G" className={styles.logoMark} />
                 </div>
                 <h1>Nueva contraseña</h1>
                 <p>Elegí tu nueva contraseña para acceder a tu cuenta</p>
@@ -131,3 +213,4 @@ export default function ResetPasswordPage() {
         </Suspense>
     )
 }
+

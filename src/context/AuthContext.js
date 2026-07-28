@@ -155,6 +155,14 @@ export function AuthProvider({ children }) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
             if (!isMounted) return
 
+            if (event === 'PASSWORD_RECOVERY') {
+                if (typeof window !== 'undefined' && window.location.pathname !== '/auth/reset-password') {
+                    window.location.href = '/auth/reset-password'
+                }
+                setLoading(false)
+                return
+            }
+
             // Skip events that don't represent actual user changes
             if (event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') return
 

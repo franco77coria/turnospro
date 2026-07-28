@@ -5,30 +5,58 @@ import { cookies } from 'next/headers'
 export async function GET(request) {
     const requestUrl = new URL(request.url)
     const code = requestUrl.searchParams.get('code')
+    const token_hash = requestUrl.searchParams.get('token_hash')
     const error = requestUrl.searchParams.get('error')
     const accountType = requestUrl.searchParams.get('account_type') // 'user' | 'business' | null
     const type = requestUrl.searchParams.get('type') // 'recovery' for password reset
+    const next = requestUrl.searchParams.get('next')
     const origin = requestUrl.origin
 
     // If OAuth returned an error, redirect to login
     if (error) {
-        return NextResponse.redirect(`${origin}/login?error=${error}`)
+        return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error)}`)
+    }
+
+    const cookieStore = await cookies()
+    const supabase = createSupabaseServerClient(cookieStore)
+
+    // Password recovery flow handler
+    if (type === 'recovery' || next === '/auth/reset-password') {
+        if (code) {
+            try {
+                const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+                if (exchangeError) {
+                    console.error('Code exchange error during recovery:', exchangeError.message)
+                    return NextResponse.redirect(`${origin}/login?error=exchange`)
+                }
+            } catch (err) {
+                console.error('Recovery exchange exception:', err)
+                return NextResponse.redirect(`${origin}/login?error=unknown`)
+            }
+        } else if (token_hash) {
+            try {
+                const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash, type: 'recovery' })
+                if (verifyError) {
+                    console.error('OTP verify error during recovery:', verifyError.message)
+                    return NextResponse.redirect(`${origin}/login?error=verify`)
+                }
+            } catch (err) {
+                console.error('Recovery verify exception:', err)
+                return NextResponse.redirect(`${origin}/login?error=unknown`)
+            }
+        }
+
+        // Always redirect to password reset page for recovery flow
+        return NextResponse.redirect(`${origin}/auth/reset-password`)
     }
 
     if (code) {
         try {
-            const cookieStore = await cookies()
-            const supabase = createSupabaseServerClient(cookieStore)
             const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
             if (exchangeError) {
                 console.error('Code exchange error:', exchangeError.message)
                 return NextResponse.redirect(`${origin}/login?error=exchange`)
-            }
-
-            // Password recovery flow — redirect to reset password page
-            if (type === 'recovery') {
-                return NextResponse.redirect(`${origin}/auth/reset-password`)
             }
 
             const { data: { user } } = await supabase.auth.getUser()
@@ -91,8 +119,21 @@ export async function GET(request) {
             console.error('Auth callback error:', err)
             return NextResponse.redirect(`${origin}/login?error=unknown`)
         }
+    } else if (token_hash && type) {
+        try {
+            const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash, type })
+            if (verifyError) {
+                console.error('Token verify error:', verifyError.message)
+                return NextResponse.redirect(`${origin}/login?error=verify`)
+            }
+            return NextResponse.redirect(`${origin}/dashboard`)
+        } catch (err) {
+            console.error('Token verify catch error:', err)
+            return NextResponse.redirect(`${origin}/login?error=unknown`)
+        }
     }
 
     // Default: redirect to book (safe default for unknown users)
     return NextResponse.redirect(`${origin}/book`)
 }
+
