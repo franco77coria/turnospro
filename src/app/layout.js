@@ -4,6 +4,7 @@ import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/Toast'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import JsonLd, { buildWebSiteSchema } from '@/components/JsonLd'
+import { Analytics } from '@vercel/analytics/next'
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -71,7 +72,9 @@ export default function RootLayout({ children }) {
           </ToastProvider>
         </AuthProvider>
         <ServiceWorkerRegister />
+        <Analytics />
       </body>
     </html>
   )
 }
+
