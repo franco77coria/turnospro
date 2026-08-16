@@ -94,6 +94,53 @@
   --text-tertiary: var(--ink-mute);
   --bg-primary: var(--bg);
   --transition: var(--t-fast) var(--ease-out);
+
+  /* Los CSS modules usaban 32 variables que nunca se definieron acá. Una
+     var() sin valor invalida toda la declaración, así que esas reglas no
+     hacían nada: fondos transparentes, transiciones muertas y el sidebar
+     sin ancho (con el contenido del dashboard quedando debajo). */
+
+  /* Superficies */
+  --bg-card: var(--surface);
+  --card-bg: var(--surface);
+  --bg-secondary: var(--surface-2);
+  --bg-tertiary: var(--surface-2);
+  --bg-hover: color-mix(in oklab, var(--ink) 5%, transparent);
+
+  /* Texto y bordes */
+  --text-primary: var(--ink);
+  --color-text-muted: var(--ink-mute);
+  --border-light: var(--line-soft);
+  --border-color: var(--line);
+
+  /* Acento */
+  --accent-light: var(--pink-tint);
+  --accent-subtle: var(--pink-soft);
+  --accent-hover: var(--pink-deep);
+
+  /* Semánticos. Tonos legibles sobre fondo claro: --mint (#00E5A8) sirve
+     de relleno pero no como color de texto. */
+  --danger: #E5484D;
+  --danger-light: color-mix(in oklab, #E5484D 12%, transparent);
+  --success: #0E9F6E;
+  --success-light: color-mix(in oklab, #0E9F6E 14%, transparent);
+  --warning: #D97706;
+  --warning-light: color-mix(in oklab, #D97706 14%, transparent);
+  --amber: #F59E0B;
+  --info: var(--blue);
+
+  /* Escala */
+  --radius-full: var(--r-full);
+  --font-size-base: 15px;
+  --font-size-3xl: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --e-out: var(--ease-out);
+
+  /* Medidas de layout */
+  --sidebar-width: 260px;
+  --consumer-nav-height: 60px;
+  --mobile-nav-height: 68px;
 }
 
 /* ===== Dark mode ===== */
@@ -122,6 +169,16 @@
   --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.6);
+
+  /* Los alias que apuntan a otro token (--bg-card → --surface) se resuelven
+     solos acá. Solo hay que repetir los que son un color literal, porque en
+     oscuro no tienen contraste suficiente. */
+  --danger: #FF7B7E;
+  --danger-light: color-mix(in oklab, #FF7B7E 18%, transparent);
+  --success: #34D399;
+  --success-light: color-mix(in oklab, #34D399 18%, transparent);
+  --warning: #FBBF24;
+  --warning-light: color-mix(in oklab, #FBBF24 18%, transparent);
 }
 
 /* ===== Reset ===== */
