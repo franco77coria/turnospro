@@ -9,6 +9,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import { useToast } from '@/components/Toast'
+import BusinessPhotosCard from '@/components/business/BusinessPhotosCard'
 
 export default function SettingsPage() {
     return (
@@ -296,11 +297,18 @@ function SettingsContent() {
                             </div>
                         </div>
 
+                        {/* Fotos de la ficha pública */}
+                        <BusinessPhotosCard business={business} />
+
                         {/* Booking Link & QR Code */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
-                                <Link2 size={18} /> Link de reservas y Código QR
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Link2 size={18} /> Link de tu ficha y Código QR
                             </h3>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
+                                Este link abre tu ficha pública: fotos, servicios con precio, equipo, horarios y reseñas.
+                                Desde ahí el cliente reserva.
+                            </p>
                             
                             {/* Link */}
                             <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>

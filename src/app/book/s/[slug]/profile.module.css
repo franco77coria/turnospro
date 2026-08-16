@@ -1,0 +1,499 @@
+.page {
+    min-height: 100vh;
+    background: var(--bg);
+    /* Espacio para la barra fija de mobile */
+    padding-bottom: 96px;
+}
+
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 var(--space-4) var(--space-10);
+}
+
+/* ── Portada ── */
+.hero {
+    position: relative;
+    height: 280px;
+    overflow: hidden;
+}
+
+.cover {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.coverFallback {
+    background: linear-gradient(135deg, var(--pink) 0%, var(--violet) 100%);
+}
+
+.heroOverlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, color-mix(in oklab, var(--bg) 92%, transparent) 100%);
+}
+
+/* ── Identidad ── */
+.identity {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-4);
+    margin-top: -56px;
+    position: relative;
+    z-index: 1;
+    margin-bottom: var(--space-5);
+}
+
+.avatar {
+    width: 104px;
+    height: 104px;
+    border-radius: var(--r-lg);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-family: var(--font-display);
+    font-size: 40px;
+    font-weight: 800;
+    flex-shrink: 0;
+    border: 4px solid var(--bg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.identityBody {
+    flex: 1;
+    min-width: 0;
+    padding-bottom: var(--space-1);
+}
+
+.type {
+    margin: 0;
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--pink);
+}
+
+.name {
+    font-family: var(--font-display);
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 2px 0 var(--space-2);
+    line-height: 1.1;
+}
+
+.metaRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--font-size-sm);
+}
+
+.rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--yellow);
+}
+
+.rating strong {
+    color: var(--ink);
+}
+
+.metaLink {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink-mute);
+    text-decoration: none;
+    transition: color var(--t-fast);
+}
+
+.metaLink:hover {
+    color: var(--pink);
+}
+
+.muted {
+    color: var(--ink-mute);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+/* ── CTAs ── */
+.ctaMain {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 26px;
+    border-radius: var(--r-full);
+    background: var(--pink);
+    color: #fff;
+    font-weight: 800;
+    font-size: var(--font-size-sm);
+    text-decoration: none;
+    white-space: nowrap;
+    box-shadow: var(--shadow-pink);
+    transition: transform var(--t-fast) var(--ease-out), background var(--t-fast);
+    flex-shrink: 0;
+}
+
+.ctaMain:hover {
+    background: var(--pink-deep);
+    transform: translateY(-2px);
+}
+
+.ctaSmall {
+    padding: 8px 18px;
+    border-radius: var(--r-full);
+    border: 1.5px solid var(--pink);
+    color: var(--pink);
+    font-weight: 700;
+    font-size: var(--font-size-xs);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.ctaSmall:hover {
+    background: var(--pink);
+    color: #fff;
+}
+
+.ctaBottom {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: var(--space-8);
+    padding: 18px;
+    border-radius: var(--r-lg);
+    background: var(--ink);
+    color: var(--cream);
+    font-weight: 800;
+    text-decoration: none;
+    transition: transform var(--t-fast) var(--ease-out);
+}
+
+.ctaBottom:hover {
+    transform: translateY(-2px);
+}
+
+.about {
+    font-size: var(--font-size-base);
+    line-height: 1.65;
+    color: var(--ink-soft);
+    margin: 0 0 var(--space-6);
+    max-width: 68ch;
+}
+
+/* ── Secciones ── */
+.section {
+    margin-bottom: var(--space-8);
+}
+
+.sectionHead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.sectionHead h2 {
+    font-family: var(--font-display);
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    margin: 0;
+}
+
+.group {
+    margin-bottom: var(--space-5);
+}
+
+.groupTitle {
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-mute);
+    margin: 0 0 var(--space-2);
+}
+
+/* ── Servicios ── */
+.serviceList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.serviceRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.serviceRow:last-child {
+    border-bottom: none;
+}
+
+.serviceInfo {
+    min-width: 0;
+}
+
+.serviceName {
+    display: block;
+    font-weight: 700;
+    color: var(--ink);
+    font-size: var(--font-size-base);
+}
+
+.serviceMeta {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: var(--font-size-xs);
+    color: var(--ink-mute);
+    margin-top: 2px;
+}
+
+.serviceDesc {
+    margin: 6px 0 0;
+    font-size: var(--font-size-sm);
+    color: var(--ink-mute);
+    line-height: 1.5;
+    max-width: 52ch;
+}
+
+.serviceAction {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-shrink: 0;
+}
+
+.servicePrice {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: var(--font-size-lg);
+    color: var(--ink);
+}
+
+/* ── Equipo ── */
+.teamGrid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: var(--space-3);
+}
+
+.teamCard {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: var(--space-4) var(--space-2);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    text-align: center;
+}
+
+.teamAvatar {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--r-full);
+    background: linear-gradient(135deg, var(--pink), var(--violet));
+    color: #fff;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: var(--font-size-lg);
+}
+
+.teamName {
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    color: var(--ink);
+}
+
+/* ── Horarios ── */
+.hoursList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.hoursRow {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--ink);
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.hoursRow:last-child {
+    border-bottom: none;
+}
+
+.hoursClosed {
+    color: var(--ink-faint);
+}
+
+/* ── Reseñas ── */
+.reviewList {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--space-3);
+}
+
+.reviewCard {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: var(--space-4);
+}
+
+.reviewHead {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: 6px;
+}
+
+.reviewAuthor {
+    font-weight: 700;
+    font-size: var(--font-size-sm);
+    color: var(--ink);
+}
+
+.stars {
+    display: inline-flex;
+    gap: 1px;
+    color: var(--yellow);
+    flex-shrink: 0;
+}
+
+.reviewText {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+    color: var(--ink-soft);
+}
+
+.footer {
+    margin-top: var(--space-8);
+    text-align: center;
+    font-size: var(--font-size-xs);
+    color: var(--ink-faint);
+}
+
+.footer a {
+    color: var(--pink);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+/* ── Barra fija de mobile ── */
+.stickyCta {
+    display: none;
+}
+
+@media (max-width: 720px) {
+    .hero {
+        height: 200px;
+    }
+
+    .identity {
+        flex-wrap: wrap;
+        margin-top: -44px;
+    }
+
+    .avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 30px;
+    }
+
+    .name {
+        font-size: var(--font-size-xl);
+    }
+
+    /* El CTA pasa a ancho completo y además queda la barra fija abajo */
+    .ctaMain {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .serviceRow {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: var(--space-2);
+    }
+
+    .serviceAction {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .stickyCta {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 60;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: 12px var(--space-4);
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+        background: var(--surface);
+        border-top: 1px solid var(--line);
+        box-shadow: 0 -6px 20px rgba(26, 14, 31, 0.08);
+        text-decoration: none;
+        font-weight: 700;
+        font-size: var(--font-size-sm);
+        color: var(--ink-mute);
+    }
+
+    .stickyBtn {
+        padding: 12px 24px;
+        border-radius: var(--r-full);
+        background: var(--pink);
+        color: #fff;
+        font-weight: 800;
+    }
+}
