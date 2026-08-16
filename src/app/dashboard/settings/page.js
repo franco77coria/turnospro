@@ -4,6 +4,7 @@ import { BUSINESS_TEMPLATES } from '@/lib/data'
 import { useState, useEffect } from 'react'
 import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download, UserX } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import { todayLocal } from '@/lib/scheduling'
 import { QRCodeSVG } from 'qrcode.react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
@@ -46,6 +47,8 @@ function SettingsContent() {
 
     // Buffer time between appointments (minutes)
     const [bufferTime, setBufferTime] = useState(0)
+    // '' = automático: el paso lo define la duración del servicio elegido
+    const [slotDuration, setSlotDuration] = useState('')
 
     // Deposit Configuration (percentage, 0 = no deposit)
     const [depositPercentage, setDepositPercentage] = useState(0)
@@ -72,7 +75,7 @@ function SettingsContent() {
         supabase.from('team_members').select('id, name').eq('business_id', business.id).eq('active', true)
             .then(({ data }) => setTeamMembers(data || []))
         supabase.from('team_absences').select('*').eq('business_id', business.id)
-            .gte('end_date', new Date().toISOString().split('T')[0])
+            .gte('end_date', todayLocal())
             .order('start_date')
             .then(({ data }) => setTeamAbsences(data || []))
     }, [business?.id])
@@ -94,6 +97,7 @@ function SettingsContent() {
             setWorkDays(business.settings?.work_days || [1, 2, 3, 4, 5, 6])
             setMinCancelHours(business.settings?.min_cancel_hours ?? 2)
             setBufferTime(business.settings?.buffer_time ?? 0)
+            setSlotDuration(business.settings?.slot_duration ? String(business.settings.slot_duration) : '')
             setDepositPercentage(business.settings?.deposit_percentage ?? 0)
             setMinAdvance(business.settings?.min_advance_hours ?? 1)
             setMaxAdvance(business.settings?.max_advance_days ?? 30)
@@ -171,6 +175,7 @@ function SettingsContent() {
                     work_days: workDays,
                     min_cancel_hours: parseInt(minCancelHours) || 2,
                     buffer_time: parseInt(bufferTime) || 0,
+                    slot_duration: slotDuration ? parseInt(slotDuration) : null,
                     deposit_percentage: parseInt(depositPercentage) || 0,
                     min_advance_hours: parseInt(minAdvance) || 1,
                     max_advance_days: parseInt(maxAdvance) || 30,
@@ -398,6 +403,24 @@ function SettingsContent() {
                                     onChange={e => setBufferTime(e.target.value)} />
                                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
                                     Descanso o preparación entre turno y turno
+                                </span>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label">Intervalo entre horarios ofrecidos</label>
+                                <select className="input" value={slotDuration}
+                                    onChange={e => setSlotDuration(e.target.value)}>
+                                    <option value="">Según la duración del servicio (recomendado)</option>
+                                    <option value="15">Cada 15 minutos</option>
+                                    <option value="20">Cada 20 minutos</option>
+                                    <option value="30">Cada 30 minutos</option>
+                                    <option value="45">Cada 45 minutos</option>
+                                    <option value="60">Cada 60 minutos</option>
+                                </select>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    {slotDuration
+                                        ? `Los horarios arrancan cada ${slotDuration} min, sin importar cuánto dure el servicio. Puede dejar huecos muertos.`
+                                        : 'Cada horario arranca justo cuando termina el anterior: un servicio de 45 min se ofrece 09:00, 09:45, 10:30…'}
                                 </span>
                             </div>
 

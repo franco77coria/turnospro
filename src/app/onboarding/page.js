@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
+import { supabase } from '@/lib/supabase'
 import { Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, ArrowLeft } from 'lucide-react'
 import styles from './onboarding.module.css'
 
@@ -71,7 +72,7 @@ export default function OnboardingPage() {
             // Add unique IDs to each template service
             const servicesWithIds = template.services.map(s => ({ ...s, id: crypto.randomUUID() }))
             const slug = slugify(form.name) + '-' + Date.now().toString(36).slice(-4)
-            await createBusiness({
+            const created = await createBusiness({
                 name: form.name,
                 business_type: form.business_type,
                 phone: form.phone,
@@ -82,10 +83,37 @@ export default function OnboardingPage() {
                 settings: {
                     work_hours: { start: '09:00', end: '20:00' },
                     work_days: [1, 2, 3, 4, 5, 6],
-                    slot_duration: 30,
+                    // null = el paso de la agenda lo define la duración del servicio
+                    slot_duration: null,
                     min_cancel_hours: 2,
                 }
             })
+
+            // Los servicios van a la tabla `services`, que es de donde leen todas
+            // las pantallas. El JSONB queda solo por compatibilidad.
+            if (created?.id && supabase) {
+                const { data: existingSvcs } = await supabase
+                    .from('services')
+                    .select('id')
+                    .eq('business_id', created.id)
+                    .limit(1)
+
+                if (!existingSvcs?.length) {
+                    const { error: svcErr } = await supabase.from('services').insert(
+                        template.services.map((s, i) => ({
+                            business_id: created.id,
+                            name: s.name,
+                            price: s.price ?? 0,
+                            duration: s.duration ?? 30,
+                            category: s.category || null,
+                            active: true,
+                            sort_order: i,
+                        }))
+                    )
+                    if (svcErr) console.error('Error creando servicios iniciales:', svcErr)
+                }
+            }
+
             router.push('/dashboard')
         } catch (err) {
             console.error('Error creating business:', err)

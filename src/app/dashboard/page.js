@@ -2,6 +2,7 @@
 
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { formatDateLocal, todayLocal } from '@/lib/scheduling'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Icons } from '@/components/Icons'
@@ -66,7 +67,7 @@ function ClientDashboard() {
     setLoading(false)
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocal()
   const now = new Date()
 
   const upcoming = appointments.filter(a => a.date >= today && a.status !== 'cancelled')
@@ -81,8 +82,8 @@ function ClientDashboard() {
     const apt = new Date(`${date}T${time}`)
     const diffMs = apt - now
     if (diffMs <= 0) return null
-    const todayStr = now.toISOString().split('T')[0]
-    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0]
+    const todayStr = formatDateLocal(now)
+    const tomorrowStr = formatDateLocal(new Date(now.getTime() + 86400000))
     if (date === todayStr) {
       const mins = Math.floor(diffMs / 60000)
       if (mins < 60) return `En ${mins} min`
@@ -303,7 +304,7 @@ function OwnerDashboard() {
       // New clients this month
       const monthStart = new Date()
       monthStart.setDate(1)
-      const monthStartStr = monthStart.toISOString().split('T')[0]
+      const monthStartStr = formatDateLocal(monthStart)
       const { count: newClientsCount } = await supabase
         .from('clients')
         .select('id', { count: 'exact', head: true })

@@ -549,3 +549,36 @@ export function reviewRequestEmail({ clientName, serviceName, businessName, revi
 
     return baseLayout(content, businessName)
 }
+
+export function waitlistSlotEmail({ clientName, serviceName, date, businessName, bookUrl }) {
+    const c = {
+        clientName: escapeHtml(clientName || 'Hola'),
+        serviceName: escapeHtml(serviceName || 'turno'),
+        date: escapeHtml(date || ''),
+        bookUrl: bookUrl ? safeUrl(bookUrl) : null,
+    }
+
+    const content = `
+        <h1 style="margin:0 0 10px;font-size:24px;font-weight:900;color:#1A0E1F;letter-spacing:-0.02em;">
+            Se liberó un turno 🎉
+        </h1>
+        <p style="margin:0 0 24px;font-size:15px;color:#6B5E76;line-height:1.6;">
+            Hola <strong>${c.clientName}</strong>, se liberó un lugar para <strong>${c.serviceName}</strong>
+            el <strong>${c.date}</strong> en <strong>${escapeHtml(businessName || 'el negocio')}</strong>.
+            Estabas en la lista de espera, así que te avisamos primero. Reservalo antes de que lo tome otra persona.
+        </p>
+
+        ${c.bookUrl ? `
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td align="center">
+                    <a href="${c.bookUrl}" style="display:inline-block;background:linear-gradient(135deg, #FF2E8E 0%, #E6157A 100%);color:#ffffff;text-decoration:none;padding:15px 36px;border-radius:999px;font-size:15px;font-weight:800;box-shadow:0 8px 20px rgba(255, 46, 142, 0.35);">
+                        Reservar ahora
+                    </a>
+                </td>
+            </tr>
+        </table>` : ''}
+    `
+
+    return baseLayout(content, businessName)
+}

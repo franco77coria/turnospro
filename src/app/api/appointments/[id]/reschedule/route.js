@@ -5,6 +5,8 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { sendEmail } from '@/lib/send-email'
+import { checkRescheduleAvailability } from '@/lib/availability'
+import { DEFAULT_DURATION } from '@/lib/scheduling'
 import { z } from 'zod'
 
 const RescheduleSchema = z.object({
@@ -77,27 +79,34 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: 'No tenés permisos para reprogramar este turno' }, { status: 403 })
         }
 
-        // 3. Verify availability for the requested new slot
-        const { data: conflicts } = await supabase
-            .from('appointments')
-            .select('id')
-            .eq('business_id', apt.business_id)
-            .eq('date', newDate)
-            .eq('time', newTime)
-            .neq('id', id)
-            .neq('status', 'cancelled')
+        // 3. Verify availability for the requested new slot.
+        // Se compara por rango real (hora + duración), no por hora exacta.
+        const { available, reason } = await checkRescheduleAvailability(supabase, {
+            businessId: apt.business_id,
+            date: newDate,
+            time: newTime,
+            duration: apt.duration || DEFAULT_DURATION,
+            teamMemberId: apt.team_member_id,
+            excludeId: id,
+            bufferTime: parseInt(apt.businesses?.settings?.buffer_time, 10) || 0,
+        })
 
-        if (conflicts && conflicts.length > 0) {
-            return NextResponse.json({ error: 'El horario seleccionado ya no se encuentra disponible. Elegí otro horario.' }, { status: 409 })
+        if (!available) {
+            return NextResponse.json(
+                { error: reason || 'El horario seleccionado ya no se encuentra disponible. Elegí otro horario.' },
+                { status: 409 }
+            )
         }
 
         // 4. Update appointment with new date and time
         const { data: updatedApt, error: updateErr } = await supabase
             .from('appointments')
+            // `appointments` no tiene columna updated_at: incluirla hacía que
+            // Postgres rechazara el UPDATE (42703) y la reprogramación
+            // devolviera 500 siempre.
             .update({
                 date: newDate,
                 time: newTime,
-                updated_at: new Date().toISOString(),
             })
             .eq('id', id)
             .select()

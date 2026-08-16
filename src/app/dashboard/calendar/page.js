@@ -1,19 +1,31 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { sendAppointmentConfirmation } from '@/lib/send-email'
-import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, User, Check, ArrowRight, ArrowLeft, Pencil } from 'lucide-react'
+import { loadBusinessServices, findServiceByName } from '@/lib/services'
+import {
+    DEFAULT_DURATION,
+    formatDateLocal,
+    generateAvailableSlots,
+    layoutDayAppointments,
+    minutesToTime,
+    resolveCalendarRange,
+    resolveScheduleSettings,
+    timeToMinutes,
+    toOccupiedRanges,
+} from '@/lib/scheduling'
+import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, Check, ArrowRight, ArrowLeft, Pencil, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 import styles from './calendar.module.css'
 
-const HOURS = Array.from({ length: 56 }, (_, i) => {
-    const hour = Math.floor(i / 4) + 7
-    const min = (i % 4) * 15
-    return `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`
-})
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+
+// Escala del calendario: 1 minuto = 1.4 px. Un turno de 45 min mide 63 px,
+// uno de 30 min mide 42 px. La altura del bloque ES la duración.
+const PX_PER_MIN = 1.4
+const MIN_BLOCK_MINUTES = 15
 
 function getWeekDates(date) {
     const d = new Date(date)
@@ -27,23 +39,20 @@ function getWeekDates(date) {
     })
 }
 
-function formatDate(d) {
-    const year = d.getFullYear()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    const day = String(d.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
+const formatDate = formatDateLocal
 
 export default function CalendarPage() {
     const { user, profile, business, loading: authLoading } = useAuth()
     const [currentDate, setCurrentDate] = useState(new Date())
     const [appointments, setAppointments] = useState([])
     const [showNewModal, setShowNewModal] = useState(false)
-    const [newApt, setNewApt] = useState({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: 30, team_member_id: null })
+    const [newApt, setNewApt] = useState({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: DEFAULT_DURATION, team_member_id: null })
     const [recurrence, setRecurrence] = useState({ enabled: false, type: 'weekly', count: 4 })
     const [teamMembers, setTeamMembers] = useState([])
     const [services, setServices] = useState([])
     const [clients, setClients] = useState([])
+    const [closureDates, setClosureDates] = useState([])
+    const [teamAbsences, setTeamAbsences] = useState([])
     const [saving, setSaving] = useState(false)
     const [error, setError] = useState('')
     const [wizardStep, setWizardStep] = useState(1)
@@ -54,15 +63,20 @@ export default function CalendarPage() {
     const [currentMember, setCurrentMember] = useState(null)
 
     const [editingApt, setEditingApt] = useState(null)
-    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', notes: '', status: '' })
+    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', duration: DEFAULT_DURATION, notes: '', status: '' })
     const [savingEdit, setSavingEdit] = useState(false)
+    const [editError, setEditError] = useState('')
+
+    const scheduleSettings = useMemo(() => resolveScheduleSettings(business?.settings), [business?.settings])
 
     function handleOpenEdit(apt) {
+        setEditError('')
         setEditingApt(apt)
         setEditForm({
             date: apt.date || '',
             time: apt.time?.slice(0, 5) || '',
             service_name: apt.service_name || '',
+            duration: apt.duration || DEFAULT_DURATION,
             notes: apt.notes || '',
             status: apt.status || 'pending',
         })
@@ -71,12 +85,16 @@ export default function CalendarPage() {
     async function handleSaveEdit(e) {
         e.preventDefault()
         if (!editingApt) return
+        setEditError('')
         setSavingEdit(true)
         try {
             const res = await fetch(`/api/appointments/${editingApt.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editForm),
+                body: JSON.stringify({
+                    ...editForm,
+                    duration: parseInt(editForm.duration, 10) || DEFAULT_DURATION,
+                }),
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Error al guardar')
@@ -105,7 +123,7 @@ export default function CalendarPage() {
             setEditingApt(null)
             loadAppointments()
         } catch (err) {
-            alert(err.message || 'Error al guardar los cambios')
+            setEditError(err.message || 'Error al guardar los cambios')
         } finally {
             setSavingEdit(false)
         }
@@ -140,6 +158,27 @@ export default function CalendarPage() {
         ? appointments.filter(a => a.team_member_id === filterProfessional)
         : appointments
 
+    // El calendario arranca en el horario de atención, pero se estira si hay
+    // turnos fuera de horario — antes quedaban invisibles con la grilla fija 07:00-20:45.
+    const { startMin: rangeStart, endMin: rangeEnd } = useMemo(
+        () => resolveCalendarRange(business?.settings, filteredAppointments),
+        [business?.settings, filteredAppointments]
+    )
+    const totalMinutes = rangeEnd - rangeStart
+    const canvasHeight = totalMinutes * PX_PER_MIN
+
+    const hourMarks = useMemo(() => {
+        const marks = []
+        for (let m = rangeStart; m <= rangeEnd; m += 60) marks.push(m)
+        return marks
+    }, [rangeStart, rangeEnd])
+
+    const halfHourMarks = useMemo(() => {
+        const marks = []
+        for (let m = rangeStart + 30; m < rangeEnd; m += 60) marks.push(m)
+        return marks
+    }, [rangeStart, rangeEnd])
+
     const loadAppointments = useCallback(async () => {
         if (!supabase || !business?.id) return
         const wd = getWeekDates(currentDate)
@@ -151,6 +190,8 @@ export default function CalendarPage() {
             .eq('business_id', business.id)
             .gte('date', start)
             .lte('date', end)
+            // Los cancelados no ocupan lugar en la agenda: no se dibujan.
+            .not('status', 'in', '("cancelled","no_show")')
             .order('time')
         if (queryError) console.error('[Calendar] Error:', queryError)
         setAppointments(data || [])
@@ -166,15 +207,10 @@ export default function CalendarPage() {
         setTeamMembers(data || [])
     }, [business?.id])
 
-    // Load services directly from DB for reliability
+    // Servicios desde la fuente única — la misma que ve la reserva pública.
     const loadServices = useCallback(async () => {
         if (!supabase || !business?.id) return
-        const { data } = await supabase
-            .from('businesses')
-            .select('services')
-            .eq('id', business.id)
-            .single()
-        setServices(Array.isArray(data?.services) ? data.services : [])
+        setServices(await loadBusinessServices(supabase, business.id, { activeOnly: true }))
     }, [business?.id])
 
     const loadClients = useCallback(async () => {
@@ -187,13 +223,26 @@ export default function CalendarPage() {
         setClients(data || [])
     }, [business?.id])
 
+    const loadCalendarBlocks = useCallback(async () => {
+        if (!supabase || !business?.id) return
+        const todayStr = formatDate(new Date())
+        const [{ data: closures }, { data: absences }] = await Promise.all([
+            supabase.from('business_closures').select('date').eq('business_id', business.id).gte('date', todayStr),
+            supabase.from('team_absences').select('team_member_id, start_date, end_date').eq('business_id', business.id).gte('end_date', todayStr),
+        ])
+        const settingsClosed = (business?.settings?.closed_dates || []).map(cd => cd.date)
+        setClosureDates([...new Set([...settingsClosed, ...(closures || []).map(c => c.date)])])
+        setTeamAbsences(absences || [])
+    }, [business?.id, business?.settings])
+
     useEffect(() => {
         if (!business?.id) return
         loadAppointments()
         loadTeam()
         loadServices()
         loadClients()
-    }, [business?.id, loadAppointments, loadTeam, loadServices, loadClients])
+        loadCalendarBlocks()
+    }, [business?.id, loadAppointments, loadTeam, loadServices, loadClients, loadCalendarBlocks])
 
     async function handleCreateAppointment() {
         if (!supabase) return
@@ -225,8 +274,9 @@ export default function CalendarPage() {
                 }
             }
 
-            const selectedService = services.find(s => s.name === newApt.service_name)
+            const selectedService = findServiceByName(services, newApt.service_name)
             const selectedProfessional = teamMembers.find(m => m.id === newApt.team_member_id)
+            const duration = newApt.duration || selectedService?.duration || DEFAULT_DURATION
 
             // Server-side availability check
             const checkRes = await fetch('/api/appointments/check', {
@@ -236,13 +286,17 @@ export default function CalendarPage() {
                     business_id: business.id,
                     date: newApt.date,
                     time: newApt.time,
-                    duration: newApt.duration || selectedService?.duration || 30,
+                    duration,
                     team_member_id: newApt.team_member_id || null,
+                    buffer_time: scheduleSettings.bufferTime,
+                    // El dueño puede agendar en un día cerrado o con el profesional
+                    // de licencia; ya se le avisa con un cartel en el paso anterior.
+                    ignore_closures: true,
                 }),
             })
             const checkData = await checkRes.json()
             if (!checkData.available) {
-                setError('Este horario ya está ocupado. Elegí otro.')
+                setError(checkData.reason || 'Este horario ya está ocupado. Elegí otro.')
                 setSaving(false)
                 return
             }
@@ -253,10 +307,10 @@ export default function CalendarPage() {
                 service_name: newApt.service_name,
                 date: newApt.date,
                 time: newApt.time,
-                duration: newApt.duration || selectedService?.duration || 30,
+                duration,
                 status: 'confirmed',
                 team_member_id: newApt.team_member_id || null,
-                price: selectedService?.price || null,
+                price: selectedService?.price ?? null,
             }
 
             const { data: createdApt, error: aptError } = await supabase
@@ -270,10 +324,11 @@ export default function CalendarPage() {
             if (recurrence.enabled && recurrence.count > 1) {
                 const daysInterval = recurrence.type === 'weekly' ? 7 : recurrence.type === 'biweekly' ? 14 : 30
                 const recurringApts = []
+                const skipped = []
                 for (let i = 1; i < recurrence.count; i++) {
                     const nextDate = new Date(newApt.date + 'T12:00:00')
                     nextDate.setDate(nextDate.getDate() + (daysInterval * i))
-                    const nextDateStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}-${String(nextDate.getDate()).padStart(2, '0')}`
+                    const nextDateStr = formatDate(nextDate)
 
                     // Check availability for each recurring date
                     const rCheckRes = await fetch('/api/appointments/check', {
@@ -281,7 +336,9 @@ export default function CalendarPage() {
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
                             business_id: business.id, date: nextDateStr, time: newApt.time,
-                            duration: appointmentData.duration, team_member_id: newApt.team_member_id || null,
+                            duration, team_member_id: newApt.team_member_id || null,
+                            buffer_time: scheduleSettings.bufferTime,
+                            ignore_closures: true,
                         }),
                     })
                     const rCheck = await rCheckRes.json()
@@ -292,10 +349,16 @@ export default function CalendarPage() {
                             parent_appointment_id: createdApt.id,
                             recurrence: { type: recurrence.type, parent_id: createdApt.id },
                         })
+                    } else {
+                        skipped.push(nextDateStr)
                     }
                 }
                 if (recurringApts.length > 0) {
                     await supabase.from('appointments').insert(recurringApts)
+                }
+                // Antes las repeticiones ocupadas se descartaban en silencio.
+                if (skipped.length > 0) {
+                    alert(`Se crearon ${recurringApts.length + 1} turnos.\n\nNo se pudieron agendar ${skipped.length} repeticiones porque el horario ya estaba ocupado:\n${skipped.join('\n')}`)
                 }
             }
 
@@ -315,7 +378,9 @@ export default function CalendarPage() {
             }
         } catch (err) {
             console.error('Error creating appointment:', err)
-            setError('Error al crear el turno. Intentá de nuevo.')
+            setError(err?.code === '23P01'
+                ? 'Ese horario se superpone con otro turno. Elegí otro.'
+                : 'Error al crear el turno. Intentá de nuevo.')
         }
         setSaving(false)
     }
@@ -328,7 +393,7 @@ export default function CalendarPage() {
             service_name: '',
             date: '',
             time: '',
-            duration: 30,
+            duration: DEFAULT_DURATION,
             team_member_id: profile?.role === 'Profesional' && currentMember ? currentMember.id : null
         })
         setRecurrence({ enabled: false, type: 'weekly', count: 4 })
@@ -363,7 +428,7 @@ export default function CalendarPage() {
         setLoadingSlots(true)
         let query = supabase
             .from('appointments')
-            .select('time, duration, team_member_id')
+            .select('id, time, duration, team_member_id, status')
             .eq('business_id', business.id)
             .eq('date', newApt.date)
             .not('status', 'in', '("cancelled","no_show")')
@@ -372,38 +437,50 @@ export default function CalendarPage() {
             query = query.eq('team_member_id', newApt.team_member_id)
         }
 
-        query.then(({ data }) => {
-            setOccupiedSlots((data || []).map(apt => {
-                const [h, m] = apt.time.split(':').map(Number)
-                const startMin = h * 60 + m
-                return { startMin, endMin: startMin + (apt.duration || 30) }
-            }))
+        query.then(({ data, error: slotsErr }) => {
+            // Sin este log, un fallo de permisos se vería como "el día está libre".
+            if (slotsErr) console.error('[Calendar] Error leyendo la agenda del día:', slotsErr.message)
+            setOccupiedSlots(toOccupiedRanges(data))
             setLoadingSlots(false)
         })
     }, [newApt.date, newApt.team_member_id, business?.id, showNewModal])
 
-    const getAvailableSlots = () => {
-        const startH = business?.settings?.work_hours?.start || '09:00'
-        const endH = business?.settings?.work_hours?.end || '20:00'
-        const [sh, sm] = startH.split(':').map(Number)
-        const [eh, em] = endH.split(':').map(Number)
-        const allSlots = []
-        for (let h = sh; h <= eh; h++) {
-            for (let m = 0; m < 60; m += 15) {
-                if (h === sh && m < sm) continue
-                if (h === eh && m > em) continue
-                allSlots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
-            }
-        }
-        // Filter occupied slots
-        const duration = newApt.duration || 30
-        return allSlots.filter(slot => {
-            const [sh2, sm2] = slot.split(':').map(Number)
-            const slotStart = sh2 * 60 + sm2
-            const slotEnd = slotStart + duration
-            return !occupiedSlots.some(o => slotStart < o.endMin && slotEnd > o.startMin)
+    // Mismos horarios que ve el cliente en la reserva pública.
+    // El dueño sí puede agendar dentro de la antelación mínima (walk-ins).
+    const availableSlots = useMemo(() => {
+        const slots = generateAvailableSlots({
+            settings: business?.settings,
+            duration: newApt.duration || DEFAULT_DURATION,
+            occupied: occupiedSlots,
+            date: newApt.date,
+            enforceMinAdvance: false,
         })
-    }
+        // Si el dueño llegó acá clickeando una celda, respetamos esa hora exacta
+        // aunque no caiga en la grilla estándar.
+        if (newApt.time && !slots.includes(newApt.time)) {
+            const start = timeToMinutes(newApt.time)
+            const end = start + (newApt.duration || DEFAULT_DURATION)
+            const free = !occupiedSlots.some(o => start < o.endMin && end > o.startMin)
+            if (free) return [...slots, newApt.time].sort()
+        }
+        return slots
+    }, [business?.settings, newApt.duration, newApt.date, newApt.time, occupiedSlots])
+
+    const wizardWarning = useMemo(() => {
+        if (!newApt.date) return null
+        if (closureDates.includes(newApt.date)) return 'El negocio figura cerrado ese día.'
+        if (!scheduleSettings.workDays.includes(new Date(newApt.date + 'T12:00:00').getDay())) {
+            return 'Ese día de la semana está fuera del horario de atención.'
+        }
+        if (newApt.team_member_id) {
+            const absent = teamAbsences.some(a =>
+                a.team_member_id === newApt.team_member_id &&
+                newApt.date >= a.start_date && newApt.date <= a.end_date
+            )
+            if (absent) return 'Ese profesional está de licencia en esa fecha.'
+        }
+        return null
+    }, [newApt.date, newApt.team_member_id, closureDates, teamAbsences, scheduleSettings.workDays])
 
     function navigate(dir) {
         const d = new Date(currentDate)
@@ -417,19 +494,61 @@ export default function CalendarPage() {
         setCurrentDate(d)
     }
 
-    const getMobileAppointments = (hour) => {
-        const dateStr = formatDate(currentDate)
-        return filteredAppointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
-    }
-
-    const getAppointmentsForSlot = (date, hour) => {
+    const getAppointmentsForDay = useCallback((date) => {
         const dateStr = formatDate(date)
-        return filteredAppointments.filter(a => a.date === dateStr && a.time?.slice(0, 5) === hour)
+        return layoutDayAppointments(filteredAppointments.filter(a => a.date === dateStr))
+    }, [filteredAppointments])
+
+    // Click en un hueco: la hora sale de la posición vertical, redondeada al
+    // intervalo configurado.
+    function handleColumnClick(e, date) {
+        const rect = e.currentTarget.getBoundingClientRect()
+        const offsetY = e.clientY - rect.top
+        const step = scheduleSettings.slotInterval || 15
+        const rawMinutes = rangeStart + (offsetY / PX_PER_MIN)
+        const snapped = Math.max(rangeStart, Math.round(rawMinutes / step) * step)
+        resetWizard()
+        setNewApt(prev => ({ ...prev, date: formatDate(date), time: minutesToTime(snapped) }))
+        setWizardStep(1)
+        setShowNewModal(true)
     }
 
     const statusColor = (status) => {
         const colors = { pending: '#F59E0B', confirmed: '#6366F1', completed: '#22C55E', cancelled: '#EF4444' }
         return colors[status] || '#9CA3AF'
+    }
+
+    function renderAppointmentBlock(apt, { compact = false } = {}) {
+        const durationMin = apt.endMin - apt.startMin
+        const heightPx = Math.max(durationMin, MIN_BLOCK_MINUTES) * PX_PER_MIN
+        const widthPct = 100 / apt.columns
+        return (
+            <div
+                key={apt.id}
+                className={`${styles.aptBlock} ${durationMin < 30 ? styles.aptBlockTight : ''}`}
+                style={{
+                    top: (apt.startMin - rangeStart) * PX_PER_MIN,
+                    height: heightPx - 2,
+                    left: `calc(${apt.column * widthPct}% + 2px)`,
+                    width: `calc(${widthPct}% - 4px)`,
+                    borderLeftColor: statusColor(apt.status),
+                    background: `color-mix(in oklab, ${statusColor(apt.status)} 10%, var(--bg-card))`,
+                }}
+                title={`${apt.clients?.name || 'Cliente'} · ${apt.service_name || ''} · ${minutesToTime(apt.startMin)}–${minutesToTime(apt.endMin)} (${durationMin} min)`}
+                onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenEdit(apt)
+                }}
+            >
+                <span className={styles.aptBlockTime}>
+                    {minutesToTime(apt.startMin)}–{minutesToTime(apt.endMin)}
+                </span>
+                <span className={styles.aptBlockName}>{apt.clients?.name || apt.service_name}</span>
+                {!compact && durationMin >= 45 && (
+                    <span className={styles.aptBlockService}>{apt.service_name} · {durationMin} min</span>
+                )}
+            </div>
+        )
     }
 
     if (authLoading || !business?.id) {
@@ -441,6 +560,8 @@ export default function CalendarPage() {
             </div>
         )
     }
+
+    const dayAppointments = getAppointmentsForDay(currentDate)
 
     return (
         <div className={styles.calendar}>
@@ -493,37 +614,30 @@ export default function CalendarPage() {
                 </div>
 
                 <div className={styles.gridBody}>
-                    {HOURS.map(hour => (
-                        <div key={hour} className={styles.timeRow}>
-                            <div className={styles.timeLabel}>{hour}</div>
-                            {weekDates.map((date, i) => {
-                                const slotApts = getAppointmentsForSlot(date, hour)
-                                return (
-                                    <div key={i} className={styles.cell} onClick={() => {
-                                        resetWizard()
-                                        setNewApt(prev => ({ ...prev, date: formatDate(date), time: hour }))
-                                        setWizardStep(3)
-                                        setShowNewModal(true)
-                                    }}>
-                                        {slotApts.map(apt => (
-                                            <div
-                                                key={apt.id}
-                                                className={styles.aptBlock}
-                                                style={{ borderLeftColor: statusColor(apt.status), cursor: 'pointer' }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    handleOpenEdit(apt)
-                                                }}
-                                            >
-                                                <span className={styles.aptBlockName}>{apt.clients?.name || apt.service_name}</span>
-                                                <span className={styles.aptBlockService}>{apt.time?.slice(0, 5)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )
-                            })}
+                    <div className={styles.gridCanvas} style={{ height: canvasHeight }}>
+                        <div className={styles.timeGutter}>
+                            {hourMarks.map(m => (
+                                <span key={m} className={styles.timeMark} style={{ top: (m - rangeStart) * PX_PER_MIN }}>
+                                    {minutesToTime(m)}
+                                </span>
+                            ))}
                         </div>
-                    ))}
+                        {weekDates.map((date, i) => (
+                            <div
+                                key={i}
+                                className={`${styles.dayColumn} ${formatDate(date) === today ? styles.dayColumnToday : ''}`}
+                                onClick={(e) => handleColumnClick(e, date)}
+                            >
+                                {hourMarks.map(m => (
+                                    <div key={`h-${m}`} className={styles.hourLine} style={{ top: (m - rangeStart) * PX_PER_MIN }} />
+                                ))}
+                                {halfHourMarks.map(m => (
+                                    <div key={`hh-${m}`} className={styles.halfHourLine} style={{ top: (m - rangeStart) * PX_PER_MIN }} />
+                                ))}
+                                {getAppointmentsForDay(date).map(apt => renderAppointmentBlock(apt))}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             </div>
 
@@ -536,36 +650,26 @@ export default function CalendarPage() {
                     </span>
                     <button className="btn btn-secondary btn-sm" onClick={() => navigateDay(1)}><ChevronRight size={16} /></button>
                 </div>
-                <div className={styles.mobileTimeline}>
-                    {HOURS.map(hour => {
-                        const slotApts = getMobileAppointments(hour)
-                        return (
-                            <div key={hour} className={styles.mobileSlot} onClick={() => {
-                                resetWizard()
-                                setNewApt(prev => ({ ...prev, date: formatDate(currentDate), time: hour }))
-                                setWizardStep(3)
-                                setShowNewModal(true)
-                            }}>
-                                <span className={styles.mobileSlotTime}>{hour}</span>
-                                <div className={styles.mobileSlotContent}>
-                                    {slotApts.length > 0 ? slotApts.map(apt => (
-                                        <div
-                                            key={apt.id}
-                                            className={styles.mobileApt}
-                                            style={{ borderLeftColor: statusColor(apt.status), cursor: 'pointer' }}
-                                            onClick={(e) => {
-                                                e.stopPropagation()
-                                                handleOpenEdit(apt)
-                                            }}
-                                        >
-                                            <span className={styles.mobileAptName}>{apt.clients?.name || apt.service_name}</span>
-                                            <span className={styles.mobileAptService}>{apt.service_name} - {apt.time?.slice(0, 5)}</span>
-                                        </div>
-                                    )) : null}
-                                </div>
-                            </div>
-                        )
-                    })}
+                <div className={styles.mobileTimeline} style={{ height: canvasHeight }}>
+                    <div className={styles.mobileGutter}>
+                        {hourMarks.map(m => (
+                            <span key={m} className={styles.timeMark} style={{ top: (m - rangeStart) * PX_PER_MIN }}>
+                                {minutesToTime(m)}
+                            </span>
+                        ))}
+                    </div>
+                    <div className={styles.mobileColumn} onClick={(e) => handleColumnClick(e, currentDate)}>
+                        {hourMarks.map(m => (
+                            <div key={`h-${m}`} className={styles.hourLine} style={{ top: (m - rangeStart) * PX_PER_MIN }} />
+                        ))}
+                        {halfHourMarks.map(m => (
+                            <div key={`hh-${m}`} className={styles.halfHourLine} style={{ top: (m - rangeStart) * PX_PER_MIN }} />
+                        ))}
+                        {dayAppointments.map(apt => renderAppointmentBlock(apt, { compact: false }))}
+                        {dayAppointments.length === 0 && (
+                            <p className={styles.mobileEmpty}>Sin turnos este día. Tocá para agendar.</p>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -678,12 +782,12 @@ export default function CalendarPage() {
                                         <div>
                                             <label className="label" style={{ marginBottom: 'var(--space-3)' }}>¿Qué servicio?</label>
                                             <div className={styles.serviceGrid}>
-                                                {services.map((svc, i) => (
+                                                {services.map((svc) => (
                                                     <button
-                                                        key={i}
+                                                        key={svc.id}
                                                         className={`${styles.serviceCard} ${newApt.service_name === svc.name ? styles.serviceCardSelected : ''}`}
                                                         onClick={() => {
-                                                            setNewApt(prev => ({ ...prev, service_name: svc.name, duration: svc.duration || 30 }))
+                                                            setNewApt(prev => ({ ...prev, service_name: svc.name, duration: svc.duration }))
                                                             setWizardStep(3)
                                                         }}
                                                     >
@@ -693,7 +797,7 @@ export default function CalendarPage() {
                                                         </div>
                                                         <div className={styles.serviceCardBottom}>
                                                             <span className={styles.serviceCardDuration}>
-                                                                <Clock size={12} /> {svc.duration || 30} min
+                                                                <Clock size={12} /> {svc.duration} min
                                                             </span>
                                                             <span className={styles.serviceCardPrice}>${svc.price?.toLocaleString()}</span>
                                                         </div>
@@ -726,6 +830,12 @@ export default function CalendarPage() {
 
                                             {newApt.date && (
                                                 <>
+                                                    {wizardWarning && (
+                                                        <div className={styles.wizardWarning}>
+                                                            <AlertTriangle size={14} /> {wizardWarning} Podés agendar igual.
+                                                        </div>
+                                                    )}
+
                                                     {teamMembers.length > 0 && profile?.role !== 'Profesional' && (
                                                         <div style={{ marginBottom: 'var(--space-3)' }}>
                                                             <label className="label" style={{ marginBottom: 'var(--space-2)' }}>Profesional</label>
@@ -749,18 +859,20 @@ export default function CalendarPage() {
                                                         </div>
                                                     )}
 
-                                                    <label className="label" style={{ marginBottom: 'var(--space-2)' }}>Horario</label>
+                                                    <label className="label" style={{ marginBottom: 'var(--space-2)' }}>
+                                                        Horario <span className={styles.durationHint}>· bloques de {newApt.duration} min</span>
+                                                    </label>
                                                     {loadingSlots ? (
                                                         <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-4)' }}>
                                                             <div className="loading-spinner" />
                                                         </div>
-                                                    ) : getAvailableSlots().length === 0 ? (
+                                                    ) : availableSlots.length === 0 ? (
                                                         <p style={{ textAlign: 'center', color: 'var(--text-tertiary)', padding: 'var(--space-4)', fontSize: 'var(--font-size-sm)' }}>
                                                             No hay horarios disponibles para esta fecha. Probá otro día.
                                                         </p>
                                                     ) : (
                                                         <div className={styles.timeGrid}>
-                                                            {getAvailableSlots().map(slot => (
+                                                            {availableSlots.map(slot => (
                                                                 <button
                                                                     key={slot}
                                                                     className={`${styles.timeSlot} ${newApt.time === slot ? styles.timeSlotSelected : ''}`}
@@ -770,6 +882,9 @@ export default function CalendarPage() {
                                                                     }}
                                                                 >
                                                                     {slot}
+                                                                    <span className={styles.timeSlotEnd}>
+                                                                        {minutesToTime(timeToMinutes(slot) + (newApt.duration || DEFAULT_DURATION))}
+                                                                    </span>
                                                                 </button>
                                                             ))}
                                                         </div>
@@ -799,8 +914,10 @@ export default function CalendarPage() {
                                                     </span>
                                                 </div>
                                                 <div className={styles.summaryRow}>
-                                                    <span className={styles.summaryLabel}>Hora</span>
-                                                    <span className={styles.summaryValue}>{newApt.time}</span>
+                                                    <span className={styles.summaryLabel}>Horario</span>
+                                                    <span className={styles.summaryValue}>
+                                                        {newApt.time} – {minutesToTime(timeToMinutes(newApt.time) + (newApt.duration || DEFAULT_DURATION))}
+                                                    </span>
                                                 </div>
                                                 <div className={styles.summaryRow}>
                                                     <span className={styles.summaryLabel}>Duración</span>
@@ -813,7 +930,7 @@ export default function CalendarPage() {
                                                     </div>
                                                 )}
                                                 {(() => {
-                                                    const svc = services.find(s => s.name === newApt.service_name)
+                                                    const svc = findServiceByName(services, newApt.service_name)
                                                     return svc?.price ? (
                                                         <div className={`${styles.summaryRow} ${styles.summaryTotal}`}>
                                                             <span className={styles.summaryLabel}>Total</span>
@@ -895,6 +1012,11 @@ export default function CalendarPage() {
                             <button className="btn btn-ghost btn-icon" onClick={() => setEditingApt(null)}><X size={16} /></button>
                         </div>
                         <form onSubmit={handleSaveEdit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                            {editError && (
+                                <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-sm)' }}>
+                                    {editError}
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label className="label">Cliente</label>
                                 <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
@@ -906,13 +1028,49 @@ export default function CalendarPage() {
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Hora</label>
-                                    <input className="input" type="time" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                    <input className="input" type="time" step="300" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
                                 </div>
                             </div>
-                            <div className="form-group">
-                                <label className="label">Servicio</label>
-                                <input className="input" type="text" value={editForm.service_name} onChange={e => setEditForm(p => ({ ...p, service_name: e.target.value }))} required />
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)' }}>
+                                <div className="form-group">
+                                    <label className="label">Servicio</label>
+                                    <select
+                                        className="input"
+                                        value={editForm.service_name}
+                                        onChange={e => {
+                                            const svc = findServiceByName(services, e.target.value)
+                                            setEditForm(p => ({
+                                                ...p,
+                                                service_name: e.target.value,
+                                                duration: svc?.duration ?? p.duration,
+                                            }))
+                                        }}
+                                        required
+                                    >
+                                        {/* El servicio del turno puede haberse borrado del catálogo */}
+                                        {!findServiceByName(services, editForm.service_name) && editForm.service_name && (
+                                            <option value={editForm.service_name}>{editForm.service_name} (fuera del catálogo)</option>
+                                        )}
+                                        {services.map(s => (
+                                            <option key={s.id} value={s.name}>{s.name} · {s.duration} min</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Duración (min)</label>
+                                    <input
+                                        className="input" type="number" min="5" max="480" step="5"
+                                        value={editForm.duration}
+                                        onChange={e => setEditForm(p => ({ ...p, duration: e.target.value }))}
+                                        required
+                                    />
+                                </div>
                             </div>
+                            {editForm.time && (
+                                <p className={styles.editRangeHint}>
+                                    <Clock size={12} /> Ocupa de {editForm.time} a {minutesToTime(timeToMinutes(editForm.time) + (parseInt(editForm.duration, 10) || DEFAULT_DURATION))}
+                                </p>
+                            )}
                             <div className="form-group">
                                 <label className="label">Estado</label>
                                 <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>

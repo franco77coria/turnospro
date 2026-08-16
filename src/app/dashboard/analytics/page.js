@@ -1,6 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { formatDateLocal } from '@/lib/scheduling'
 import { useState, useEffect } from 'react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
@@ -34,8 +35,8 @@ function AnalyticsContent() {
             startDate = new Date(now.getFullYear(), 0, 1)
         }
 
-        const startStr = startDate.toISOString().split('T')[0]
-        const endStr = now.toISOString().split('T')[0]
+        const startStr = formatDateLocal(startDate)
+        const endStr = formatDateLocal(now)
 
         // Fetch appointments
         const { data: appointments } = await supabase
@@ -110,7 +111,7 @@ function AnalyticsContent() {
         for (let i = 6; i >= 0; i--) {
             const d = new Date()
             d.setDate(d.getDate() - i)
-            const dateStr = d.toISOString().split('T')[0]
+            const dateStr = formatDateLocal(d)
             const dayLabel = d.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric' })
             const dayIncome = txns
                 .filter(t => t.type === 'income' && t.created_at?.startsWith(dateStr))

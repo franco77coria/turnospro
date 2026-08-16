@@ -1,7 +1,7 @@
 // Helper to send emails from client/server components
 // Supports both server-side (direct Resend) and client-side (via /api/email)
 
-import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail } from '@/lib/email-templates'
+import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail, waitlistSlotEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
 
 /**
@@ -59,6 +59,10 @@ export async function sendEmail({ type, to, data }) {
                 case 'review_request':
                     html = reviewRequestEmail(data)
                     subject = `¿Cómo fue tu experiencia? — ${data.businessName}`
+                    break
+                case 'waitlist_slot':
+                    html = waitlistSlotEmail(data)
+                    subject = `Se liberó un turno — ${data.date} | ${data.businessName}`
                     break
                 default:
                     return { error: 'Tipo de email no válido' }

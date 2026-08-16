@@ -2,6 +2,19 @@ import { NextResponse } from 'next/server'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
+import { checkRescheduleAvailability } from '@/lib/availability'
+import { DEFAULT_DURATION } from '@/lib/scheduling'
+import { z } from 'zod'
+
+const UpdateSchema = z.object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (YYYY-MM-DD)').optional(),
+    time: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, 'Hora inválida (HH:MM)').optional(),
+    service_name: z.string().trim().min(1).max(200).optional(),
+    duration: z.coerce.number().int().min(5).max(480).optional(),
+    price: z.coerce.number().nonnegative().max(10_000_000).optional(),
+    status: z.enum(['pending', 'confirmed', 'completed', 'cancelled', 'no_show']).optional(),
+    notes: z.string().trim().max(1000).nullish(),
+})
 
 export async function PATCH(request, { params }) {
     try {
@@ -17,13 +30,21 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
         }
 
-        const updates = await request.json().catch(() => ({}))
+        const raw = await request.json().catch(() => ({}))
+        const parsed = UpdateSchema.safeParse(raw)
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: 'Datos inválidos', issues: parsed.error.issues },
+                { status: 400 }
+            )
+        }
+        const updates = parsed.data
         const supabase = createSupabaseAdmin()
 
-        // 1. Fetch existing appointment & business to verify owner rights
+        // 1. Fetch existing appointment & business to verify rights
         const { data: appointment, error: fetchErr } = await supabase
             .from('appointments')
-            .select('*, businesses(owner_id, name, phone)')
+            .select('*, businesses(owner_id, name, phone, settings)')
             .eq('id', id)
             .single()
 
@@ -31,19 +52,54 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: 'Turno no encontrado' }, { status: 404 })
         }
 
-        if (appointment.businesses?.owner_id !== user.id) {
+        // El dueño o cualquier miembro activo del equipo puede editar.
+        // Antes solo el dueño: un profesional editando desde su calendario recibía 403.
+        let authorized = appointment.businesses?.owner_id === user.id
+        if (!authorized) {
+            const { data: member } = await supabase
+                .from('team_members')
+                .select('id')
+                .eq('business_id', appointment.business_id)
+                .eq('user_id', user.id)
+                .eq('active', true)
+                .maybeSingle()
+            authorized = !!member
+        }
+        if (!authorized) {
             return NextResponse.json({ error: 'No tenés permisos para modificar este turno' }, { status: 403 })
         }
 
-        // 2. Perform update
+        // 2. Si cambia el horario o la duración, revalidar que entre.
+        //    Antes se guardaba sin chequear nada: dos clics y se pisaban turnos.
+        const movesInTime = updates.date !== undefined || updates.time !== undefined || updates.duration !== undefined
+        const staysActive = (updates.status ?? appointment.status) !== 'cancelled'
+            && (updates.status ?? appointment.status) !== 'no_show'
+
+        if (movesInTime && staysActive) {
+            const { available, reason } = await checkRescheduleAvailability(supabase, {
+                businessId: appointment.business_id,
+                date: updates.date ?? appointment.date,
+                time: updates.time ?? appointment.time,
+                duration: updates.duration ?? appointment.duration ?? DEFAULT_DURATION,
+                teamMemberId: appointment.team_member_id,
+                excludeId: id,
+                bufferTime: parseInt(appointment.businesses?.settings?.buffer_time, 10) || 0,
+            })
+            if (!available) {
+                return NextResponse.json({ error: reason }, { status: 409 })
+            }
+        }
+
+        // 3. Perform update
         const allowedUpdates = {}
-        if (updates.date) allowedUpdates.date = updates.date
-        if (updates.time) allowedUpdates.time = updates.time
-        if (updates.service_name) allowedUpdates.service_name = updates.service_name
-        if (updates.status) allowedUpdates.status = updates.status
+        for (const key of ['date', 'time', 'service_name', 'status', 'duration', 'price']) {
+            if (updates[key] !== undefined) allowedUpdates[key] = updates[key]
+        }
         if (updates.notes !== undefined) allowedUpdates.notes = updates.notes
-        if (updates.duration) allowedUpdates.duration = updates.duration
-        if (updates.price !== undefined) allowedUpdates.price = updates.price
+
+        if (Object.keys(allowedUpdates).length === 0) {
+            return NextResponse.json({ error: 'No hay cambios para guardar' }, { status: 400 })
+        }
 
         const { data: updatedApt, error: updateErr } = await supabase
             .from('appointments')
@@ -53,10 +109,15 @@ export async function PATCH(request, { params }) {
             .single()
 
         if (updateErr) {
+            // La constraint de exclusión es la última línea de defensa contra
+            // dos ediciones simultáneas que terminan superpuestas.
+            if (updateErr.code === '23P01') {
+                return NextResponse.json({ error: 'Ese horario se superpone con otro turno' }, { status: 409 })
+            }
             throw updateErr
         }
 
-        // 3. Notify client via email if date or time changed
+        // 4. Notify client via email if date or time changed
         if ((updates.date || updates.time) && appointment.client_id) {
             const { data: client } = await supabase
                 .from('clients')
@@ -66,7 +127,10 @@ export async function PATCH(request, { params }) {
 
             if (client?.email) {
                 const { sendEmail } = await import('@/lib/send-email')
-                const formattedDate = new Date(updates.date || appointment.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                const dateStr = updates.date || appointment.date
+                const [y, m, d] = dateStr.split('-').map(Number)
+                const formattedDate = new Date(y, m - 1, d)
+                    .toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
                 sendEmail({
                     type: 'confirmation',
                     to: client.email,
@@ -89,6 +153,6 @@ export async function PATCH(request, { params }) {
         return NextResponse.json({ success: true, appointment: updatedApt })
     } catch (err) {
         console.error('PATCH /api/appointments/[id] error:', err)
-        return NextResponse.json({ error: err.message || 'Error al actualizar turno' }, { status: 500 })
+        return NextResponse.json({ error: 'Error al actualizar turno' }, { status: 500 })
     }
 }

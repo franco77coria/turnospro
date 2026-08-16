@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Bell, Sun, Sunset, Moon } from 'lucide-react'
 import styles from './DateTimeStep.module.css'
 import WaitlistForm from './WaitlistForm'
+import { todayLocal } from '@/lib/scheduling'
 
 function groupSlotsByPeriod(slots) {
     const morning = [] // < 12:00
@@ -86,7 +87,7 @@ export default function DateTimeStep({
                         const dayName = dateObj.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', '')
                         const monthName = dateObj.toLocaleDateString('es-AR', { month: 'short' }).replace('.', '')
                         const isSelected = selectedDate === d.value
-                        const isToday = d.value === new Date().toISOString().split('T')[0]
+                        const isToday = d.value === todayLocal()
 
                         return (
                             <button

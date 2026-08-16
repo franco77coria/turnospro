@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import crypto from 'crypto'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { notifyWaitlist } from '@/lib/waitlist'
+import { nowInTimezone } from '@/lib/timezone'
+import { formatDateLocal } from '@/lib/scheduling'
 
 export const dynamic = 'force-dynamic'
 
@@ -64,13 +66,18 @@ export async function POST(request) {
       if (!from) continue
 
       if (text === 'CANCELAR') {
-        const today = new Date().toISOString().split('T')[0]
+        // Fecha de Argentina: con toISOString() en un runtime UTC, después de
+        // las 21:00 el filtro saltaba al día siguiente y se perdían los turnos de hoy.
+        const today = formatDateLocal(nowInTimezone())
 
+        // Un mismo teléfono puede figurar como cliente en varios negocios;
+        // con .single() la consulta fallaba y el mensaje se ignoraba en silencio.
         const { data: client } = await supabase
           .from('clients')
           .select('id')
           .eq('phone', from)
-          .single()
+          .limit(1)
+          .maybeSingle()
 
         if (client) {
           const { data: appointment } = await supabase
@@ -82,7 +89,7 @@ export async function POST(request) {
             .order('date', { ascending: true })
             .order('time', { ascending: true })
             .limit(1)
-            .single()
+            .maybeSingle()
 
           if (appointment) {
             await supabase
@@ -92,7 +99,7 @@ export async function POST(request) {
 
             // Track monthly cancellations
             try {
-              const currentMonth = new Date().toISOString().slice(0, 7)
+              const currentMonth = formatDateLocal(nowInTimezone()).slice(0, 7)
               const { data: clientInfo } = await supabase
                 .from('clients')
                 .select('monthly_cancellations, last_cancellation_month')
@@ -134,35 +141,8 @@ export async function POST(request) {
         }
       }
 
-      if (text === 'CONFIRMO' || text === 'CONFIRMAR') {
-        const today = new Date().toISOString().split('T')[0]
-
-        const { data: client } = await supabase
-          .from('clients')
-          .select('id')
-          .eq('phone', from)
-          .single()
-
-        if (client) {
-          await supabase
-            .from('appointments')
-            .update({
-              status: 'confirmed',
-              confirmation_required: false,
-              confirmation_deadline: null,
-            })
-            .eq('client_id', client.id)
-            .in('status', ['pending', 'confirmed'])
-            .gte('date', today)
-
-          const { sendWhatsAppText } = await import('@/lib/whatsapp')
-          await sendWhatsAppText({
-            to: from,
-            phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
-            text: 'Tu turno fue confirmado exitosamente. ¡Te esperamos!'
-          }).catch(() => {})
-        }
-      }
+      // El flujo de confirmación por WhatsApp ("respondé CONFIRMO") se retiró.
+      // Solo queda CANCELAR.
     }
 
     return NextResponse.json({ status: 'processed' })

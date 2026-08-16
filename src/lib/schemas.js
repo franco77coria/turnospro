@@ -41,6 +41,10 @@ export const AvailabilityCheckSchema = z.object({
     duration: z.number().int().min(5).max(480).optional(),
     team_member_id: uuid.nullish(),
     buffer_time: z.number().int().min(0).max(240).optional(),
+    // El dashboard agenda sobre feriados/licencias a propósito (con aviso).
+    ignore_closures: z.boolean().optional().default(false),
+    // Al editar un turno, no debe chocar consigo mismo.
+    exclude_appointment_id: uuid.nullish(),
 })
 
 // ─── Waitlist ───

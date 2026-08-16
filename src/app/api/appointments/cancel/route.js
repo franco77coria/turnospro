@@ -1,10 +1,20 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { verifyCancelToken, markCancelTokenUsed } from '@/lib/cancel-token'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { sendEmail } from '@/lib/send-email'
 import { notifyWaitlist } from '@/lib/waitlist'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { CancelTokenSchema, parseBody } from '@/lib/schemas'
+import { formatDateEs } from '@/lib/scheduling'
+import { z } from 'zod'
+
+const SessionCancelSchema = z.object({
+    appointment_id: z.string().uuid(),
+})
 
 async function sendCancellationPush(supabase, appointment) {
     try {
@@ -69,22 +79,62 @@ export async function POST(request) {
         if (rateLimited) return rateLimited
 
         const raw = await request.json().catch(() => null)
-        const parsed = parseBody(CancelTokenSchema, raw)
-        if (!parsed.ok) {
-            return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
-        }
-        const { token } = parsed.data
-
-        const { valid, appointmentId, expiresAt } = await verifyCancelToken(token)
-        if (!valid || !appointmentId) {
-            return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 })
-        }
-
         const supabase = createSupabaseAdmin()
+
+        // Dos caminos de entrada:
+        //  - token HMAC del link del mail (invitados)
+        //  - sesión iniciada, desde "Mis turnos"
+        // Antes el segundo hacía un UPDATE directo desde el navegador y se
+        // salteaba la antelación mínima, el aviso al negocio y la lista de espera.
+        let token = null
+        let appointmentId = null
+        let expiresAt = null
+
+        const sessionParsed = SessionCancelSchema.safeParse(raw)
+        if (sessionParsed.success) {
+            const cookieStore = await cookies()
+            const authClient = createSupabaseServerClient(cookieStore)
+            const { data: { user } } = await authClient.auth.getUser()
+            if (!user?.email) {
+                return NextResponse.json({ error: 'Iniciá sesión para cancelar' }, { status: 401 })
+            }
+
+            const { data: apt } = await supabase
+                .from('appointments')
+                .select('id, client_id, business_id, clients:client_id (email), businesses:business_id (owner_id)')
+                .eq('id', sessionParsed.data.appointment_id)
+                .maybeSingle()
+
+            if (!apt) {
+                return NextResponse.json({ error: 'Turno no encontrado' }, { status: 404 })
+            }
+
+            const isClient = apt.clients?.email
+                && apt.clients.email.toLowerCase() === user.email.toLowerCase()
+            const isOwner = apt.businesses?.owner_id === user.id
+            if (!isClient && !isOwner) {
+                return NextResponse.json({ error: 'No tenés permisos para cancelar este turno' }, { status: 403 })
+            }
+
+            appointmentId = apt.id
+        } else {
+            const parsed = parseBody(CancelTokenSchema, raw)
+            if (!parsed.ok) {
+                return NextResponse.json({ error: 'Token requerido' }, { status: 400 })
+            }
+            token = parsed.data.token
+
+            const verified = await verifyCancelToken(token)
+            if (!verified.valid || !verified.appointmentId) {
+                return NextResponse.json({ error: 'Token inválido o expirado' }, { status: 401 })
+            }
+            appointmentId = verified.appointmentId
+            expiresAt = verified.expiresAt
+        }
 
         const { data: appointment, error: fetchErr } = await supabase
             .from('appointments')
-            .select('*, businesses:business_id (name, business_type, phone, settings, owner_id), clients:client_id (name, email)')
+            .select('*, businesses:business_id (name, slug, business_type, phone, settings, owner_id), clients:client_id (name, email)')
             .eq('id', appointmentId)
             .single()
 
@@ -113,21 +163,31 @@ export async function POST(request) {
 
         // Atomically claim the token. The unique constraint on token_hash
         // guarantees that only one caller wins the race; any concurrent
-        // duplicate POST gets "already used".
-        const claim = await markCancelTokenUsed(supabase, token, appointmentId, expiresAt)
-        if (!claim.ok) {
-            const message = claim.reason === 'already_used'
-                ? 'Este link de cancelación ya fue utilizado.'
-                : 'No se pudo procesar la cancelación. Intentá de nuevo.'
-            return NextResponse.json({ error: message }, { status: 409 })
+        // duplicate POST gets "already used". Solo aplica al link del mail:
+        // la vía autenticada no consume ningún token de un solo uso.
+        if (token) {
+            const claim = await markCancelTokenUsed(supabase, token, appointmentId, expiresAt)
+            if (!claim.ok) {
+                const message = claim.reason === 'already_used'
+                    ? 'Este link de cancelación ya fue utilizado.'
+                    : 'No se pudo procesar la cancelación. Intentá de nuevo.'
+                return NextResponse.json({ error: message }, { status: 409 })
+            }
         }
 
-        const { error: updateErr } = await supabase
+        // El filtro por estado evita que dos pedidos simultáneos disparen dos
+        // veces los mails y el aviso a la lista de espera.
+        const { data: cancelledRows, error: updateErr } = await supabase
             .from('appointments')
             .update({ status: 'cancelled' })
             .eq('id', appointmentId)
+            .not('status', 'in', '("cancelled","completed")')
+            .select('id')
 
         if (updateErr) throw updateErr
+        if (!cancelledRows?.length) {
+            return NextResponse.json({ error: 'Este turno ya fue cancelado' }, { status: 409 })
+        }
 
         if (appointment.client_id) {
             try {
@@ -153,7 +213,7 @@ export async function POST(request) {
             }
         }
 
-        const formattedDate = new Date(appointment.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+        const formattedDate = formatDateEs(appointment.date)
         const formattedTime = appointment.time?.slice(0, 5)
         const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
 

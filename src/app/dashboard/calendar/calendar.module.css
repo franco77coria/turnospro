@@ -111,6 +111,9 @@
 .gridBody {
     max-height: calc(100vh - 280px);
     overflow-y: auto;
+    /* Reserva el ancho de la barra para que el cuerpo no se corra respecto
+       del encabezado de días cuando aparece el scroll. */
+    scrollbar-gutter: stable;
 }
 
 /* Webkit Scrollbars for Calendar */
@@ -125,57 +128,107 @@
     border-radius: var(--r-full);
 }
 
-.timeRow {
+/*
+ * Lienzo proporcional: la altura total la fija el JS (minutos * PX_PER_MIN) y
+ * cada turno se posiciona en absoluto según su hora y su duración. Nada de
+ * filas fijas — un turno de 45 min mide exactamente 45 min de alto.
+ */
+.gridCanvas {
     display: grid;
     grid-template-columns: 60px repeat(7, 1fr);
-    min-height: 48px;
-    border-bottom: 1px solid var(--line);
+    position: relative;
 }
 
-.timeLabel {
-    padding: 8px;
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--ink-mute);
-    text-align: right;
-    padding-right: 12px;
+.timeGutter {
+    position: relative;
     border-right: 1px solid var(--line);
     background: color-mix(in oklab, var(--ink-soft) 2%, transparent);
 }
 
-.cell {
-    border-right: 1px solid var(--line);
-    padding: 4px;
-    cursor: pointer;
-    min-height: 48px;
-    transition: background var(--t-fast);
-    position: relative;
+.timeMark {
+    position: absolute;
+    right: 8px;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-mute);
+    white-space: nowrap;
+    pointer-events: none;
 }
 
-.cell:last-child {
+.dayColumn {
+    position: relative;
+    border-right: 1px solid var(--line);
+    cursor: pointer;
+    transition: background var(--t-fast);
+}
+
+.dayColumn:last-child {
     border-right: none;
 }
 
-.cell:hover {
-    background: color-mix(in oklab, var(--ink-soft) 4%, transparent);
+.dayColumn:hover {
+    background: color-mix(in oklab, var(--ink-soft) 3%, transparent);
 }
 
-/* Appointment block in grid */
+.dayColumnToday {
+    background: color-mix(in oklab, var(--pink) 4%, transparent);
+}
+
+.hourLine {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px solid var(--line);
+    pointer-events: none;
+}
+
+.halfHourLine {
+    position: absolute;
+    left: 0;
+    right: 0;
+    border-top: 1px dashed color-mix(in oklab, var(--line) 55%, transparent);
+    pointer-events: none;
+}
+
+/* Appointment block — top/height los calcula el JS a partir de time + duration */
 .aptBlock {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    overflow: hidden;
     background: var(--bg-card);
     border-radius: var(--r-md);
-    padding: 6px 10px;
-    margin-bottom: 4px;
+    padding: 4px 8px;
     cursor: pointer;
     box-shadow: var(--shadow-sm);
     border: 1px solid var(--line);
     border-left-width: 4px;
-    transition: all var(--t-fast);
+    transition: box-shadow var(--t-fast), filter var(--t-fast);
+    z-index: 1;
 }
 
 .aptBlock:hover {
-    transform: translateY(-1px);
     box-shadow: var(--shadow-md);
+    filter: brightness(1.03);
+    z-index: 2;
+}
+
+/* Turnos cortos: una sola línea, sin apretar el texto */
+.aptBlockTight {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 8px;
+}
+
+.aptBlockTime {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--ink-soft);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .aptBlockName {
@@ -186,12 +239,16 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    line-height: 1.2;
 }
 
 .aptBlockService {
     font-size: 10px;
     color: var(--ink-soft);
     font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Mobile Day View */
@@ -218,73 +275,41 @@
     color: var(--ink);
 }
 
+/* Mobile: misma escala proporcional que el desktop, en una sola columna */
 .mobileTimeline {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.mobileSlot {
-    display: flex;
-    gap: 16px;
-    padding: 12px 16px;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    position: relative;
     background: var(--bg-card);
+    border: 1px solid var(--line);
     border-radius: var(--r-lg);
-    border: 1px solid var(--line);
-    min-height: 64px;
+    overflow: hidden;
+}
+
+.mobileGutter {
+    position: relative;
+    border-right: 1px solid var(--line);
+    background: color-mix(in oklab, var(--ink-soft) 2%, transparent);
+}
+
+.mobileColumn {
+    position: relative;
     cursor: pointer;
-    transition: all var(--t-fast);
-}
-
-.mobileSlot:hover {
-    border-color: var(--pink);
-    transform: translateX(2px);
-}
-
-.mobileSlotTime {
-    font-family: var(--font-display);
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--ink-soft);
-    min-width: 48px;
-    padding-top: 4px;
-}
-
-.mobileSlotContent {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.mobileApt {
-    background: var(--bg-card);
-    border-radius: var(--r-md);
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-left-width: 4px;
-    box-shadow: var(--shadow-sm);
-}
-
-.mobileAptName {
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--ink);
-    display: block;
-}
-
-.mobileAptService {
-    font-size: 11px;
-    color: var(--ink-soft);
 }
 
 .mobileEmpty {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100% - 32px);
     border: 1px dashed var(--line);
     border-radius: var(--r-lg);
     padding: 16px;
     text-align: center;
     color: var(--ink-mute);
     font-size: 12px;
+    pointer-events: none;
 }
 
 @media (max-width: 960px) {
@@ -306,10 +331,6 @@
 
     .currentMonth {
         display: none;
-    }
-
-    .mobileSlot {
-        min-height: 60px;
     }
 }
 
@@ -613,7 +634,11 @@
 }
 
 .timeSlot {
-    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1px;
+    padding: 8px 10px;
     border: 1px solid var(--line);
     border-radius: var(--r-lg);
     font-size: 13px;
@@ -624,6 +649,45 @@
     background: var(--bg-card);
     font-family: inherit;
     color: var(--ink);
+}
+
+/* Hora de fin: deja claro cuánto ocupa realmente el turno */
+.timeSlotEnd {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--ink-mute);
+}
+
+.timeSlotSelected .timeSlotEnd {
+    color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.durationHint {
+    font-weight: 500;
+    color: var(--ink-mute);
+    font-size: 12px;
+}
+
+.wizardWarning {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    border-radius: var(--r-md);
+    font-size: 12px;
+    background: color-mix(in oklab, #F59E0B 12%, transparent);
+    color: #B45309;
+    border: 1px solid color-mix(in oklab, #F59E0B 30%, transparent);
+}
+
+.editRangeHint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin: 0;
 }
 
 .timeSlot:hover {

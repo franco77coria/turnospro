@@ -1,6 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
+import { loadBusinessServices } from '@/lib/services'
 import { useState, useEffect } from 'react'
 import { Plus, Minus, Search, ShoppingCart, User, CreditCard, CheckCircle2, Package, Scissors, Trash2 } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
@@ -32,11 +33,13 @@ function POSContent() {
     const [activeTab, setActiveTab] = useState('services')
 
     useEffect(() => {
-        if (business) {
-            setServices(business.services || [])
+        if (business?.id) {
+            // Fuente única de servicios: el JSONB `business.services` quedaba
+            // congelado con los precios y duraciones del onboarding.
+            loadBusinessServices(supabase, business.id, { activeOnly: true }).then(setServices)
             loadProducts()
         }
-    }, [business])
+    }, [business?.id])
 
     async function loadProducts() {
         try {

@@ -232,7 +232,7 @@ export async function POST(request) {
             })
 
             if (rpcError) {
-                if (rpcError.message?.includes('SLOT_CONFLICT')) {
+                if (rpcError.message?.includes('SLOT_CONFLICT') || rpcError.code === '23P01') {
                     return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
                 }
                 throw rpcError
@@ -268,7 +268,8 @@ export async function POST(request) {
                     .single()
 
                 if (insertErr) {
-                    if (insertErr.code === '23505') {
+                    // 23505 = índice único, 23P01 = constraint de exclusión por superposición
+                    if (insertErr.code === '23505' || insertErr.code === '23P01') {
                         return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
                     }
                     throw insertErr

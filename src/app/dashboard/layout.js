@@ -44,7 +44,7 @@ export default function DashboardLayout({ children }) {
         settings: {
           work_hours: { start: '09:00', end: '20:00' },
           work_days: [1, 2, 3, 4, 5, 6],
-          slot_duration: 30,
+          slot_duration: null,
         }
       }).catch(err => {
         console.error('Auto-create business error:', err)

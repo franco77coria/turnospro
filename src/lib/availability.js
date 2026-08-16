@@ -1,21 +1,14 @@
 // Availability checking utilities for appointment conflict validation
+// Las primitivas de tiempo viven en scheduling.js, compartidas con el cliente.
 
-/**
- * Convert "HH:MM" string to total minutes since midnight
- */
-function timeToMinutes(timeStr) {
-    const [h, m] = timeStr.split(':').map(Number)
-    return h * 60 + m
-}
-
-/**
- * Convert total minutes to "HH:MM" string
- */
-function minutesToTime(minutes) {
-    const h = Math.floor(minutes / 60)
-    const m = minutes % 60
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
-}
+import {
+    DEFAULT_DURATION,
+    findConflict,
+    minutesToTime,
+    timeToMinutes,
+    todayLocal,
+    toOccupiedRanges,
+} from './scheduling'
 
 /**
  * Get occupied time ranges for a given business, date, and optionally a specific team member.
@@ -24,7 +17,7 @@ function minutesToTime(minutes) {
 export async function getOccupiedSlots(supabase, businessId, date, teamMemberId = null) {
     let query = supabase
         .from('appointments')
-        .select('time, duration, team_member_id')
+        .select('id, time, duration, team_member_id, status')
         .eq('business_id', businessId)
         .eq('date', date)
         .not('status', 'in', '("cancelled","no_show")')
@@ -39,17 +32,11 @@ export async function getOccupiedSlots(supabase, businessId, date, teamMemberId 
         return []
     }
 
-    return (data || []).map(apt => {
-        const startMin = timeToMinutes(apt.time)
-        const endMin = startMin + (apt.duration || 30)
-        return {
-            start: apt.time,
-            end: minutesToTime(endMin),
-            startMin,
-            endMin,
-            team_member_id: apt.team_member_id,
-        }
-    })
+    return toOccupiedRanges(data).map(range => ({
+        ...range,
+        start: minutesToTime(range.startMin),
+        end: minutesToTime(range.endMin),
+    }))
 }
 
 /**
@@ -59,16 +46,8 @@ export async function getOccupiedSlots(supabase, businessId, date, teamMemberId 
 export function filterAvailableSlots(allSlots, occupiedSlots, serviceDuration, teamMemberId = null) {
     return allSlots.filter(slot => {
         const slotStart = timeToMinutes(slot)
-        const slotEnd = slotStart + (serviceDuration || 30)
-
-        // Check against occupied slots (filter by team member if specified)
-        const relevantOccupied = teamMemberId
-            ? occupiedSlots.filter(o => o.team_member_id === teamMemberId)
-            : occupiedSlots
-
-        return !relevantOccupied.some(occupied =>
-            slotStart < occupied.endMin && slotEnd > occupied.startMin
-        )
+        const slotEnd = slotStart + (serviceDuration || DEFAULT_DURATION)
+        return !findConflict(slotStart, slotEnd, occupiedSlots, { teamMemberId })
     })
 }
 
@@ -129,7 +108,7 @@ export async function getBusinessClosures(supabase, businessId) {
         .from('business_closures')
         .select('date, reason')
         .eq('business_id', businessId)
-        .gte('date', new Date().toISOString().split('T')[0])
+        .gte('date', todayLocal())
 
     if (error) {
         console.error('Error fetching closures:', error)
@@ -146,7 +125,7 @@ export async function getTeamAbsences(supabase, businessId, teamMemberId = null)
         .from('team_absences')
         .select('id, team_member_id, start_date, end_date, reason')
         .eq('business_id', businessId)
-        .gte('end_date', new Date().toISOString().split('T')[0])
+        .gte('end_date', todayLocal())
 
     if (teamMemberId) {
         query = query.eq('team_member_id', teamMemberId)
@@ -168,12 +147,72 @@ export async function checkSlotAvailability(supabase, businessId, date, time, du
     const occupied = await getOccupiedSlots(supabase, businessId, date, teamMemberId)
 
     const slotStart = timeToMinutes(time)
-    const slotEnd = slotStart + (duration || 30)
+    const slotEnd = slotStart + (duration || DEFAULT_DURATION)
 
-    const conflict = occupied.find(o => slotStart < o.endMin && slotEnd > o.startMin)
+    const conflict = findConflict(slotStart, slotEnd, occupied)
 
     return {
         available: !conflict,
         conflict: conflict || null,
     }
+}
+
+/**
+ * Chequeo de superposición para mover/editar un turno existente.
+ *
+ * Antes reprogramar comparaba con `time = nuevaHora` exacto: un turno de 45 min
+ * a las 10:00 no impedía mover otro a las 10:15. Acá se compara por rango real
+ * y se respeta la capacidad del negocio.
+ *
+ * @returns {Promise<{ available: boolean, reason: string|null }>}
+ */
+export async function checkRescheduleAvailability(supabase, {
+    businessId, date, time, duration, teamMemberId = null,
+    excludeId = null, bufferTime = 0,
+}) {
+    const [{ data: appointments, error }, { count: teamCount }] = await Promise.all([
+        supabase
+            .from('appointments')
+            .select('id, time, duration, team_member_id, status')
+            .eq('business_id', businessId)
+            .eq('date', date)
+            .not('status', 'in', '("cancelled","no_show")'),
+        supabase
+            .from('team_members')
+            .select('id', { count: 'exact', head: true })
+            .eq('business_id', businessId)
+            .eq('active', true),
+    ])
+
+    if (error) {
+        console.error('Error checking reschedule availability:', error)
+        return { available: false, reason: 'No se pudo verificar la disponibilidad' }
+    }
+
+    const occupied = toOccupiedRanges(appointments, { excludeId })
+    const slotStart = timeToMinutes(time)
+    const slotEnd = slotStart + (duration || DEFAULT_DURATION)
+
+    if (teamMemberId) {
+        const own = findConflict(slotStart, slotEnd, occupied, { bufferTime, teamMemberId })
+        if (own) {
+            return { available: false, reason: 'Ese profesional ya tiene un turno que se superpone' }
+        }
+    }
+
+    const capacity = Math.max(1, teamCount || 0)
+    const overlapping = occupied.filter(o =>
+        slotStart < o.endMin + bufferTime && slotEnd > o.startMin - bufferTime
+    )
+
+    if (overlapping.length >= capacity) {
+        return {
+            available: false,
+            reason: capacity === 1
+                ? 'Ese horario se superpone con otro turno'
+                : `No queda nadie libre en ese horario (${overlapping.length} de ${capacity} ocupados)`,
+        }
+    }
+
+    return { available: true, reason: null }
 }

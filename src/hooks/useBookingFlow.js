@@ -4,6 +4,15 @@ import { useParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { validateInternationalPhone } from '@/lib/phone-validation'
+import { loadBusinessServices } from '@/lib/services'
+import {
+    DEFAULT_DURATION,
+    formatDateLocal,
+    generateAvailableSlots,
+    resolveScheduleSettings,
+    todayLocal,
+    toOccupiedRanges,
+} from '@/lib/scheduling'
 
 export function useBookingFlow() {
     const { id } = useParams()
@@ -68,7 +77,7 @@ export function useBookingFlow() {
                 .from('business_closures')
                 .select('date')
                 .eq('business_id', data.id)
-                .gte('date', new Date().toISOString().split('T')[0])
+                .gte('date', todayLocal())
             setClosureDates((closures || []).map(c => c.date))
 
             // Load team absences
@@ -76,22 +85,11 @@ export function useBookingFlow() {
                 .from('team_absences')
                 .select('team_member_id, start_date, end_date')
                 .eq('business_id', data.id)
-                .gte('end_date', new Date().toISOString().split('T')[0])
+                .gte('end_date', todayLocal())
             setTeamAbsences(absences || [])
 
-            // Load services from services table (fallback to JSONB)
-            const { data: svcData, error: svcErr } = await supabase
-                .from('services')
-                .select('*')
-                .eq('business_id', data.id)
-                .eq('active', true)
-                .order('sort_order')
-            if (!svcErr && svcData?.length > 0) {
-                setServicesList(svcData)
-            } else {
-                // Fallback to JSONB
-                setServicesList(Array.isArray(data.services) ? data.services : [])
-            }
+            // Servicios desde la fuente única (tabla `services`, con fallback al JSONB)
+            setServicesList(await loadBusinessServices(supabase, data.id, { activeOnly: true }))
         }
         setLoading(false)
     }, [id])
@@ -106,74 +104,43 @@ export function useBookingFlow() {
         setLoadingSlots(true)
         setSelectedTime('')
         const tmId = selectedProfessional?.id
+        // `public_busy_slots`, no `appointments`: RLS no deja que un invitado lea
+        // la tabla, así que la consulta devolvía cero filas y TODOS los horarios
+        // aparecían libres. La vista expone solo hora y duración, sin datos del cliente.
         let query = supabase
-        query = query.from('appointments')
+            .from('public_busy_slots')
             .select('time, duration, team_member_id')
             .eq('business_id', business.id)
             .eq('date', selectedDate)
-            .not('status', 'in', '(cancelled,no_show)')
         // Filter by professional if one is selected
         if (tmId) query = query.eq('team_member_id', tmId)
-        query.then(({ data }) => {
-                setOccupiedSlots((data || []).map(apt => {
-                    const [h, m] = apt.time.split(':').map(Number)
-                    const startMin = h * 60 + m
-                    return { startMin, endMin: startMin + (apt.duration || 30) }
-                }))
-                setLoadingSlots(false)
-            })
+        query.then(({ data, error }) => {
+            if (error) {
+                // Si la vista todavía no existe (migración sin aplicar), es mejor
+                // gritarlo que mostrar en silencio la agenda entera como libre.
+                console.error('[Booking] No se pudieron leer los horarios ocupados:', error.message)
+            }
+            setOccupiedSlots(toOccupiedRanges(data))
+            setLoadingSlots(false)
+        })
     }, [selectedDate, business?.id, selectedProfessional?.id])
 
-    // Generate available time slots (filtered by occupied + buffer + min advance)
+    // Horarios disponibles — misma implementación que usa el dashboard
     function getTimeSlots() {
         if (!business) return []
-        const settings = business.settings || {}
-        const { work_hours } = settings
-        const [startH, startM] = (work_hours?.start || '09:00').split(':').map(Number)
-        const [endH, endM] = (work_hours?.end || '20:00').split(':').map(Number)
-        const startMin = startH * 60 + (startM || 0)
-        const endMin = endH * 60 + (endM || 0)
-        const duration = selectedService?.duration || 30
-        const bufferTime = settings.buffer_time || 0
-        const minAdvanceHours = settings.min_advance_hours || 1
-        const slotInterval = settings.slot_duration || (duration <= 30 ? 30 : 60)
-
-        const allSlots = []
-        for (let m = startMin; m + duration <= endMin; m += slotInterval) {
-            const h = Math.floor(m / 60)
-            const min = m % 60
-            allSlots.push(`${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`)
-        }
-
-        const now = new Date()
-        const isToday = selectedDate === now.toISOString().split('T')[0]
-
-        // Filter out occupied slots (with buffer) and past slots
-        return allSlots.filter(slot => {
-            const [sh, sm] = slot.split(':').map(Number)
-            const slotStart = sh * 60 + sm
-            const slotEnd = slotStart + duration
-
-            // Check min advance time
-            if (isToday) {
-                const minTime = now.getHours() * 60 + now.getMinutes() + (minAdvanceHours * 60)
-                if (slotStart < minTime) return false
-            }
-
-            // Check against occupied slots (including buffer time)
-            return !occupiedSlots.some(o => {
-                const occStart = o.startMin - bufferTime
-                const occEnd = o.endMin + bufferTime
-                return slotStart < occEnd && slotEnd > occStart
-            })
+        return generateAvailableSlots({
+            settings: business.settings,
+            duration: selectedService?.duration || DEFAULT_DURATION,
+            occupied: occupiedSlots,
+            date: selectedDate,
+            enforceMinAdvance: true,
         })
     }
 
     // Generate available dates (respecting max advance, work days, closed dates, and absences)
     function getAvailableDates() {
         const dates = []
-        const workDays = business?.settings?.work_days || [1, 2, 3, 4, 5, 6]
-        const maxDays = business?.settings?.max_advance_days || 30
+        const { workDays, maxAdvanceDays: maxDays } = resolveScheduleSettings(business?.settings)
         // Merge JSONB closed_dates with business_closures table
         const settingsClosedDates = (business?.settings?.closed_dates || []).map(cd => cd.date)
         const allClosedDates = [...new Set([...settingsClosedDates, ...closureDates])]
@@ -181,7 +148,7 @@ export function useBookingFlow() {
         for (let i = 0; i <= maxDays; i++) {
             const d = new Date()
             d.setDate(d.getDate() + i)
-            const dateStr = d.toISOString().split('T')[0]
+            const dateStr = formatDateLocal(d)
 
             // Skip non-work days
             if (!workDays.includes(d.getDay())) continue
@@ -310,6 +277,8 @@ export function useBookingFlow() {
             let clientId = null
 
             // 2. Server-side availability check
+            // Mandamos el profesional y el buffer: sin eso el servidor comparaba
+            // contra la agenda de todo el negocio e ignoraba el descanso configurado.
             const checkRes = await fetch('/api/appointments/check', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -317,12 +286,14 @@ export function useBookingFlow() {
                     business_id: business.id,
                     date: selectedDate,
                     time: selectedTime,
-                    duration: selectedService.duration || 30,
+                    duration: selectedService.duration || DEFAULT_DURATION,
+                    team_member_id: selectedProfessional?.id || null,
+                    buffer_time: resolveScheduleSettings(business.settings).bufferTime,
                 }),
             })
             const checkData = await checkRes.json()
             if (!checkData.available) {
-                setError('Este horario ya fue reservado. Elegí otro horario.')
+                setError(checkData.reason || 'Este horario ya fue reservado. Elegí otro horario.')
                 setSubmitting(false)
                 return
             }
@@ -348,7 +319,7 @@ export function useBookingFlow() {
                     service_name: selectedService.name,
                     date: selectedDate,
                     time: selectedTime,
-                    duration: selectedService.duration,
+                    duration: selectedService.duration || DEFAULT_DURATION,
                     price: finalPrice,
                     notes: form.note?.trim() || null,
                     send_emails: true,
@@ -423,7 +394,9 @@ export function useBookingFlow() {
         setCouponError('')
     }
 
-    const services = servicesList.length > 0 ? servicesList : (business?.services || [])
+    // loadBusinessServices ya resuelve el fallback al JSONB heredado y normaliza
+    // la forma, así que acá no hace falta un segundo fallback sin normalizar.
+    const services = servicesList
     const dates = getAvailableDates()
     const slots = getTimeSlots()
 

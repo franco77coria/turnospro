@@ -6,6 +6,14 @@ import { CalendarDays, Clock, MapPin, X, RotateCcw, Store, History, AlertTriangl
 import Link from 'next/link'
 import { useToast } from '@/components/Toast'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
+import {
+    DEFAULT_DURATION,
+    formatDateLocal,
+    generateAvailableSlots,
+    timeToMinutes,
+    toOccupiedRanges,
+    todayLocal,
+} from '@/lib/scheduling'
 import styles from './my-appointments.module.css'
 
 function getCountdown(date, time) {
@@ -14,8 +22,8 @@ function getCountdown(date, time) {
     const diffMs = apt - now
     if (diffMs <= 0) return null
 
-    const todayStr = now.toISOString().split('T')[0]
-    const tomorrowStr = new Date(now.getTime() + 86400000).toISOString().split('T')[0]
+    const todayStr = formatDateLocal(now)
+    const tomorrowStr = formatDateLocal(new Date(now.getTime() + 86400000))
 
     if (date === todayStr) {
         const mins = Math.floor(diffMs / 60000)
@@ -33,14 +41,9 @@ function getEndTime(time, duration) {
     return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
 }
 
-function generateDefaultSlots() {
-    const times = []
-    for (let h = 9; h <= 19; h++) {
-        const hh = String(h).padStart(2, '0')
-        times.push(`${hh}:00`, `${hh}:30`)
-    }
-    return times
-}
+// Los horarios salen del mismo motor que usa la reserva y el dashboard.
+// Antes esta pantalla tenía su propia lista fija de 09:00 a 19:30 cada 30 min,
+// que ignoraba el horario de atención, la duración del servicio y el buffer.
 
 export default function MyAppointmentsPage() {
     const toast = useToast()
@@ -94,48 +97,60 @@ export default function MyAppointmentsPage() {
     async function openReschedule(apt) {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
-        const dateStr = tomorrow.toISOString().split('T')[0]
+        const dateStr = formatDateLocal(tomorrow)
 
         setRescheduleModal({
             appointment: apt,
             newDate: dateStr,
             newTime: '',
-            slots: generateDefaultSlots(),
+            slots: [],
             loadingSlots: true,
             saving: false,
         })
 
-        fetchSlotsForDate(apt.business_id, dateStr)
+        fetchSlotsForDate(apt, dateStr)
     }
 
-    async function fetchSlotsForDate(businessId, dateStr) {
+    async function fetchSlotsForDate(apt, dateStr) {
         try {
-            // Consultar turnos ocupados ese día
-            const { data: booked } = await supabase
-                .from('appointments')
-                .select('time')
-                .eq('business_id', businessId)
+            // `public_busy_slots`: RLS no deja que un cliente lea los turnos de
+            // otros, así que consultar `appointments` devolvía solo los propios
+            // y todos los horarios aparecían libres.
+            let query = supabase
+                .from('public_busy_slots')
+                .select('time, duration, team_member_id')
+                .eq('business_id', apt.business_id)
                 .eq('date', dateStr)
-                .neq('status', 'cancelled')
+            if (apt.team_member_id) query = query.eq('team_member_id', apt.team_member_id)
 
-            const bookedSet = new Set((booked || []).map(b => b.time.slice(0, 5)))
-            const allTimes = generateDefaultSlots()
-            const available = allTimes.filter(t => !bookedSet.has(t))
+            const { data: booked, error } = await query
+            if (error) throw error
 
-            setRescheduleModal(prev => prev ? {
-                ...prev,
-                slots: available.length > 0 ? available : allTimes,
-                loadingSlots: false,
-            } : null)
-        } catch {
-            setRescheduleModal(prev => prev ? { ...prev, loadingSlots: false } : null)
+            const settings = apt.business?.settings || {}
+            const available = generateAvailableSlots({
+                settings,
+                duration: apt.duration || DEFAULT_DURATION,
+                // El turno propio no puede bloquearse a sí mismo.
+                occupied: toOccupiedRanges(booked).filter(
+                    o => !(dateStr === apt.date && o.startMin === timeToMinutes(apt.time))
+                ),
+                date: dateStr,
+                enforceMinAdvance: true,
+            })
+
+            setRescheduleModal(prev => prev ? { ...prev, slots: available, loadingSlots: false } : null)
+        } catch (err) {
+            console.error('Error cargando horarios:', err)
+            // Sin datos confiables no se inventan horarios: antes, si no quedaba
+            // ninguno libre, se mostraba la lista completa como si lo estuvieran.
+            setRescheduleModal(prev => prev ? { ...prev, slots: [], loadingSlots: false } : null)
         }
     }
 
     function handleRescheduleDateChange(newDate) {
         if (!rescheduleModal) return
         setRescheduleModal(prev => ({ ...prev, newDate, newTime: '', loadingSlots: true }))
-        fetchSlotsForDate(rescheduleModal.appointment.business_id, newDate)
+        fetchSlotsForDate(rescheduleModal.appointment, newDate)
     }
 
     async function handleSaveReschedule() {
@@ -193,7 +208,21 @@ export default function MyAppointmentsPage() {
         if (!cancelModal) return
         setCancelling(cancelModal.id)
         try {
-            await supabase.from('appointments').update({ status: 'cancelled' }).eq('id', cancelModal.id)
+            // Vía API, no un UPDATE directo: el endpoint valida la antelación
+            // mínima, avisa al negocio por mail, dispara la lista de espera y
+            // registra la cancelación. Antes nada de eso pasaba, y si RLS
+            // rechazaba el update igual se mostraba "cancelado correctamente".
+            const res = await fetch('/api/appointments/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ appointment_id: cancelModal.id }),
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) {
+                toast.error(data.error || 'Error al cancelar. Intentá de nuevo.')
+                setCancelling(null)
+                return
+            }
             setAppointments(prev => prev.map(a => a.id === cancelModal.id ? { ...a, status: 'cancelled' } : a))
             toast.success('Turno cancelado correctamente')
             setCancelModal(null)
@@ -204,7 +233,7 @@ export default function MyAppointmentsPage() {
         setCancelling(null)
     }
 
-    const today = new Date().toISOString().split('T')[0]
+    const today = todayLocal()
     const now = new Date()
 
     const filtered = appointments.filter(a => {
@@ -386,7 +415,7 @@ export default function MyAppointmentsPage() {
                                     <input
                                         className="input"
                                         type="date"
-                                        min={new Date().toISOString().split('T')[0]}
+                                        min={todayLocal()}
                                         value={rescheduleModal.newDate}
                                         onChange={e => handleRescheduleDateChange(e.target.value)}
                                         required

@@ -3,7 +3,9 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
-import { Check, X as XIcon, Plus, User, Pencil } from 'lucide-react'
+import { loadBusinessServices, findServiceByName } from '@/lib/services'
+import { DEFAULT_DURATION, formatDateLocal, minutesToTime, timeToMinutes } from '@/lib/scheduling'
+import { Check, X as XIcon, Plus, User, Pencil, Clock } from 'lucide-react'
 import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
 import MyAppointmentsPage from '@/app/book/my-appointments/page'
@@ -26,9 +28,12 @@ function OwnerAppointmentsPage() {
     const [selectedClientId, setSelectedClientId] = useState(null)
     const [appointments, setAppointments] = useState([])
     const [filter, setFilter] = useState('all')
-    const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0])
+    // Fecha local: con toISOString() el filtro saltaba al día siguiente después
+    // de las 21:00 en Argentina (UTC-3).
+    const [dateFilter, setDateFilter] = useState(formatDateLocal(new Date()))
     const [loadingApts, setLoadingApts] = useState(true)
     const [currentMember, setCurrentMember] = useState(null)
+    const [services, setServices] = useState([])
 
     // Load active employee data if current profile is a Professional
     useEffect(() => {
@@ -105,6 +110,11 @@ function OwnerAppointmentsPage() {
         }
     }, [business?.id, dateFilter, filter, currentMember])
 
+    useEffect(() => {
+        if (!supabase || !business?.id) return
+        loadBusinessServices(supabase, business.id, { activeOnly: true }).then(setServices)
+    }, [business?.id])
+
     async function updateStatus(id, status) {
         if (!supabase) return
         await supabase.from('appointments').update({ status }).eq('id', id)
@@ -161,15 +171,9 @@ function OwnerAppointmentsPage() {
                 // Use price stored on appointment first, then fall back to service lookup
                 let price = apt.price
                 if (!price) {
-                    // Fetch services fresh from DB
-                    const { data: bizData } = await supabase
-                        .from('businesses')
-                        .select('services')
-                        .eq('id', business.id)
-                        .single()
-                    const svcList = Array.isArray(bizData?.services) ? bizData.services : []
-                    const service = svcList.find(s => s.name === apt.service_name)
-                    price = service?.price
+                    // Fuente única de servicios — antes leía el JSONB heredado
+                    const svcList = await loadBusinessServices(supabase, business.id)
+                    price = findServiceByName(svcList, apt.service_name)?.price
                 }
                 if (price) {
                     await supabase.from('transactions').insert([{
@@ -208,15 +212,18 @@ function OwnerAppointmentsPage() {
     }
 
     const [editingApt, setEditingApt] = useState(null)
-    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', notes: '', status: '' })
+    const [editForm, setEditForm] = useState({ date: '', time: '', service_name: '', duration: DEFAULT_DURATION, notes: '', status: '' })
     const [savingEdit, setSavingEdit] = useState(false)
+    const [editError, setEditError] = useState('')
 
     function handleOpenEdit(apt) {
+        setEditError('')
         setEditingApt(apt)
         setEditForm({
             date: apt.date || '',
             time: apt.time?.slice(0, 5) || '',
             service_name: apt.service_name || '',
+            duration: apt.duration || DEFAULT_DURATION,
             notes: apt.notes || '',
             status: apt.status || 'pending',
         })
@@ -225,19 +232,23 @@ function OwnerAppointmentsPage() {
     async function handleSaveEdit(e) {
         e.preventDefault()
         if (!editingApt) return
+        setEditError('')
         setSavingEdit(true)
         try {
             const res = await fetch(`/api/appointments/${editingApt.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(editForm),
+                body: JSON.stringify({
+                    ...editForm,
+                    duration: parseInt(editForm.duration, 10) || DEFAULT_DURATION,
+                }),
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Error al guardar')
             setEditingApt(null)
             loadAppointments()
         } catch (err) {
-            alert(err.message || 'Error al guardar los cambios')
+            setEditError(err.message || 'Error al guardar los cambios')
         } finally {
             setSavingEdit(false)
         }
@@ -321,7 +332,12 @@ function OwnerAppointmentsPage() {
                                 <tr><td colSpan={6} className={styles.emptyState}>No hay turnos para esta fecha</td></tr>
                             ) : appointments.map(apt => (
                                 <tr key={apt.id}>
-                                    <td style={{ fontWeight: 600 }}>{apt.time?.slice(0, 5)}</td>
+                                    <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                        {apt.time?.slice(0, 5)}
+                                        <span style={{ display: 'block', fontWeight: 500, fontSize: 11, color: 'var(--text-tertiary)' }}>
+                                            a {minutesToTime(timeToMinutes(apt.time) + (apt.duration || DEFAULT_DURATION))} · {apt.duration || DEFAULT_DURATION} min
+                                        </span>
+                                    </td>
                                     <td>
                                         <span style={{ cursor: apt.client_id ? 'pointer' : 'default', textDecoration: apt.client_id ? 'underline' : 'none' }}
                                             onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
@@ -394,6 +410,11 @@ function OwnerAppointmentsPage() {
                             <button className="btn btn-ghost btn-icon" onClick={() => setEditingApt(null)}><XIcon size={16} /></button>
                         </div>
                         <form onSubmit={handleSaveEdit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                            {editError && (
+                                <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-sm)' }}>
+                                    {editError}
+                                </div>
+                            )}
                             <div className="form-group">
                                 <label className="label">Cliente</label>
                                 <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
@@ -405,13 +426,41 @@ function OwnerAppointmentsPage() {
                                 </div>
                                 <div className="form-group">
                                     <label className="label">Hora</label>
-                                    <input className="input" type="time" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                    <input className="input" type="time" step="300" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
                                 </div>
                             </div>
-                            <div className="form-group">
-                                <label className="label">Servicio</label>
-                                <input className="input" type="text" value={editForm.service_name} onChange={e => setEditForm(p => ({ ...p, service_name: e.target.value }))} required />
+                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)' }}>
+                                <div className="form-group">
+                                    <label className="label">Servicio</label>
+                                    <select
+                                        className="input"
+                                        value={editForm.service_name}
+                                        onChange={e => {
+                                            const svc = findServiceByName(services, e.target.value)
+                                            setEditForm(p => ({ ...p, service_name: e.target.value, duration: svc?.duration ?? p.duration }))
+                                        }}
+                                        required
+                                    >
+                                        {!findServiceByName(services, editForm.service_name) && editForm.service_name && (
+                                            <option value={editForm.service_name}>{editForm.service_name} (fuera del catálogo)</option>
+                                        )}
+                                        {services.map(s => (
+                                            <option key={s.id} value={s.name}>{s.name} · {s.duration} min</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label className="label">Duración (min)</label>
+                                    <input className="input" type="number" min="5" max="480" step="5"
+                                        value={editForm.duration}
+                                        onChange={e => setEditForm(p => ({ ...p, duration: e.target.value }))} required />
+                                </div>
                             </div>
+                            {editForm.time && (
+                                <p style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: 'var(--text-secondary)', margin: 0 }}>
+                                    <Clock size={12} /> Ocupa de {editForm.time} a {minutesToTime(timeToMinutes(editForm.time) + (parseInt(editForm.duration, 10) || DEFAULT_DURATION))}
+                                </p>
+                            )}
                             <div className="form-group">
                                 <label className="label">Estado</label>
                                 <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>

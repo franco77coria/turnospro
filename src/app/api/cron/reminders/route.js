@@ -5,6 +5,8 @@ import { Resend } from 'resend'
 import { reminderEmail } from '@/lib/email-templates'
 import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCronAuth } from '@/lib/cron-auth'
+import { nowInTimezone } from '@/lib/timezone'
+import { formatDateEs, formatDateLocal } from '@/lib/scheduling'
 
 // This endpoint is called by Vercel Cron
 // Runs every hour to check for upcoming appointments in the next 2 hours
@@ -17,20 +19,21 @@ export async function GET(request) {
     const resend = new Resend(process.env.RESEND_API_KEY)
 
     try {
-        // Get current time in Argentina timezone (UTC-3)
-        const now = new Date()
-        const argentinaOffset = -3 * 60 // UTC-3 in minutes
-        const utcOffset = now.getTimezoneOffset() // local offset in minutes
-        const argentinaNow = new Date(now.getTime() + (utcOffset + argentinaOffset) * 60000)
+        // Hora de Argentina calculada con la base de zonas horarias, no con un
+        // offset a mano: el truco anterior mezclaba getTimezoneOffset() del
+        // runtime con toISOString(), y daba la fecha equivocada fuera de UTC.
+        const argentinaNow = nowInTimezone()
         const twoHoursLater = new Date(argentinaNow.getTime() + 2 * 60 * 60 * 1000)
 
-        const today = argentinaNow.toISOString().split('T')[0]
-        const tomorrow = new Date(argentinaNow.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        const today = formatDateLocal(argentinaNow)
+        const tomorrow = formatDateLocal(new Date(argentinaNow.getTime() + 24 * 60 * 60 * 1000))
 
         const currentMinutes = argentinaNow.getHours() * 60 + argentinaNow.getMinutes()
         const reminderMinutes = twoHoursLater.getHours() * 60 + twoHoursLater.getMinutes()
 
-        // Fetch today's confirmed appointments that haven't been reminded yet
+        // Turnos próximos sin recordatorio enviado.
+        // Incluye 'pending': los turnos reservados desde la web se crean así, y
+        // al filtrar solo por 'confirmed' NUNCA recibían recordatorio.
         const { data: appointments, error } = await supabase
             .from('appointments')
             .select(`
@@ -39,7 +42,7 @@ export async function GET(request) {
                 clients:client_id (name, email, phone, monthly_cancellations, last_cancellation_month)
             `)
             .in('date', [today, tomorrow])
-            .eq('status', 'confirmed')
+            .in('status', ['pending', 'confirmed'])
             .or('reminder_sent.is.null,reminder_sent.eq.false')
 
         if (error) throw error
@@ -70,7 +73,7 @@ export async function GET(request) {
                 sent: 0,
                 total: 0,
                 message: 'No appointments to remind',
-                checked_at: argentinaNow.toISOString(),
+                checked_at: `${today} ${String(argentinaNow.getHours()).padStart(2, '0')}:${String(argentinaNow.getMinutes()).padStart(2, '0')} (AR)`,
             })
         }
 
@@ -82,63 +85,33 @@ export async function GET(request) {
             const aptMinutes = aptH * 60 + (aptM || 0)
             const hoursUntil = Math.max(1, Math.round((aptMinutes - currentMinutes) / 60))
 
-            const date = new Date(apt.date)
-            const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
-
-            // Smart confirmation logic and general WhatsApp reminder
-            const currentMonth = argentinaNow.toISOString().slice(0, 7)
-            const monthlyCancels = apt.clients.last_cancellation_month === currentMonth
-                ? (apt.clients.monthly_cancellations || 0)
-                : 0
+            const formattedDate = formatDateEs(apt.date)
 
             let whatsappSent = false
             let emailSent = false
-            let isConfirmationRequest = false
 
-            // 1. Try sending WhatsApp first if phone exists
+            // 1. WhatsApp, si el negocio lo tiene configurado.
+            // El pedido de confirmación ("respondé CONFIRMO o se libera el turno")
+            // se sacó: la feature no está en uso.
             if (apt.clients.phone) {
                 try {
                     const { sendWhatsAppText } = await import('@/lib/whatsapp')
                     const phoneNumberId = apt.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID
-                    
-                    let messageText = ''
-                    if (monthlyCancels >= 2) {
-                        isConfirmationRequest = true
-                        const deadline = new Date(now.getTime() + 2 * 60 * 60 * 1000) // 2 hours to confirm
-                        messageText = `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)} hs.\n\nPor favor respondé CONFIRMO para confirmar tu turno. Si no confirmás en las próximas 2 horas, el turno podría ser liberado.`
-                        
-                        await sendWhatsAppText({
-                            to: apt.clients.phone,
-                            phoneNumberId,
-                            text: messageText
-                        })
 
-                        await supabase
-                            .from('appointments')
-                            .update({
-                                confirmation_required: true,
-                                confirmation_deadline: deadline.toISOString(),
-                                reminder_sent: true,
-                                reminder_sent_at: new Date().toISOString(),
-                            })
-                            .eq('id', apt.id)
-                    } else {
-                        messageText = `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)} hs en ${apt.businesses?.name || 'GLOWUP'}.\n\n¡Te esperamos! Si no podés asistir, respondé CANCELAR.`
-                        
-                        await sendWhatsAppText({
-                            to: apt.clients.phone,
-                            phoneNumberId,
-                            text: messageText
-                        })
+                    await sendWhatsAppText({
+                        to: apt.clients.phone,
+                        phoneNumberId,
+                        text: `Hola ${apt.clients.name || 'Cliente'}, te recordamos tu turno de ${apt.service_name || 'turno'} el ${formattedDate} a las ${apt.time?.slice(0, 5)} hs en ${apt.businesses?.name || 'GLOWUP'}.\n\n¡Te esperamos! Si no podés asistir, respondé CANCELAR.`,
+                    })
 
-                        await supabase
-                            .from('appointments')
-                            .update({
-                                reminder_sent: true,
-                                reminder_sent_at: new Date().toISOString(),
-                            })
-                            .eq('id', apt.id)
-                    }
+                    await supabase
+                        .from('appointments')
+                        .update({
+                            reminder_sent: true,
+                            reminder_sent_at: new Date().toISOString(),
+                        })
+                        .eq('id', apt.id)
+
                     whatsappSent = true
                 } catch (e) {
                     console.error('WhatsApp reminder dispatch failed:', e)
@@ -181,15 +154,13 @@ export async function GET(request) {
             }
 
             if (whatsappSent || emailSent) {
-                return { 
-                    sent: true, 
-                    id: apt.id, 
-                    type: isConfirmationRequest ? 'confirmation_request' : 'standard_reminder',
-                    channels: { whatsapp: whatsappSent, email: emailSent }
+                return {
+                    sent: true,
+                    id: apt.id,
+                    channels: { whatsapp: whatsappSent, email: emailSent },
                 }
-            } else {
-                return { sent: false, id: apt.id, reason: 'dispatch_failed_all_channels' }
             }
+            return { sent: false, id: apt.id, reason: 'dispatch_failed_all_channels' }
         }))
 
         const sentCount = results.filter(r => r.status === 'fulfilled' && r.value?.sent).length
@@ -202,7 +173,7 @@ export async function GET(request) {
             sent: sentCount,
             total: eligible.length,
             errors: errors.length > 0 ? errors : undefined,
-            checked_at: argentinaNow.toISOString(),
+            checked_at: `${today} ${String(argentinaNow.getHours()).padStart(2, '0')}:${String(argentinaNow.getMinutes()).padStart(2, '0')} (AR)`,
         })
     } catch (err) {
         console.error('Cron reminder error:', err)

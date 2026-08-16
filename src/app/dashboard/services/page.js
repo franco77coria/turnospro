@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Tag, GripVertical } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
+import { loadBusinessServices } from '@/lib/services'
 import styles from './services.module.css'
 
 export default function ServicesPage() {
@@ -25,32 +26,38 @@ function ServicesContent() {
     const [error, setError] = useState('')
     const [loadingServices, setLoadingServices] = useState(true)
 
-    // Load services from the `services` table
+    // Carga desde la fuente única. Si el negocio todavía tiene los servicios en
+    // el JSONB heredado, los sube a la tabla una sola vez: mientras vivan ahí, la
+    // duración que edite el dueño no llega al resto de las pantallas.
     const loadServices = useCallback(async () => {
         if (!supabase || !business?.id) {
             setLoadingServices(false)
             return
         }
         try {
-            const { data, error: loadErr } = await supabase
-                .from('services')
-                .select('*')
-                .eq('business_id', business.id)
-                .order('sort_order', { ascending: true })
-                .order('created_at', { ascending: true })
+            let list = await loadBusinessServices(supabase, business.id)
 
-            if (loadErr) {
-                // Fallback to JSONB if services table doesn't exist yet
-                console.warn('Services table not ready, falling back to JSONB:', loadErr.message)
-                const { data: bizData } = await supabase
-                    .from('businesses')
-                    .select('services')
-                    .eq('id', business.id)
-                    .single()
-                setServices(Array.isArray(bizData?.services) ? bizData.services : [])
-            } else {
-                setServices(data || [])
+            if (list.length > 0 && list.every(s => s.legacy)) {
+                const { error: migrateErr } = await supabase.from('services').insert(
+                    list.map((s, i) => ({
+                        business_id: business.id,
+                        name: s.name,
+                        price: s.price,
+                        duration: s.duration,
+                        category: s.category,
+                        description: s.description,
+                        active: s.active,
+                        sort_order: i,
+                    }))
+                )
+                if (migrateErr) {
+                    console.error('Error migrando servicios del JSONB:', migrateErr)
+                } else {
+                    list = await loadBusinessServices(supabase, business.id)
+                }
             }
+
+            setServices(list)
         } catch (err) {
             console.error('Error loading services:', err)
         }
@@ -75,7 +82,7 @@ function ServicesContent() {
                 business_id: business.id,
             }
 
-            if (editService?.id) {
+            if (editService?.id && !editService.legacy) {
                 // Update existing
                 const { error: updateErr } = await supabase
                     .from('services')
@@ -108,14 +115,15 @@ function ServicesContent() {
         if (!confirm(`¿Eliminar "${service.name}"?`)) return
         setError('')
         try {
-            if (service.id && typeof service.id === 'string' && service.id.includes('-')) {
-                // UUID = from services table
-                const { error: delErr } = await supabase
-                    .from('services')
-                    .delete()
-                    .eq('id', service.id)
-                if (delErr) throw delErr
+            if (service.legacy) {
+                setError('Ese servicio todavía no está migrado. Recargá la página e intentá de nuevo.')
+                return
             }
+            const { error: delErr } = await supabase
+                .from('services')
+                .delete()
+                .eq('id', service.id)
+            if (delErr) throw delErr
             loadServices()
         } catch (err) {
             console.error('Error deleting service:', err)
@@ -125,13 +133,16 @@ function ServicesContent() {
 
     async function toggleActive(service) {
         try {
-            await supabase
+            if (service.legacy) return
+            const { error: toggleErr } = await supabase
                 .from('services')
                 .update({ active: !service.active })
                 .eq('id', service.id)
+            if (toggleErr) throw toggleErr
             loadServices()
         } catch (err) {
             console.error('Error toggling service:', err)
+            setError('Error al cambiar el estado del servicio.')
         }
     }
 
