@@ -89,7 +89,8 @@ export default function BookingPage() {
                 {b.error && <div className={styles.errorMsg}>{b.error}</div>}
 
                 {b.step === 1 && <ServiceStep services={b.services} selectedService={b.selectedService}
-                    onSelect={b.setSelectedService} onContinue={() => b.setStep(hasTm ? 2 : 3)} />}
+                    onSelect={b.setSelectedService} onContinue={() => b.setStep(hasTm ? 2 : 3)}
+                    backHref={biz.slug ? `/book/s/${biz.slug}` : null} />}
 
                 {b.step === 2 && hasTm && <ProfessionalStep teamMembers={b.teamMembers} selectedProfessional={b.selectedProfessional}
                     onSelect={(tm) => { b.setSelectedProfessional(tm); b.setStep(3) }} onBack={() => b.setStep(1)} />}

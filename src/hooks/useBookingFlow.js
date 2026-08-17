@@ -1,6 +1,6 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { validateInternationalPhone } from '@/lib/phone-validation'
@@ -16,6 +16,9 @@ import {
 
 export function useBookingFlow() {
     const { id } = useParams()
+    // La ficha manda ?service={id}: sin esto el usuario ya había elegido y el
+    // wizard le pedía elegir de nuevo, justo en el momento de mayor intención.
+    const preselectedServiceId = useSearchParams().get('service')
     const { user, loading: authLoading } = useAuth()
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -97,6 +100,15 @@ export function useBookingFlow() {
     useEffect(() => {
         loadBusiness()
     }, [loadBusiness])
+
+    // Preselección del servicio que venía desde la ficha
+    useEffect(() => {
+        if (!preselectedServiceId || selectedService || servicesList.length === 0) return
+        const match = servicesList.find(s => String(s.id) === String(preselectedServiceId))
+        if (!match) return
+        setSelectedService(match)
+        setStep(teamMembers.length > 0 ? 2 : 3)
+    }, [preselectedServiceId, servicesList, teamMembers.length, selectedService])
 
     // Load occupied slots when date changes
     useEffect(() => {

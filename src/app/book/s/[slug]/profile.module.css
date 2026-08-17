@@ -5,201 +5,210 @@
     padding-bottom: 96px;
 }
 
-.container {
-    max-width: 900px;
-    margin: 0 auto;
-    padding: 0 var(--space-4) var(--space-10);
+/* Superficies del navegador: selección y foco también son parte del diseño */
+.page ::selection {
+    background: var(--pink-soft);
+    color: var(--ink);
 }
 
-/* ── Portada ── */
-.hero {
-    position: relative;
-    height: 280px;
+.page :focus-visible {
+    outline: 2px solid var(--pink-ink);
+    outline-offset: 3px;
+    border-radius: var(--r-xs);
+}
+
+.container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--space-8) var(--space-4) var(--space-10);
+}
+
+.srOnly {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
     overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ══ Presentación ══
+   Este bloque es el diseño principal, no un plan B. La mayoría de los negocios
+   nunca sube una foto de portada, así que la ficha se compone alrededor de lo
+   que siempre existe: el nombre, el rubro, las palabras del dueño y el estado
+   real de la agenda. Cuando hay foto, pasa a ocupar la columna derecha. */
+.intro {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-6);
+    align-items: center;
+    padding: var(--space-8) var(--space-6);
+    background: var(--surface-2);
+    border-radius: var(--r-xl);
+    margin-bottom: var(--space-8);
+}
+
+.introWithCover {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+}
+
+.introBody {
+    min-width: 0;
 }
 
 .cover {
     width: 100%;
-    height: 100%;
+    aspect-ratio: 4 / 3;
     object-fit: cover;
-    display: block;
-}
-
-.coverFallback {
-    background: linear-gradient(135deg, var(--pink) 0%, var(--violet) 100%);
-}
-
-.heroOverlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, transparent 40%, color-mix(in oklab, var(--bg) 92%, transparent) 100%);
-}
-
-/* ── Identidad ── */
-.identity {
-    display: flex;
-    align-items: flex-end;
-    gap: var(--space-4);
-    margin-top: -56px;
-    position: relative;
-    z-index: 1;
-    margin-bottom: var(--space-5);
-}
-
-.avatar {
-    width: 104px;
-    height: 104px;
     border-radius: var(--r-lg);
-    background: linear-gradient(135deg, var(--pink), var(--violet));
-    color: #fff;
-    display: grid;
-    place-items: center;
-    font-family: var(--font-display);
-    font-size: 40px;
-    font-weight: 800;
-    flex-shrink: 0;
-    border: 4px solid var(--bg);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
-}
-
-.avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-.identityBody {
-    flex: 1;
-    min-width: 0;
-    padding-bottom: var(--space-1);
-}
-
-.type {
-    margin: 0;
-    font-size: var(--font-size-xs);
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--pink);
+    display: block;
 }
 
 .name {
     font-family: var(--font-display);
-    font-size: var(--font-size-2xl);
+    /* Escala de afiche, no de pantalla de ajustes */
+    font-size: clamp(40px, 8vw, 68px);
+    line-height: 0.98;
     font-weight: 800;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
     color: var(--ink);
-    margin: 2px 0 var(--space-2);
-    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
 }
 
-.metaRow {
+/* El rubro va acá, en una frase. Una etiqueta suelta arriba del título es
+   ruido: el título ya se sostiene solo. */
+.lede {
+    font-size: var(--font-size-lg);
+    line-height: 1.45;
+    color: var(--ink-soft);
+    margin: var(--space-3) 0 0;
+    max-width: 34ch;
+}
+
+/* Las palabras del dueño son el activo más persuasivo del dataset.
+   Estaban a 15px en gris, indistinguibles de un descargo legal. */
+.quote {
+    font-size: clamp(17px, 2.4vw, 21px);
+    line-height: 1.5;
+    color: var(--ink);
+    margin: var(--space-5) 0 0;
+    padding-left: var(--space-4);
+    border-left: 2px solid var(--pink);
+    max-width: 62ch;
+    text-wrap: pretty;
+}
+
+.status {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--ink-soft);
+    margin: var(--space-5) 0 0;
+}
+
+.dotOpen,
+.dotClosed {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--r-full);
+    flex-shrink: 0;
+}
+
+.dotOpen {
+    background: var(--success-ink);
+    /* El estado no puede depender solo del color */
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--success-ink) 22%, transparent);
+}
+
+.dotClosed {
+    background: var(--ink-faint);
+}
+
+.actions {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
     gap: var(--space-3);
-    font-size: var(--font-size-sm);
+    margin-top: var(--space-6);
 }
 
-.rating {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--yellow);
-}
-
-.rating strong {
-    color: var(--ink);
-}
-
-.metaLink {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--ink-mute);
-    text-decoration: none;
-    transition: color var(--t-fast);
-}
-
-.metaLink:hover {
-    color: var(--pink);
-}
-
-.muted {
-    color: var(--ink-mute);
-    font-weight: 500;
-    font-size: var(--font-size-sm);
-}
-
-/* ── CTAs ── */
+/* ══ Acciones ══ */
 .ctaMain {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    padding: 14px 26px;
+    padding: 15px 28px;
     border-radius: var(--r-full);
-    background: var(--pink);
-    color: #fff;
+    background: var(--ink);
+    color: var(--cream);
     font-weight: 800;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-base);
     text-decoration: none;
     white-space: nowrap;
-    box-shadow: var(--shadow-pink);
-    transition: transform var(--t-fast) var(--ease-out), background var(--t-fast);
-    flex-shrink: 0;
+    transition: background var(--t-fast) var(--ease-out);
 }
 
 .ctaMain:hover {
-    background: var(--pink-deep);
-    transform: translateY(-2px);
+    background: var(--pink-ink);
 }
 
-.ctaSmall {
-    padding: 8px 18px;
+.ctaGhost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 15px 24px;
     border-radius: var(--r-full);
-    border: 1.5px solid var(--pink);
-    color: var(--pink);
+    border: 1.5px solid var(--line);
+    background: var(--surface);
+    color: var(--ink);
     font-weight: 700;
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-base);
     text-decoration: none;
     white-space: nowrap;
-    transition: background var(--t-fast), color var(--t-fast);
+    transition: border-color var(--t-fast), color var(--t-fast);
 }
 
-.ctaSmall:hover {
-    background: var(--pink);
-    color: #fff;
+.ctaGhost:hover {
+    border-color: var(--pink-ink);
+    color: var(--pink-ink);
+}
+
+/* Lo que frena a alguien que nunca reservó online: no sabe a qué se compromete */
+.reassure {
+    font-size: var(--font-size-sm);
+    color: var(--ink-mute);
+    margin: var(--space-3) 0 0;
+    max-width: 52ch;
 }
 
 .ctaBottom {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
     margin-top: var(--space-8);
-    padding: 18px;
+    padding: 20px;
     border-radius: var(--r-lg);
     background: var(--ink);
     color: var(--cream);
+    font-family: var(--font-display);
+    font-size: var(--font-size-lg);
     font-weight: 800;
     text-decoration: none;
-    transition: transform var(--t-fast) var(--ease-out);
+    transition: background var(--t-fast) var(--ease-out);
 }
 
 .ctaBottom:hover {
-    transform: translateY(-2px);
+    background: var(--pink-ink);
 }
 
-.about {
-    font-size: var(--font-size-base);
-    line-height: 1.65;
-    color: var(--ink-soft);
-    margin: 0 0 var(--space-6);
-    max-width: 68ch;
-}
-
-/* ── Secciones ── */
+/* ══ Secciones ══ */
 .section {
     margin-bottom: var(--space-8);
 }
@@ -209,16 +218,16 @@
     align-items: baseline;
     justify-content: space-between;
     gap: var(--space-3);
-    margin-bottom: var(--space-4);
 }
 
-.sectionHead h2 {
+.sectionTitle {
     font-family: var(--font-display);
     font-size: var(--font-size-xl);
     font-weight: 800;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.02em;
     color: var(--ink);
-    margin: 0;
+    /* Más aire arriba que abajo: el título pertenece a lo que sigue */
+    margin: 0 0 var(--space-4);
 }
 
 .group {
@@ -226,15 +235,29 @@
 }
 
 .groupTitle {
-    font-size: var(--font-size-xs);
+    font-size: var(--font-size-sm);
     font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
     color: var(--ink-mute);
     margin: 0 0 var(--space-2);
 }
 
-/* ── Servicios ── */
+.muted {
+    color: var(--ink-mute);
+    font-weight: 500;
+    font-size: var(--font-size-sm);
+}
+
+.emptyNote {
+    font-size: var(--font-size-sm);
+    color: var(--ink-mute);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    padding: var(--space-4);
+    margin: 0;
+}
+
+/* ══ Servicios ══ */
 .serviceList {
     list-style: none;
     margin: 0;
@@ -245,25 +268,35 @@
     overflow: hidden;
 }
 
+.serviceList > li + li {
+    border-top: 1px solid var(--line-soft);
+}
+
+/* La fila entera es el destino táctil, no una píldora chica al costado */
 .serviceRow {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: var(--space-4);
     padding: var(--space-4);
-    border-bottom: 1px solid var(--line-soft);
+    min-height: 72px;
+    text-decoration: none;
+    color: inherit;
+    transition: background var(--t-fast);
 }
 
-.serviceRow:last-child {
-    border-bottom: none;
+.serviceRow:hover {
+    background: var(--pink-tint);
 }
 
 .serviceInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     min-width: 0;
 }
 
 .serviceName {
-    display: block;
     font-weight: 700;
     color: var(--ink);
     font-size: var(--font-size-base);
@@ -275,15 +308,14 @@
     gap: 4px;
     font-size: var(--font-size-xs);
     color: var(--ink-mute);
-    margin-top: 2px;
 }
 
 .serviceDesc {
-    margin: 6px 0 0;
     font-size: var(--font-size-sm);
     color: var(--ink-mute);
     line-height: 1.5;
     max-width: 52ch;
+    margin-top: 4px;
 }
 
 .serviceAction {
@@ -298,9 +330,26 @@
     font-weight: 800;
     font-size: var(--font-size-lg);
     color: var(--ink);
+    font-variant-numeric: tabular-nums;
 }
 
-/* ── Equipo ── */
+.serviceGo {
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-full);
+    background: var(--surface-2);
+    color: var(--ink-mute);
+    transition: background var(--t-fast), color var(--t-fast);
+}
+
+.serviceRow:hover .serviceGo {
+    background: var(--pink-ink);
+    color: #fff;
+}
+
+/* ══ Equipo ══ */
 .teamGrid {
     list-style: none;
     margin: 0;
@@ -323,13 +372,14 @@
 }
 
 .teamAvatar {
+    display: grid;
+    place-items: center;
     width: 52px;
     height: 52px;
     border-radius: var(--r-full);
-    background: linear-gradient(135deg, var(--pink), var(--violet));
-    color: #fff;
-    display: grid;
-    place-items: center;
+    background: var(--pink-tint);
+    color: var(--pink-ink);
+    font-family: var(--font-display);
     font-weight: 800;
     font-size: var(--font-size-lg);
 }
@@ -340,7 +390,7 @@
     color: var(--ink);
 }
 
-/* ── Horarios ── */
+/* ══ Horarios ══ */
 .hoursList {
     list-style: none;
     margin: 0;
@@ -354,21 +404,70 @@
 .hoursRow {
     display: flex;
     justify-content: space-between;
-    padding: 12px var(--space-4);
-    font-size: var(--font-size-sm);
+    gap: var(--space-4);
+    padding: 14px var(--space-4);
+    font-size: var(--font-size-base);
     color: var(--ink);
-    border-bottom: 1px solid var(--line-soft);
+    font-variant-numeric: tabular-nums;
 }
 
-.hoursRow:last-child {
-    border-bottom: none;
+.hoursRow + .hoursRow {
+    border-top: 1px solid var(--line-soft);
 }
 
 .hoursClosed {
-    color: var(--ink-faint);
+    color: var(--ink-mute);
 }
 
-/* ── Reseñas ── */
+/* ══ Contacto ══ */
+.contactRow {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+}
+
+.contactLink {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: var(--space-4);
+    min-height: 56px;
+    color: var(--ink);
+    text-decoration: none;
+    font-size: var(--font-size-base);
+    transition: background var(--t-fast);
+}
+
+.contactLink + .contactLink {
+    border-top: 1px solid var(--line-soft);
+}
+
+.contactLink:hover {
+    background: var(--pink-tint);
+}
+
+.contactLink .muted {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* ══ Reseñas ══ */
+.rating {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    color: var(--ink);
+    font-size: var(--font-size-sm);
+}
+
+.rating svg {
+    /* --yellow da 1.39:1 sobre blanco: ilegible como marca de estado */
+    color: var(--amber-ink);
+}
+
 .reviewList {
     list-style: none;
     margin: 0;
@@ -402,7 +501,7 @@
 .stars {
     display: inline-flex;
     gap: 1px;
-    color: var(--yellow);
+    color: var(--amber-ink);
     flex-shrink: 0;
 }
 
@@ -411,55 +510,62 @@
     font-size: var(--font-size-sm);
     line-height: 1.55;
     color: var(--ink-soft);
+    text-wrap: pretty;
 }
 
 .footer {
     margin-top: var(--space-8);
     text-align: center;
-    font-size: var(--font-size-xs);
-    color: var(--ink-faint);
+    font-size: var(--font-size-sm);
+    color: var(--ink-mute);
 }
 
 .footer a {
-    color: var(--pink);
+    color: var(--pink-ink);
     font-weight: 700;
     text-decoration: none;
+    /* Un link de 13px sin padding es un destino táctil de 13px de alto */
+    display: inline-block;
+    padding: 13px 10px;
 }
 
-/* ── Barra fija de mobile ── */
+/* ══ Barra fija de mobile ══ */
 .stickyCta {
     display: none;
 }
 
 @media (max-width: 720px) {
-    .hero {
-        height: 200px;
+    .container {
+        padding-top: var(--space-5);
     }
 
-    .identity {
-        flex-wrap: wrap;
-        margin-top: -44px;
+    .intro {
+        padding: var(--space-6) var(--space-5);
+        border-radius: var(--r-lg);
     }
 
-    .avatar {
-        width: 80px;
-        height: 80px;
-        font-size: 30px;
+    .introWithCover {
+        grid-template-columns: 1fr;
     }
 
-    .name {
-        font-size: var(--font-size-xl);
+    .cover {
+        aspect-ratio: 16 / 10;
+        order: -1;
     }
 
-    /* El CTA pasa a ancho completo y además queda la barra fija abajo */
-    .ctaMain {
-        width: 100%;
+    .actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .ctaMain,
+    .ctaGhost {
         justify-content: center;
     }
 
     .serviceRow {
-        flex-direction: column;
         align-items: flex-start;
+        flex-direction: column;
         gap: var(--space-2);
     }
 
@@ -482,18 +588,49 @@
         padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
         background: var(--surface);
         border-top: 1px solid var(--line);
-        box-shadow: 0 -6px 20px rgba(26, 14, 31, 0.08);
         text-decoration: none;
         font-weight: 700;
         font-size: var(--font-size-sm);
-        color: var(--ink-mute);
+        color: var(--ink-soft);
+    }
+
+    .stickyInfo {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     .stickyBtn {
-        padding: 12px 24px;
+        padding: 13px 26px;
         border-radius: var(--r-full);
-        background: var(--pink);
-        color: #fff;
+        background: var(--ink);
+        color: var(--cream);
         font-weight: 800;
+        flex-shrink: 0;
+    }
+}
+
+/* ══ Movimiento ══
+   Un solo momento autorado: la presentación entra una vez, al cargar. Nada de
+   una animación de entrada repetida en cada sección. */
+@media (prefers-reduced-motion: no-preference) {
+    .intro {
+        animation: intro-rise var(--t-slow) var(--ease-out) both;
+    }
+
+    .quote {
+        animation: intro-rise var(--t-slow) var(--ease-out) 90ms both;
+    }
+}
+
+@keyframes intro-rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
     }
 }

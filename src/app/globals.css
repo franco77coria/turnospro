@@ -20,6 +20,10 @@
   --pink-deep: #E6157A;
   --pink-soft: #FFD7E8;
   --pink-tint: #FFE9F2;
+  /* Rosa legible: --pink da 3.48:1 contra blanco y contra texto blanco, por
+     debajo del 4.5:1 de AA. Este llega a 5.35:1 en los dos sentidos, así que
+     sirve tanto para texto rosa sobre claro como para texto blanco sobre rosa. */
+  --pink-ink: #D1006B;
 
   --violet: #6E2BFF;
   --violet-deep: #5418D6;
@@ -129,6 +133,12 @@
   --amber: #F59E0B;
   --info: var(--blue);
 
+  /* Versiones legibles sobre superficies claras. Los tonos de arriba están
+     pensados para rellenos: como ícono o marca de estado no llegan al 3:1 que
+     pide AA para gráficos con significado (--amber da 1.87 sobre el crema). */
+  --amber-ink: #B45309;
+  --success-ink: #077A52;
+
   /* Escala */
   --radius-full: var(--r-full);
   --font-size-base: 15px;
@@ -179,6 +189,10 @@
   --success-light: color-mix(in oklab, #34D399 18%, transparent);
   --warning: #FBBF24;
   --warning-light: color-mix(in oklab, #FBBF24 18%, transparent);
+  /* Sobre fondo oscuro pasa lo inverso: los tonos oscurecidos no contrastan */
+  --amber-ink: #FBBF24;
+  --success-ink: #34D399;
+  --pink-ink: #FF5FA6;
 }
 
 /* ===== Reset ===== */

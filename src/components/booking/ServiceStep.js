@@ -1,9 +1,16 @@
-import { Clock, ArrowRight } from 'lucide-react'
+import { Clock, ArrowRight, ArrowLeft } from 'lucide-react'
 import styles from '@/app/book/[id]/booking.module.css'
 
-export default function ServiceStep({ services, selectedService, onSelect, onContinue }) {
+export default function ServiceStep({ services, selectedService, onSelect, onContinue, backHref }) {
     return (
         <div className={styles.stepContent}>
+            {/* Sin esto el wizard es una puerta de una sola dirección: quien
+                entra desde la ficha no tiene forma de volver. */}
+            {backHref && (
+                <a className={styles.backBtn} href={backHref}>
+                    <ArrowLeft size={14} /> Volver a la ficha
+                </a>
+            )}
             <h2>Elegi un servicio</h2>
             <div className={styles.serviceList}>
                 {services.map((s, i) => (
@@ -18,7 +25,10 @@ export default function ServiceStep({ services, selectedService, onSelect, onCon
                                 <Clock size={12} /> {s.duration} min
                             </span>
                         </div>
-                        <span className={styles.servicePrice}>${s.price?.toLocaleString()}</span>
+                        {/* Sin locale, un navegador en inglés muestra 12,000
+                            donde la ficha muestra 12.000: mismo número, dos
+                            separadores, un solo flujo. */}
+                        <span className={styles.servicePrice}>${s.price?.toLocaleString('es-AR')}</span>
                     </button>
                 ))}
             </div>
