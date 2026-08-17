@@ -172,6 +172,20 @@ export function buildOpeningHoursSpecification(settings) {
     }]
 }
 
+/**
+ * Consulta de mapa a partir de la dirección que escribió el dueño.
+ *
+ * El campo es texto libre y casi nadie pone la ciudad: "coronel superi 626"
+ * puede caer en cualquier localidad con una calle de ese nombre. Se le agrega
+ * el país, que es verdad para todo el producto, salvo que ya venga puesto.
+ */
+export function buildMapQuery(address) {
+    const value = String(address || '').trim()
+    if (!value) return null
+    const yaTienePais = /argentin|,\s*ar\s*$/i.test(value)
+    return yaTienePais ? value : `${value}, Argentina`
+}
+
 /** "Reservando online desde agosto 2026" — antigüedad, no promesas. */
 export function resolveTenure(createdAt) {
     if (!createdAt) return null

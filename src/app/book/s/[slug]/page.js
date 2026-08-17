@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { MapPin, Phone, Star, Clock, ArrowRight, MessageCircle } from 'lucide-react'
 import JsonLd, { buildLocalBusinessSchema } from '@/components/JsonLd'
 import PhotoGallery from '@/components/business/PhotoGallery'
+import SocialLinks from '@/components/business/SocialLinks'
 import { DEFAULT_DURATION, formatDateLocal, minutesToTime, timeToMinutes, toOccupiedRanges } from '@/lib/scheduling'
 import { nowInTimezone } from '@/lib/timezone'
 import {
+    buildMapQuery,
     buildOpeningHoursSpecification,
     buildWhatsAppLink,
     collapseWeeklyHours,
@@ -15,6 +17,7 @@ import {
     resolveTenure,
     resolveTodayAvailability,
 } from '@/lib/business-profile'
+import { resolveSocialLinks } from '@/lib/socials'
 import styles from './profile.module.css'
 
 // La ficha muestra disponibilidad de hoy, así que no puede quedar muy vieja.
@@ -168,6 +171,9 @@ export default async function BusinessProfilePage({ params }) {
     const tenure = resolveTenure(business.created_at)
     const weeklyHours = collapseWeeklyHours(settings)
 
+    const socials = resolveSocialLinks(settings)
+    const mapQuery = buildMapQuery(business.address)
+
     const whatsapp = buildWhatsAppLink(
         business.phone,
         `Hola ${name}! Te escribo desde tu página de GLOWUP.`
@@ -185,6 +191,18 @@ export default async function BusinessProfilePage({ params }) {
         }),
         // priceRange salía fijo en '$$' aunque los precios reales se conozcan.
         ...(cheapest !== null && { priceRange: `${formatPrice(cheapest)}+` }),
+        // sameAs enlaza el negocio con sus perfiles reales: Google usa esto
+        // para confirmar que la ficha y las redes son la misma entidad.
+        ...(socials.length > 0 && { sameAs: socials.map(s => s.url) }),
+        ...(business.address && {
+            address: {
+                '@type': 'PostalAddress',
+                streetAddress: business.address,
+                // Sin país el PostalAddress no es válido para Google. El
+                // producto es solo Argentina (timezone fija en lib/timezone.js).
+                addressCountry: 'AR',
+            },
+        }),
     }
 
     return (
@@ -368,14 +386,29 @@ export default async function BusinessProfilePage({ params }) {
                     </section>
                 )}
 
-                {/* ── Contacto ── */}
+                {/* ── Dónde queda ── */}
                 <section className={styles.section} aria-labelledby="contacto">
                     <h2 id="contacto" className={styles.sectionTitle}>Dónde queda</h2>
+
+                    {business.address && (
+                        <div className={styles.mapFrame}>
+                            {/* Embed sin API key. El CSP habilita solo este origen.
+                                loading="lazy" evita pagar el mapa en el primer render. */}
+                            <iframe
+                                title={`Mapa de ${name}`}
+                                src={`https://www.google.com/maps?q=${encodeURIComponent(mapQuery)}&output=embed&hl=es`}
+                                loading="lazy"
+                                referrerPolicy="no-referrer-when-downgrade"
+                                allowFullScreen
+                            />
+                        </div>
+                    )}
+
                     <div className={styles.contactRow}>
                         {business.address && (
                             <a
                                 className={styles.contactLink}
-                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(business.address)}`}
+                                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQuery)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
@@ -389,6 +422,12 @@ export default async function BusinessProfilePage({ params }) {
                             </a>
                         )}
                     </div>
+
+                    {socials.length > 0 && (
+                        <div className={styles.socials}>
+                            <SocialLinks links={socials} businessName={name} />
+                        </div>
+                    )}
                 </section>
 
                 <Link href={bookUrl} className={styles.ctaBottom}>

@@ -106,21 +106,38 @@
     display: block;
 }
 
+/* El área táctil mide 44px, pero el disco visible es de 28: un botón de 44
+   ocuparía un cuarto de la miniatura. Antes medía 26px en total, la mitad
+   del mínimo. */
 .del {
     position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 26px;
-    height: 26px;
-    border-radius: var(--radius-full);
+    top: 0;
+    right: 0;
+    width: 44px;
+    height: 44px;
     border: none;
-    background: rgba(10, 4, 14, 0.65);
+    background: none;
+    padding: 0;
     color: #fff;
     display: grid;
     place-items: center;
     cursor: pointer;
     opacity: 0;
-    transition: opacity var(--t-fast), background var(--t-fast);
+    transition: opacity var(--t-fast);
+}
+
+.del::before {
+    content: '';
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-full);
+    background: rgba(10, 4, 14, 0.65);
+    transition: background var(--t-fast);
+}
+
+.del svg {
+    position: relative;
 }
 
 .thumb:hover .del,
@@ -128,7 +145,7 @@
     opacity: 1;
 }
 
-.del:hover {
+.del:hover::before {
     background: var(--danger);
 }
 
@@ -169,4 +186,8 @@
 
 @keyframes spin {
     to { transform: rotate(360deg) }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spin { animation: none; }
 }

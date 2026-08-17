@@ -419,7 +419,29 @@
     color: var(--ink-mute);
 }
 
-/* ══ Contacto ══ */
+/* ══ Dónde queda ══ */
+.mapFrame {
+    /* La proporción está fija de antemano para que el mapa no empuje el
+       contenido de abajo cuando termina de cargar. */
+    aspect-ratio: 16 / 9;
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    margin-bottom: var(--space-3);
+}
+
+.mapFrame iframe {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+}
+
+.socials {
+    margin-top: var(--space-3);
+}
+
 .contactRow {
     display: flex;
     flex-direction: column;
@@ -537,6 +559,11 @@
 @media (max-width: 720px) {
     .container {
         padding-top: var(--space-5);
+    }
+
+    .mapFrame {
+        /* En vertical, 16:9 deja el mapa demasiado bajo para ubicarse */
+        aspect-ratio: 4 / 3;
     }
 
     .intro {

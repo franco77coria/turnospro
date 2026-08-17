@@ -26,14 +26,21 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
+              // va.vercel-scripts.com es el script de Vercel Analytics, que se
+              // monta en el layout raíz. Sin esta entrada el navegador lo
+              // bloqueaba y la analítica nunca registró un solo evento.
+              // Si algún día se configura NEXT_PUBLIC_SENTRY_DSN, Sentry va a
+              // necesitar su propia entrada en connect-src.
+              "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
               "script-src-attr 'none'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com data:",
               "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.resend.com https://graph.facebook.com",
               "frame-ancestors 'none'",
-              "frame-src 'none'",
+              // El mapa de la ficha pública es un iframe de Google Maps. Se
+              // habilita solo ese origen: cualquier otro iframe sigue bloqueado.
+              "frame-src https://www.google.com https://maps.google.com",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",

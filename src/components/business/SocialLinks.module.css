@@ -1,0 +1,78 @@
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    /* 44px de alto: el mínimo táctil, no un ícono suelto de 20px */
+    min-height: 44px;
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    transition: border-color var(--t-fast), color var(--t-fast);
+}
+
+.handle {
+    max-width: 18ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* El color de marca aparece al interactuar, no de entrada */
+.instagram:hover,
+.instagram:focus-visible {
+    border-color: #C13584;
+    color: #C13584;
+}
+
+.tiktok:hover,
+.tiktok:focus-visible {
+    border-color: var(--ink);
+    color: var(--ink);
+    background: var(--surface-2);
+}
+
+.facebook:hover,
+.facebook:focus-visible {
+    border-color: #0866FF;
+    color: #0866FF;
+}
+
+/* En oscuro, el azul y el fucsia de marca pierden contraste contra el fondo */
+:global(.dark) .instagram:hover,
+:global(.dark) .instagram:focus-visible {
+    border-color: #F06AB5;
+    color: #F06AB5;
+}
+
+:global(.dark) .facebook:hover,
+:global(.dark) .facebook:focus-visible {
+    border-color: #6BA4FF;
+    color: #6BA4FF;
+}
+
+:global(.dark) .tiktok:hover,
+:global(.dark) .tiktok:focus-visible {
+    border-color: var(--ink);
+    color: var(--ink);
+}
+
+@media (max-width: 480px) {
+    .link {
+        flex: 1 1 auto;
+        justify-content: center;
+    }
+}

@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import styles from './PhotoGallery.module.css'
 
@@ -12,25 +12,57 @@ export default function PhotoGallery({ photos = [], businessName = '' }) {
     const [openIndex, setOpenIndex] = useState(null)
     const isOpen = openIndex !== null
     const total = photos.length
+    const viewerRef = useRef(null)
+    // Para devolver el foco a la miniatura desde la que se abrió el visor
+    const openerRef = useRef(null)
 
     const close = useCallback(() => setOpenIndex(null), [])
     const prev = useCallback(() => setOpenIndex(i => (i - 1 + total) % total), [total])
     const next = useCallback(() => setOpenIndex(i => (i + 1) % total), [total])
 
+    function openAt(index, event) {
+        openerRef.current = event.currentTarget
+        setOpenIndex(index)
+    }
+
     useEffect(() => {
         if (!isOpen) return
+        const viewer = viewerRef.current
+        const focusables = () => Array.from(
+            viewer?.querySelectorAll('button, [href], [tabindex]:not([tabindex="-1"])') || []
+        )
+
         function onKey(e) {
-            if (e.key === 'Escape') close()
-            if (e.key === 'ArrowLeft') prev()
-            if (e.key === 'ArrowRight') next()
+            if (e.key === 'Escape') { close(); return }
+            if (e.key === 'ArrowLeft') { prev(); return }
+            if (e.key === 'ArrowRight') { next(); return }
+            // Trampa de foco: un diálogo modal no puede dejar tabular al fondo.
+            if (e.key !== 'Tab') return
+            const items = focusables()
+            if (items.length === 0) return
+            const first = items[0]
+            const last = items[items.length - 1]
+            const active = document.activeElement
+            if (e.shiftKey && (active === first || !viewer.contains(active))) {
+                e.preventDefault()
+                last.focus()
+            } else if (!e.shiftKey && active === last) {
+                e.preventDefault()
+                first.focus()
+            }
         }
+
         window.addEventListener('keydown', onKey)
         // Sin esto el fondo scrollea detrás del visor abierto.
-        const previous = document.body.style.overflow
+        const previousOverflow = document.body.style.overflow
         document.body.style.overflow = 'hidden'
+        // El foco entra al visor, no queda atrás en la miniatura.
+        focusables()[0]?.focus()
+
         return () => {
             window.removeEventListener('keydown', onKey)
-            document.body.style.overflow = previous
+            document.body.style.overflow = previousOverflow
+            openerRef.current?.focus?.()
         }
     }, [isOpen, close, prev, next])
 
@@ -46,7 +78,7 @@ export default function PhotoGallery({ photos = [], businessName = '' }) {
                     <button
                         key={photo.id || i}
                         className={styles.cell}
-                        onClick={() => setOpenIndex(i)}
+                        onClick={(e) => openAt(i, e)}
                         aria-label={`Ver foto ${i + 1} de ${total}`}
                     >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -63,7 +95,14 @@ export default function PhotoGallery({ photos = [], businessName = '' }) {
             </div>
 
             {isOpen && (
-                <div className={styles.viewer} onClick={close} role="dialog" aria-modal="true">
+                <div
+                    className={styles.viewer}
+                    onClick={close}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label={`Fotos de ${businessName}`}
+                    ref={viewerRef}
+                >
                     <button className={styles.close} onClick={close} aria-label="Cerrar">
                         <X size={22} />
                     </button>

@@ -10,6 +10,8 @@ import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import { useToast } from '@/components/Toast'
 import BusinessPhotosCard from '@/components/business/BusinessPhotosCard'
+import { SOCIAL_NETWORKS, serializeSocials } from '@/lib/socials'
+import { SocialMark } from '@/components/business/SocialLinks'
 
 export default function SettingsPage() {
     return (
@@ -60,6 +62,10 @@ function SettingsContent() {
     // Max advance booking (days)
     const [maxAdvance, setMaxAdvance] = useState(30)
 
+    // Redes sociales del negocio, para la ficha pública
+    const [socials, setSocials] = useState({})
+    const [socialError, setSocialError] = useState('')
+
     // Closed dates (holidays/special days)
     const [closedDates, setClosedDates] = useState([])
     const [newClosedDate, setNewClosedDate] = useState('')
@@ -103,6 +109,7 @@ function SettingsContent() {
             setMinAdvance(business.settings?.min_advance_hours ?? 1)
             setMaxAdvance(business.settings?.max_advance_days ?? 30)
             setClosedDates(business.settings?.closed_dates || [])
+            setSocials(business.settings?.socials || {})
         }
     }, [business?.id, business?.name, business?.phone, business?.address, business?.business_type, business?.settings])
 
@@ -164,6 +171,15 @@ function SettingsContent() {
         e.preventDefault()
         setSaving(true)
         setError('')
+        setSocialError('')
+        // Se descarta lo que no se puede interpretar en vez de guardar basura
+        // que después rompe el link en la ficha.
+        const { socials: cleanSocials, invalid } = serializeSocials(socials)
+        if (invalid.length > 0) {
+            setSocialError(`Revisá el usuario de ${invalid.join(' y ')}: no se entiende. Poné el usuario (@tunegocio) o el link completo del perfil.`)
+            setSaving(false)
+            return
+        }
         try {
             await updateBusiness({
                 name: form.name,
@@ -181,6 +197,7 @@ function SettingsContent() {
                     min_advance_hours: parseInt(minAdvance) || 1,
                     max_advance_days: parseInt(maxAdvance) || 30,
                     closed_dates: closedDates,
+                    socials: cleanSocials,
                 }
             })
             setSaved(true)
@@ -247,7 +264,12 @@ function SettingsContent() {
                             </div>
                             <div className="form-group">
                                 <label className="label">Dirección</label>
-                                <input className="input" value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+                                <input className="input" value={form.address}
+                                    placeholder="Ej: Coronel Superí 626, Palermo, CABA"
+                                    onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    Poné también el barrio o la ciudad: con eso el mapa de tu ficha cae en el lugar exacto.
+                                </span>
                             </div>
                         </div>
 
@@ -299,6 +321,36 @@ function SettingsContent() {
 
                         {/* Fotos de la ficha pública */}
                         <BusinessPhotosCard business={business} />
+
+                        {/* Redes sociales */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                                <Link2 size={18} /> Redes sociales
+                            </h3>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
+                                Se muestran en tu ficha pública. Podés poner el usuario o pegar el link del perfil.
+                            </p>
+
+                            {socialError && (
+                                <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-3)' }}>
+                                    {socialError}
+                                </div>
+                            )}
+
+                            {SOCIAL_NETWORKS.map(network => (
+                                <div className="form-group" key={network.id}>
+                                    <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                        <SocialMark id={network.id} size={14} /> {network.label}
+                                    </label>
+                                    <input
+                                        className="input"
+                                        placeholder={network.placeholder}
+                                        value={socials[network.id] || ''}
+                                        onChange={e => setSocials(prev => ({ ...prev, [network.id]: e.target.value }))}
+                                    />
+                                </div>
+                            ))}
+                        </div>
 
                         {/* Booking Link & QR Code */}
                         <div className="card">
