@@ -2,20 +2,20 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Search, MapPin, Scissors, Sparkles, Hand, Eye, Heart, Stethoscope, PawPrint, Wrench, Store, Star, SlidersHorizontal, ArrowLeft } from 'lucide-react'
+import { Search, MapPin, Store, Star, ArrowLeft } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './explore.module.css'
 
 const CATEGORIES = [
-    { key: 'barberia', name: 'Barbería', icon: Scissors },
-    { key: 'peluqueria', name: 'Peluquería', icon: Scissors },
-    { key: 'unas', name: 'Uñas', icon: Hand },
-    { key: 'lash', name: 'Lash & Cejas', icon: Eye },
-    { key: 'spa', name: 'Spa & Estética', icon: Sparkles },
-    { key: 'consultorio', name: 'Consultorio', icon: Stethoscope },
-    { key: 'veterinaria', name: 'Veterinaria', icon: PawPrint },
-    { key: 'custom', name: 'Otro', icon: Wrench },
+    { key: 'barberia', name: 'Barbería' },
+    { key: 'peluqueria', name: 'Peluquería' },
+    { key: 'unas', name: 'Uñas' },
+    { key: 'lash', name: 'Lash & Cejas' },
+    { key: 'spa', name: 'Spa & Estética' },
+    { key: 'consultorio', name: 'Consultorio' },
+    { key: 'veterinaria', name: 'Veterinaria' },
+    { key: 'custom', name: 'Otro' },
 ]
 
 function ExploreContent() {
@@ -108,9 +108,7 @@ function ExploreContent() {
                     </form>
 
                     <div className={styles.categories}>
-                        {CATEGORIES.map(cat => {
-                            const Icon = cat.icon
-                            return (
+                        {CATEGORIES.map(cat => (
                                 <button
                                     key={cat.key}
                                     className={`${styles.categoryPill} ${typeFilter === cat.key ? styles.active : ''}`}
@@ -118,8 +116,7 @@ function ExploreContent() {
                                 >
                                     {cat.name}
                                 </button>
-                            )
-                        })}
+                        ))}
                     </div>
                 </div>
 
