@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { CalendarDays, Clock, MapPin, X, RotateCcw, Store, History, AlertTriangle, Search, Calendar, RefreshCw } from 'lucide-react'
@@ -55,7 +55,7 @@ export default function MyAppointmentsPage() {
     const [cancelModal, setCancelModal] = useState(null)
     const [rescheduleModal, setRescheduleModal] = useState(null)
 
-    async function loadAppointments() {
+    const loadAppointments = useCallback(async () => {
         if (!supabase || !user) { setLoading(false); return }
 
         const { data: clientRecords } = await supabase
@@ -88,11 +88,11 @@ export default function MyAppointmentsPage() {
 
         setAppointments((appts || []).map(a => ({ ...a, business: bizMap[a.business_id] || null })))
         setLoading(false)
-    }
+    }, [user])
 
     useEffect(() => {
         if (user) loadAppointments()
-    }, [user])
+    }, [user, loadAppointments])
 
     async function openReschedule(apt) {
         const tomorrow = new Date()

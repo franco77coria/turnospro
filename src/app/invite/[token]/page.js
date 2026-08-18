@@ -1,6 +1,6 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import Link from 'next/link'
@@ -18,9 +18,9 @@ export default function InvitePage() {
 
     useEffect(() => {
         if (token) checkInvite()
-    }, [token])
+    }, [token, checkInvite])
 
-    async function checkInvite() {
+    const checkInvite = useCallback(async () => {
         if (!supabase) return
         setLoading(true)
         try {
@@ -40,7 +40,7 @@ export default function InvitePage() {
             setError(err.message || 'El enlace de invitación es inválido o expiró.')
         }
         setLoading(false)
-    }
+    }, [token])
 
     async function handleAccept() {
         if (!user || !supabase) return

@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { loadBusinessServices, findServiceByName } from '@/lib/services'
 import { DEFAULT_DURATION, formatDateLocal, minutesToTime, timeToMinutes } from '@/lib/scheduling'
@@ -55,7 +55,7 @@ function OwnerAppointmentsPage() {
         fetchCurrentMember()
     }, [user?.id, profile?.role])
 
-    async function loadAppointments() {
+    const loadAppointments = useCallback(async () => {
         if (!supabase || !business?.id) return
         try {
             let query = supabase
@@ -64,25 +64,15 @@ function OwnerAppointmentsPage() {
                 .eq('business_id', business.id)
 
             if (profile?.role === 'Profesional') {
-                let memberId = currentMember?.id
-                if (!memberId) {
-                    const { data } = await supabase
-                        .from('team_members')
-                        .select('id')
-                        .eq('user_id', user.id)
-                        .maybeSingle()
-                    if (data) {
-                        setCurrentMember(data)
-                        memberId = data.id
-                    }
-                }
-                if (memberId) {
-                    query = query.eq('team_member_id', memberId)
-                } else {
+                // El efecto de arriba ya resuelve currentMember. Repetir esa
+                // consulta acá hacía que la carga escribiera un estado del que
+                // ella misma depende: se dispara sola una vuelta de más.
+                if (!currentMember?.id) {
                     setAppointments([])
                     setLoadingApts(false)
                     return
                 }
+                query = query.eq('team_member_id', currentMember.id)
             }
 
             query = query
@@ -100,7 +90,7 @@ function OwnerAppointmentsPage() {
         } finally {
             setLoadingApts(false)
         }
-    }
+    }, [business?.id, dateFilter, filter, currentMember])
 
     useEffect(() => {
         if (business?.id) {
@@ -108,7 +98,7 @@ function OwnerAppointmentsPage() {
         } else {
             setLoadingApts(false)
         }
-    }, [business?.id, dateFilter, filter, currentMember])
+    }, [business?.id, dateFilter, filter, currentMember, loadAppointments])
 
     useEffect(() => {
         if (!supabase || !business?.id) return

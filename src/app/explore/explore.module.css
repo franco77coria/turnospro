@@ -207,7 +207,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
 }
 
 .bizCardImage img {
@@ -222,6 +221,9 @@
 }
 
 .bizCardName {
+    /* El padding vive acá y no en el contenedor: con next/image en modo fill,
+       un contenedor con padding recorta la foto. */
+    padding: 20px;
     font-family: var(--font-display);
     font-size: clamp(22px, 4vw, 30px);
     font-weight: 800;

@@ -241,17 +241,13 @@
     background: var(--surface-2);
     display: grid;
     place-items: center;
-    padding: 16px;
     overflow: hidden;
 }
 
-.bizThumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
 .bizThumbName {
+    /* El padding va en el texto: un contenedor con padding recortaría la foto
+       que next/image posiciona en modo fill. */
+    padding: 16px;
     font-family: var(--font-display);
     font-size: clamp(19px, 2.4vw, 25px);
     font-weight: 800;
@@ -385,6 +381,7 @@
 }
 
 .rebookThumb {
+    position: relative;
     width: 64px;
     height: 64px;
     flex-shrink: 0;
@@ -393,12 +390,6 @@
     background: var(--surface-2);
     display: grid;
     place-items: center;
-}
-
-.rebookThumb img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
 }
 
 .rebookInitial {

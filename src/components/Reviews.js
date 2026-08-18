@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Star, Send } from 'lucide-react'
 import { useAuth } from '@/context/AuthContext'
 import styles from './Reviews.module.css'
@@ -14,7 +14,7 @@ export default function Reviews({ businessId }) {
     const [form, setForm] = useState({ rating: 5, comment: '' })
     const [submitting, setSubmitting] = useState(false)
 
-    async function fetchReviews() {
+    const fetchReviews = useCallback(async () => {
         try {
             const res = await fetch(`/api/reviews?business_id=${businessId}`)
             const data = await res.json()
@@ -25,11 +25,11 @@ export default function Reviews({ businessId }) {
             console.error(err)
         }
         setLoading(false)
-    }
+    }, [businessId])
 
     useEffect(() => {
         if (businessId) fetchReviews()
-    }, [businessId])
+    }, [businessId, fetchReviews])
 
     async function handleSubmit(e) {
         e.preventDefault()

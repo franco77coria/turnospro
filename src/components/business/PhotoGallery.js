@@ -1,5 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import styles from './PhotoGallery.module.css'
 
@@ -81,11 +82,13 @@ export default function PhotoGallery({ photos = [], businessName = '' }) {
                         onClick={(e) => openAt(i, e)}
                         aria-label={`Ver foto ${i + 1} de ${total}`}
                     >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                             src={photo.url}
                             alt={photo.alt || `${businessName} — foto ${i + 1}`}
-                            loading={i === 0 ? 'eager' : 'lazy'}
+                            fill
+                            sizes="(max-width: 720px) 50vw, 33vw"
+                            style={{ objectFit: 'cover' }}
+                            priority={i === 0}
                         />
                         {i === 4 && total > 5 && (
                             <span className={styles.more}>+{total - 5}</span>

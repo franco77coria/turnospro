@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { BellRing, Phone, Calendar, Trash2 } from 'lucide-react'
@@ -22,12 +22,16 @@ function WaitlistContent() {
     const [loading, setLoading] = useState(true)
     const [filter, setFilter] = useState('pending') // pending | notified | all
 
-    async function loadEntries() {
+    // Se extrae el id: la dependencia declarada tiene que coincidir
+    // exactamente con lo que el cuerpo lee.
+    const businessId = business?.id
+
+    const loadEntries = useCallback(async () => {
         setLoading(true)
         let query = supabase
             .from('waitlist')
             .select('*')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .order('date', { ascending: true })
 
         if (filter === 'pending') query = query.eq('notified', false)
@@ -36,12 +40,12 @@ function WaitlistContent() {
         const { data } = await query
         setEntries(data || [])
         setLoading(false)
-    }
+    }, [businessId, filter])
 
     useEffect(() => {
         if (!business?.id || !supabase) return
         loadEntries()
-    }, [business?.id, filter])
+    }, [business?.id, filter, loadEntries])
 
     async function deleteEntry(id) {
         await supabase.from('waitlist').delete().eq('id', id)

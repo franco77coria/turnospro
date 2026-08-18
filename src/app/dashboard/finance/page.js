@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { PAYMENT_METHODS, EXPENSE_CATEGORIES } from '@/lib/data'
 import { TrendingUp, TrendingDown, DollarSign, Banknote, ClipboardList, Plus, X, Download } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
@@ -29,21 +29,25 @@ function FinanceContent() {
     const localToday = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
     const [selectedDate, setSelectedDate] = useState(localToday)
 
-    async function loadTransactions() {
+    // Se extrae el id: la dependencia declarada tiene que coincidir
+    // exactamente con lo que el cuerpo lee.
+    const businessId = business?.id
+
+    const loadTransactions = useCallback(async () => {
         if (!supabase) return
         const { data } = await supabase
             .from('transactions')
             .select('*')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .gte('created_at', `${selectedDate}T00:00:00`)
             .lte('created_at', `${selectedDate}T23:59:59`)
             .order('created_at', { ascending: false })
         setTransactions(data || [])
-    }
+    }, [businessId, selectedDate])
 
     useEffect(() => {
         if (business?.id) loadTransactions()
-    }, [business?.id, selectedDate])
+    }, [business?.id, selectedDate, loadTransactions])
 
     const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
     const expenses = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)

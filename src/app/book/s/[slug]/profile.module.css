@@ -60,11 +60,13 @@
 }
 
 .cover {
+    /* Contenedor posicionado: next/image con `fill` se ancla acá y sirve un
+       tamaño por viewport en vez de la misma imagen para todos. */
+    position: relative;
     width: 100%;
     aspect-ratio: 4 / 3;
-    object-fit: cover;
     border-radius: var(--r-lg);
-    display: block;
+    overflow: hidden;
 }
 
 .name {

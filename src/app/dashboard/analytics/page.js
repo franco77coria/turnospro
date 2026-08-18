@@ -2,7 +2,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatDateLocal } from '@/lib/scheduling'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import { TrendingUp, Users, CalendarDays, AlertTriangle, DollarSign } from 'lucide-react'
@@ -21,7 +21,11 @@ function AnalyticsContent() {
     const [stats, setStats] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    async function loadStats() {
+    // Se extrae el id: la dependencia declarada tiene que coincidir
+    // exactamente con lo que el cuerpo lee.
+    const businessId = business?.id
+
+    const loadStats = useCallback(async () => {
         setLoading(true)
         const now = new Date()
         let startDate
@@ -42,7 +46,7 @@ function AnalyticsContent() {
         const { data: appointments } = await supabase
             .from('appointments')
             .select('status, service_name, date, team_member_id, price')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .gte('date', startStr)
             .lte('date', endStr)
 
@@ -53,14 +57,14 @@ function AnalyticsContent() {
         const { data: transactions } = await supabase
             .from('transactions')
             .select('type, amount, created_at')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .gte('created_at', txnStartDate.toISOString())
 
         // Fetch team members
         const { data: team } = await supabase
             .from('team_members')
             .select('id, name, commission_rate')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .eq('active', true)
 
         const apts = appointments || []
@@ -159,12 +163,12 @@ function AnalyticsContent() {
             topServicesByRevenue, busiestDay, monthlyRevenue,
         })
         setLoading(false)
-    }
+    }, [businessId, period])
 
     useEffect(() => {
         if (!business?.id || !supabase) return
         loadStats()
-    }, [business?.id, period])
+    }, [business?.id, period, loadStats])
 
     if (authLoading || !business?.id) {
         return <div style={{ display: 'flex', justifyContent: 'center', padding: 'var(--space-10)' }}><div className="loading-spinner" /></div>

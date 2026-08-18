@@ -2,7 +2,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { loadBusinessServices } from '@/lib/services'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Minus, Search, ShoppingCart, User, CreditCard, CheckCircle2, Package, Scissors, Trash2 } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS, PAYMENT_METHODS } from '@/lib/data'
@@ -39,9 +39,9 @@ function POSContent() {
             loadBusinessServices(supabase, business.id, { activeOnly: true }).then(setServices)
             loadProducts()
         }
-    }, [business?.id])
+    }, [business?.id, loadProducts])
 
-    async function loadProducts() {
+    const loadProducts = useCallback(async () => {
         try {
             const { data } = await supabase
                 .from('products')
@@ -53,7 +53,7 @@ function POSContent() {
             console.error(err)
         }
         setLoading(false)
-    }
+    }, [business?.id])
 
     const addToCart = (item, type) => {
         setCart(prev => {

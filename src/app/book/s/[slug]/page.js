@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { MapPin, Phone, Star, Clock, ArrowRight, MessageCircle } from 'lucide-react'
 import JsonLd, { buildLocalBusinessSchema } from '@/components/JsonLd'
 import PhotoGallery from '@/components/business/PhotoGallery'
@@ -264,8 +265,16 @@ export default async function BusinessProfilePage({ params }) {
                     </div>
 
                     {business.cover_image_url && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className={styles.cover} src={business.cover_image_url} alt={`Local de ${name}`} />
+                        <div className={styles.cover}>
+                            <Image
+                                src={business.cover_image_url}
+                                alt={`Local de ${name}`}
+                                fill
+                                priority
+                                sizes="(max-width: 720px) 100vw, 480px"
+                                style={{ objectFit: 'cover' }}
+                            />
+                        </div>
                     )}
                 </header>
 

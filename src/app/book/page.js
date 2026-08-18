@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { Search, Star, Store, ChevronRight, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './book.module.css'
 
@@ -35,8 +36,13 @@ function BizCard({ biz }) {
         <Link href={href} className={styles.bizCard}>
             <div className={styles.bizThumb}>
                 {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={`Local de ${biz.name}`} loading="lazy" />
+                    <Image
+                        src={image}
+                        alt={`Local de ${biz.name}`}
+                        fill
+                        sizes="280px"
+                        style={{ objectFit: 'cover' }}
+                    />
                 ) : (
                     /* Sin foto va el nombre, no una inicial sobre un degradado */
                     <span className={styles.bizThumbName}>{biz.name}</span>
@@ -82,8 +88,13 @@ function RebookCard({ apt }) {
         <Link href={href} className={styles.rebookCard}>
             <div className={styles.rebookThumb}>
                 {image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={image} alt={`Local de ${biz.name}`} loading="lazy" />
+                    <Image
+                        src={image}
+                        alt={`Local de ${biz.name}`}
+                        fill
+                        sizes="64px"
+                        style={{ objectFit: 'cover' }}
+                    />
                 ) : (
                     <span className={styles.rebookInitial}>{(biz.name || '?').trim()[0].toUpperCase()}</span>
                 )}

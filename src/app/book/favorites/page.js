@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { Heart, MapPin, ArrowLeft, Store, ArrowRight, Star } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
@@ -12,7 +12,7 @@ export default function FavoritesPage() {
     const [favorites, setFavorites] = useState([])
     const [loading, setLoading] = useState(true)
 
-    async function fetchFavorites() {
+    const fetchFavorites = useCallback(async () => {
         try {
             const res = await fetch(`/api/favorites?user_id=${user.id}`)
             const data = await res.json()
@@ -21,12 +21,12 @@ export default function FavoritesPage() {
             console.error(err)
         }
         setLoading(false)
-    }
+    }, [user])
 
     useEffect(() => {
         if (user) fetchFavorites()
         else setLoading(false)
-    }, [user])
+    }, [user, fetchFavorites])
 
     async function toggleFavorite(businessId) {
         try {

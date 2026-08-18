@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, MapPin, Building, X, Trash2 } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
@@ -25,7 +25,7 @@ function LocationsContent() {
     const [form, setForm] = useState({ name: '', address: '', phone: '', active: true, is_primary: false })
     const [saving, setSaving] = useState(false)
 
-    async function loadLocations() {
+    const loadLocations = useCallback(async () => {
         if (!supabase) return
         setLoading(true)
         try {
@@ -40,11 +40,11 @@ function LocationsContent() {
             console.error(err)
         }
         setLoading(false)
-    }
+    }, [business])
 
     useEffect(() => {
         if (business) loadLocations()
-    }, [business])
+    }, [business, loadLocations])
 
     async function handleSave(e) {
         e.preventDefault()

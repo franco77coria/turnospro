@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Search, MapPin, Store, Star, ArrowLeft } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
@@ -144,8 +145,13 @@ function ExploreContent() {
                                             {/* Con foto, el nombre va debajo. Sin foto, el nombre ES
                                                 la portada y no se repite abajo. */}
                                             {biz.cover_image_url ? (
-                                                // eslint-disable-next-line @next/next/no-img-element
-                                                <img src={biz.cover_image_url} alt={`Local de ${biz.name}`} loading="lazy" />
+                                                <Image
+                                                    src={biz.cover_image_url}
+                                                    alt={`Local de ${biz.name}`}
+                                                    fill
+                                                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 320px"
+                                                    style={{ objectFit: 'cover' }}
+                                                />
                                             ) : (
                                                 /* Sin foto no se pinta un degradado con una letra: se
                                                    muestra el nombre, que es lo que el visitante busca. */

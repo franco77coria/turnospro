@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, Mail, Phone, X, Link2, Check, UserPlus } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
@@ -23,19 +23,23 @@ function TeamContent() {
     const [form, setForm] = useState({ name: '', email: '', phone: '', role: '', commission_rate: '' })
     const [copiedToken, setCopiedToken] = useState(null)
 
-    async function loadTeam() {
+    // Se extrae el id: la dependencia declarada tiene que coincidir
+    // exactamente con lo que el cuerpo lee.
+    const businessId = business?.id
+
+    const loadTeam = useCallback(async () => {
         if (!supabase) return
         const { data } = await supabase
             .from('team_members')
             .select('*')
-            .eq('business_id', business.id)
+            .eq('business_id', businessId)
             .order('created_at')
         setMembers(data || [])
-    }
+    }, [businessId])
 
     useEffect(() => {
         if (business?.id) loadTeam()
-    }, [business?.id])
+    }, [business?.id, loadTeam])
 
     async function handleSave(e) {
         e.preventDefault()

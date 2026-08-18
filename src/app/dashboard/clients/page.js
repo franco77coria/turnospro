@@ -1,7 +1,7 @@
 'use client'
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Search, Trash2, AlertTriangle, Tag } from 'lucide-react'
 import styles from './clients.module.css'
 
@@ -15,7 +15,7 @@ export default function ClientsPage() {
     const [tagInput, setTagInput] = useState('')
     const [loadingClients, setLoadingClients] = useState(true)
 
-    async function loadClients() {
+    const loadClients = useCallback(async () => {
         if (!supabase) return
         try {
             const { data, error } = await supabase
@@ -30,11 +30,11 @@ export default function ClientsPage() {
         } finally {
             setLoadingClients(false)
         }
-    }
+    }, [business?.id])
 
     useEffect(() => {
         if (business?.id) loadClients()
-    }, [business?.id])
+    }, [business?.id, loadClients])
 
     async function handleSave(e) {
         e.preventDefault()

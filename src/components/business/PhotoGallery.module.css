@@ -44,10 +44,7 @@
 }
 
 .cell img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    display: block;
+    /* next/image posiciona en absoluto; solo queda la transición del zoom */
     transition: transform var(--t-med) var(--ease-out);
 }
 

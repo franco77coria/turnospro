@@ -8,7 +8,7 @@ export default function ClientProfileCard({ clientId, businessId }) {
     const [client, setClient] = useState(null)
     const [stats, setStats] = useState({ total: 0, completed: 0, cancelled: 0 })
 
-    async function loadProfile() {
+    const loadProfile = useCallback(async () => {
         if (!supabase) return
 
         const [{ data: clientData }, { data: apts }] = await Promise.all([
@@ -27,11 +27,11 @@ export default function ClientProfileCard({ clientId, businessId }) {
                 cancelled: apts.filter(a => a.status === 'cancelled').length,
             })
         }
-    }
+    }, [clientId, businessId])
 
     useEffect(() => {
         if (clientId && businessId) loadProfile()
-    }, [clientId, businessId])
+    }, [clientId, businessId, loadProfile])
 
     if (!client) return null
 
