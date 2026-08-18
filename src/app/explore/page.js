@@ -138,9 +138,9 @@ function ExploreContent() {
                         </div>
                     ) : (
                         <>
-                            <div className={styles.resultsCount}>
-                                {businesses.length} establecimiento{businesses.length !== 1 ? 's' : ''} encontrado{businesses.length !== 1 ? 's' : ''}
-                            </div>
+                            <h2 className={styles.resultsCount}>
+                                {businesses.length} {businesses.length === 1 ? 'lugar' : 'lugares'} para reservar
+                            </h2>
                             <div className={styles.resultsGrid}>
                                 {businesses.map(biz => (
                                     <Link
@@ -149,20 +149,30 @@ function ExploreContent() {
                                         className={styles.bizCard}
                                     >
                                         <div className={styles.bizCardImage}>
+                                            {/* Con foto, el nombre va debajo. Sin foto, el nombre ES
+                                                la portada y no se repite abajo. */}
                                             {biz.cover_image_url ? (
-                                                <img src={biz.cover_image_url} alt={biz.name} />
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img src={biz.cover_image_url} alt={`Local de ${biz.name}`} loading="lazy" />
                                             ) : (
-                                                <span className={styles.bizCardInitial}>
-                                                    {(biz.name || '?')[0].toUpperCase()}
+                                                /* Sin foto no se pinta un degradado con una letra: se
+                                                   muestra el nombre, que es lo que el visitante busca. */
+                                                <span className={styles.bizCardName}>{biz.name}</span>
+                                            )}
+                                            {biz.open_status && (
+                                                <span className={`${styles.bizStatus} ${biz.open_status.open ? styles.bizOpen : ''}`}>
+                                                    {biz.open_status.open ? 'Abierto' : 'Cerrado'}
                                                 </span>
                                             )}
                                         </div>
                                         <div className={styles.bizInfo}>
                                             <div className={styles.bizNameRow}>
-                                                <span className={styles.bizName}>{biz.name}</span>
-                                                {biz.avg_rating > 0 && (
+                                                {biz.cover_image_url && (
+                                                    <span className={styles.bizName}>{biz.name}</span>
+                                                )}
+                                                {biz.avg_rating > 0 && biz.review_count > 0 && (
                                                     <span className={styles.bizRating}>
-                                                        <Star size={12} fill="#F59E0B" color="#F59E0B" />
+                                                        <Star size={12} fill="currentColor" strokeWidth={0} />
                                                         {Number(biz.avg_rating).toFixed(1)}
                                                         <span className={styles.bizReviewCount}>({biz.review_count})</span>
                                                     </span>
@@ -170,12 +180,17 @@ function ExploreContent() {
                                             </div>
                                             <div className={styles.bizMeta}>
                                                 {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
-                                                {biz.services_count > 0 && ` · ${biz.services_count} servicios`}
+                                                {biz.services_count > 0 && ` · ${biz.services_count} servicio${biz.services_count !== 1 ? 's' : ''}`}
                                             </div>
                                             {biz.address && (
                                                 <div className={styles.bizAddress}>
                                                     <MapPin size={13} />
                                                     {biz.address}
+                                                </div>
+                                            )}
+                                            {biz.price_from != null && (
+                                                <div className={styles.bizPrice}>
+                                                    desde <strong>${Number(biz.price_from).toLocaleString('es-AR')}</strong>
                                                 </div>
                                             )}
                                         </div>

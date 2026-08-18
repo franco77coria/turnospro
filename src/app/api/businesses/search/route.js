@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { resolveOpenStatus } from '@/lib/business-profile'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,7 +21,9 @@ export async function GET(request) {
 
         let query = supabase
             .from('businesses')
-            .select('id, name, business_type, address, slug, services')
+            // cover_image_url faltaba: la tarjeta lo consultaba y nunca llegaba,
+            // así que un negocio con portada cargada igual mostraba el degradado.
+            .select('id, name, business_type, address, slug, settings, cover_image_url, avg_rating, total_reviews')
             .limit(limit)
 
         if (q.trim()) {
@@ -34,51 +37,53 @@ export async function GET(request) {
         const { data, error } = await query
         if (error) throw error
 
-        let businesses = (data || []).map(biz => ({
-            id: biz.id,
-            name: biz.name,
-            business_type: biz.business_type,
-            address: biz.address || '',
-            slug: biz.slug,
-            services_count: Array.isArray(biz.services) ? biz.services.length : 0,
-            avg_rating: 0,
-            review_count: 0
-        }))
+        const rows = data || []
+        const ids = rows.map(b => b.id)
 
-        // Fetch ratings for these businesses
-        if (businesses.length > 0) {
-            const businessIds = businesses.map(b => b.id)
-            const { data: reviewsData } = await supabase
-                .from('reviews')
-                .select('business_id, rating')
-                .in('business_id', businessIds)
+        // Servicios desde la tabla, no desde el JSONB `businesses.services`.
+        // Ese JSONB quedó congelado con las plantillas del onboarding: Barone
+        // figuraba con 6 servicios cuando en el catálogo real tiene 2.
+        const countByBusiness = new Map()
+        const priceByBusiness = new Map()
+        if (ids.length > 0) {
+            const { data: services } = await supabase
+                .from('services')
+                .select('business_id, price')
+                .in('business_id', ids)
+                .eq('active', true)
 
-            if (reviewsData && reviewsData.length > 0) {
-                // Group by business_id
-                const ratingsMap = {}
-                reviewsData.forEach(r => {
-                    if (!ratingsMap[r.business_id]) ratingsMap[r.business_id] = { sum: 0, count: 0 }
-                    ratingsMap[r.business_id].sum += r.rating
-                    ratingsMap[r.business_id].count += 1
-                })
-
-                businesses = businesses.map(biz => {
-                    const r = ratingsMap[biz.id]
-                    if (r) {
-                        return { 
-                            ...biz, 
-                            review_count: r.count, 
-                            avg_rating: Math.round((r.sum / r.count) * 10) / 10 
-                        }
-                    }
-                    return biz
-                })
+            for (const svc of services || []) {
+                countByBusiness.set(svc.business_id, (countByBusiness.get(svc.business_id) || 0) + 1)
+                if (svc.price == null) continue
+                const current = priceByBusiness.get(svc.business_id)
+                if (current == null || svc.price < current) {
+                    priceByBusiness.set(svc.business_id, svc.price)
+                }
             }
         }
 
-        // Sort by rating if not specifically a text search
+        const businesses = rows.map(biz => ({
+            id: biz.id,
+            name: (biz.name || '').trim(),
+            business_type: biz.business_type,
+            address: biz.address || '',
+            slug: biz.slug,
+            cover_image_url: biz.cover_image_url || null,
+            services_count: countByBusiness.get(biz.id) || 0,
+            price_from: priceByBusiness.get(biz.id) ?? null,
+            // avg_rating y total_reviews los mantiene un trigger: no hace falta
+            // traer todas las reseñas y promediarlas en JS como antes.
+            avg_rating: Number(biz.avg_rating) || 0,
+            review_count: biz.total_reviews || 0,
+            open_status: resolveOpenStatus(biz.settings),
+        }))
+
+        // Sin búsqueda por texto, primero los mejor puntuados; a igual puntaje,
+        // los que tienen catálogo cargado, que son los que se pueden reservar.
         if (!q.trim()) {
-            businesses.sort((a, b) => b.avg_rating - a.avg_rating)
+            businesses.sort((a, b) =>
+                b.avg_rating - a.avg_rating || b.services_count - a.services_count
+            )
         }
 
         return NextResponse.json({ businesses })

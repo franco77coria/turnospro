@@ -31,7 +31,8 @@
     font-size: 13px;
     font-weight: 600;
     text-decoration: none;
-    padding: 6px 14px;
+    padding: 12px 18px;
+    min-height: 44px;
     border-radius: var(--r-full);
     background: var(--bg-card);
     border: 1px solid var(--line);
@@ -95,6 +96,15 @@
     scrollbar-width: none;
 }
 
+@media (min-width: 769px) {
+    /* Con ancho suficiente entran las ocho: scrollear de costado un filtro que
+       cabe entero es esconderlo. */
+    .categories {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+}
+
 .categories::-webkit-scrollbar {
     display: none;
 }
@@ -103,7 +113,7 @@
     display: flex;
     align-items: center;
     gap: 4px;
-    padding: 6px 14px;
+    padding: 10px 16px;
     border: 1px solid var(--line);
     border-radius: var(--r-full);
     background: var(--bg-card);
@@ -115,7 +125,8 @@
     transition: all var(--t-fast);
     flex-shrink: 0;
     font-family: inherit;
-    min-height: 34px;
+    /* 34px dejaba el filtro principal por debajo del mínimo táctil */
+    min-height: 44px;
     box-shadow: var(--shadow-sm);
 }
 
@@ -125,10 +136,11 @@
 }
 
 .categoryPill.active {
-    background: var(--pink);
-    border-color: var(--pink);
-    color: white;
-    box-shadow: 0 4px 10px color-mix(in oklab, var(--pink) 25%, transparent);
+    /* Blanco sobre --pink da 3.48:1, por debajo de AA en los dos temas */
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--cream);
+    box-shadow: none;
 }
 
 /* Results Area */
@@ -137,10 +149,12 @@
 }
 
 .resultsCount {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    margin-bottom: 16px;
+    font-family: var(--font-display);
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 0 0 16px;
 }
 
 .resultsGrid {
@@ -173,14 +187,27 @@
     transform: scale(0.98);
 }
 
+@media (prefers-reduced-motion: reduce) {
+    .explorePage { animation: none; }
+    .bizCard,
+    .bizCardImage img { transition: none; }
+    .bizCard:hover { transform: none; }
+    .bizCard:hover .bizCardImage img { transform: none; }
+    .bizCard:active { transform: none; }
+}
+
 .bizCardImage {
+    position: relative;
     width: 100%;
     height: 180px;
-    background: linear-gradient(135deg, var(--pink), var(--violet));
+    /* El degradado rosa-violeta ya hacía de portada, de avatar y de foto de
+       equipo. Sin foto, la tarjeta muestra el nombre sobre una superficie. */
+    background: var(--surface-2);
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
+    padding: 20px;
 }
 
 .bizCardImage img {
@@ -194,11 +221,66 @@
     transform: scale(1.04);
 }
 
-.bizCardInitial {
+.bizCardName {
     font-family: var(--font-display);
-    font-size: 48px;
+    font-size: clamp(22px, 4vw, 30px);
     font-weight: 800;
-    color: rgba(255, 255, 255, 0.6);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    text-align: center;
+    text-wrap: balance;
+    /* Un nombre largo no puede desbordar la tarjeta */
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Estado real de la agenda, sobre la portada */
+.bizStatus {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    border-radius: var(--r-full);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-mute);
+}
+
+.bizStatus::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: var(--r-full);
+    background: var(--ink-faint);
+}
+
+.bizOpen {
+    color: var(--ink);
+}
+
+.bizOpen::before {
+    background: var(--success-ink);
+}
+
+.bizPrice {
+    font-size: 13px;
+    color: var(--ink-mute);
+    margin-top: 2px;
+}
+
+.bizPrice strong {
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
 }
 
 .bizInfo {
@@ -219,10 +301,10 @@
     font-family: var(--font-display);
     font-weight: 800;
     font-size: 18px;
+    letter-spacing: -0.02em;
     color: var(--ink);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .bizRating {
@@ -233,6 +315,11 @@
     font-weight: 700;
     color: var(--ink);
     flex-shrink: 0;
+}
+
+.bizRating svg {
+    /* #F59E0B da 2.15:1 sobre blanco, por debajo del 3:1 que pide AA */
+    color: var(--amber-ink);
 }
 
 .bizReviewCount {
@@ -300,7 +387,9 @@
 /* Desktop Styles */
 @media (min-width: 769px) {
     .searchSection {
-        max-width: 600px;
+        /* Antes 600px mientras los resultados iban a 1000: las píldoras de
+           rubro quedaban cortadas al medio de una palabra. */
+        max-width: 1000px;
         margin: 0 auto;
         padding: 32px 16px 16px;
         border-bottom: none;
