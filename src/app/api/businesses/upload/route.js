@@ -10,10 +10,23 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 const MAX_BYTES = 5 * 1024 * 1024
 const MAX_GALLERY_PHOTOS = 12
 
-const EXT_BY_TYPE = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
+// Se guardaba el archivo tal como lo subía el dueño: una foto de 5 MB sacada
+// con el celular se le bajaba entera a cada visitante de la ficha. Se
+// normaliza a WebP con un ancho tope antes de guardar.
+const OUTPUT_WIDTH = { cover: 1600, gallery: 1400 }
+const OUTPUT_QUALITY = 82
+
+async function optimize(buffer, kind) {
+    const sharp = (await import('sharp')).default
+    return sharp(buffer)
+        .rotate() // respeta la orientación EXIF antes de descartar los metadatos
+        .resize({
+            width: OUTPUT_WIDTH[kind],
+            // Una foto más chica que el tope no se agranda
+            withoutEnlargement: true,
+        })
+        .webp({ quality: OUTPUT_QUALITY })
+        .toBuffer()
 }
 
 /** Verifica que el usuario logueado sea dueño del negocio. */
@@ -60,10 +73,18 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No tenés permisos para este negocio' }, { status: 403 })
         }
 
-        // La extensión sale del tipo MIME validado, no del nombre del archivo:
-        // el nombre lo controla quien sube y termina siendo una ruta de storage.
-        const ext = EXT_BY_TYPE[file.type]
-        const buffer = Buffer.from(await file.arrayBuffer())
+        const original = Buffer.from(await file.arrayBuffer())
+        let buffer
+        try {
+            buffer = await optimize(original, kind)
+        } catch (err) {
+            // Un archivo con extensión válida pero contenido que no es una
+            // imagen llega hasta acá: se rechaza en vez de guardarlo.
+            console.error('Image optimize error:', err?.message)
+            return NextResponse.json({ error: 'No se pudo procesar la imagen. Probá con otra.' }, { status: 400 })
+        }
+        // Siempre WebP: la extensión ya no depende de lo que subió el usuario.
+        const ext = 'webp'
 
         if (kind === 'gallery') {
             const { count } = await supabase
@@ -82,7 +103,7 @@ export async function POST(request) {
 
             const { error: uploadError } = await supabase.storage
                 .from(BUCKET)
-                .upload(storagePath, buffer, { contentType: file.type, upsert: false })
+                .upload(storagePath, buffer, { contentType: 'image/webp', upsert: false })
 
             if (uploadError) {
                 console.error('Gallery upload error:', uploadError)
@@ -117,7 +138,14 @@ export async function POST(request) {
 
         const { error: uploadError } = await supabase.storage
             .from(BUCKET)
-            .upload(storagePath, buffer, { contentType: file.type, upsert: true })
+            .upload(storagePath, buffer, { contentType: 'image/webp', upsert: true })
+
+        // Portadas viejas guardadas con otra extensión quedarían huérfanas en
+        // el bucket, porque ahora la ruta siempre termina en .webp.
+        await supabase.storage.from(BUCKET).remove([
+            `${businessId}/cover.jpg`,
+            `${businessId}/cover.png`,
+        ])
 
         if (uploadError) {
             console.error('Upload error:', uploadError)

@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check": "eslint --max-warnings 200 && next build",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -25,13 +26,14 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "resend": "^6.9.2",
+    "sharp": "^0.34.5",
     "web-push": "^3.6.7",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "eslint": "^9",
     "eslint-config-next": "^16.2.6",
-    "sharp": "^0.34.5",
+    "typescript": "^6.0.3",
     "vitest": "^3.2.1"
   },
   "overrides": {

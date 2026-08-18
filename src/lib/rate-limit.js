@@ -71,7 +71,6 @@ function getUpstash() {
     }
 
     try {
-        // eslint-disable-next-line no-undef
         const { Redis } = require('@upstash/redis')
         upstashRedis = new Redis({ url, token })
         upstashEnabled = true

@@ -139,7 +139,7 @@ export function useBookingFlow() {
         if (!match) return
         setSelectedService(match)
         setStep(teamMembers.length > 0 ? 2 : 3, { replace: true })
-    }, [preselectedServiceId, servicesList, teamMembers.length, selectedService])
+    }, [preselectedServiceId, servicesList, teamMembers.length, selectedService, setStep])
 
     // Load occupied slots when date changes
     useEffect(() => {

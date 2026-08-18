@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { formatDateLocal, todayLocal } from '@/lib/scheduling'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Icons } from '@/components/Icons'
 import Link from 'next/link'
@@ -25,12 +25,7 @@ function ClientDashboard() {
     setFormattedDate(new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }).format(now))
   }, [])
 
-  useEffect(() => {
-    if (!user?.email) return
-    loadMyAppointments()
-  }, [user])
-
-  async function loadMyAppointments() {
+  const loadMyAppointments = useCallback(async () => {
     try {
       const { data: clientRecords } = await supabase
         .from('clients')
@@ -65,7 +60,12 @@ function ClientDashboard() {
       console.error('Client dashboard load error:', err)
     }
     setLoading(false)
-  }
+  }, [user])
+
+  useEffect(() => {
+    if (!user?.email) return
+    loadMyAppointments()
+  }, [user, loadMyAppointments])
 
   const today = todayLocal()
   const now = new Date()

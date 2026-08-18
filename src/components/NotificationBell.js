@@ -9,32 +9,38 @@ export default function NotificationBell() {
     const [notifications, setNotifications] = useState([])
     const [unreadCount, setUnreadCount] = useState(0)
     const [open, setOpen] = useState(false)
+    // Se extrae el id: así la dependencia declarada coincide exactamente con lo
+    // que el cuerpo lee, y el compilador de React puede optimizar el componente.
+    const userId = user?.id
 
-    const loadNotifications = async () => {
-        if (!supabase || !user?.id) return
+    // Sin useCallback esta función cambia de identidad en cada render, y está
+    // en las dependencias del efecto de abajo: cada fetch dispara un setState,
+    // que dispara un render, que dispara otro fetch. Bucle infinito contra la
+    // base y resuscripción constante del canal de realtime.
+    const loadNotifications = useCallback(async () => {
+        if (!supabase || !userId) return
         const { data } = await supabase
             .from('notifications')
             .select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', userId)
             .order('created_at', { ascending: false })
             .limit(10)
         setNotifications(data || [])
         setUnreadCount((data || []).filter(n => !n.read).length)
-    }
+    }, [userId])
 
     useEffect(() => {
-        // eslint-disable-next-line
         loadNotifications()
 
         // Subscribe to realtime notifications
-        if (!supabase || !user?.id) return
+        if (!supabase || !userId) return
         const channel = supabase
-            .channel('notifications')
+            .channel(`notifications:${userId}`)
             .on('postgres_changes', {
                 event: 'INSERT',
                 schema: 'public',
                 table: 'notifications',
-                filter: `user_id=eq.${user.id}`,
+                filter: `user_id=eq.${userId}`,
             }, (payload) => {
                 setNotifications(prev => [payload.new, ...prev])
                 setUnreadCount(prev => prev + 1)
@@ -42,7 +48,7 @@ export default function NotificationBell() {
             .subscribe()
 
         return () => { supabase.removeChannel(channel) }
-    }, [user?.id, loadNotifications])
+    }, [userId, loadNotifications])
 
     async function markAllRead() {
         if (!supabase || !user?.id) return
