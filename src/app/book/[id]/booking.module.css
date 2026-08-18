@@ -545,3 +545,18 @@
         gap: 4px;
     }
 }
+
+/* Los pasos ya completados vuelven atrás: además del link de cada paso y del
+   botón del navegador, el stepper mismo es una vía de regreso. */
+.progressClickable {
+    border: none;
+    background: none;
+    padding: 0;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+}
+
+.progressClickable:hover .progressDot {
+    filter: brightness(1.1);
+}

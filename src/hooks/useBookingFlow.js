@@ -1,5 +1,5 @@
 'use client'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -22,7 +22,7 @@ export function useBookingFlow() {
     const { user, loading: authLoading } = useAuth()
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [step, setStep] = useState(1)
+    const [step, setStepState] = useState(1)
     const [selectedService, setSelectedService] = useState(null)
     const [selectedProfessional, setSelectedProfessional] = useState(null)
     const [teamMembers, setTeamMembers] = useState([])
@@ -41,6 +41,37 @@ export function useBookingFlow() {
     const [couponError, setCouponError] = useState('')
     const [closureDates, setClosureDates] = useState([])
     const [teamAbsences, setTeamAbsences] = useState([])
+
+    // Los pasos viven en el historial del navegador. Sin esto, "atrás" saca al
+    // usuario del flujo entero en vez de retroceder un paso — y en el navegador
+    // embebido de Instagram eso cierra la sesión de compra.
+    const stepRef = useRef(1)
+    useEffect(() => { stepRef.current = step }, [step])
+
+    const setStep = useCallback((value, { replace = false } = {}) => {
+        if (value === stepRef.current) return
+        stepRef.current = value
+        setStepState(value)
+        if (typeof window === 'undefined') return
+        const entry = { bookingStep: value }
+        if (replace) window.history.replaceState(entry, '')
+        else window.history.pushState(entry, '')
+    }, [])
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return
+        // La entrada inicial se marca sin apilar: "atrás" desde el paso 1 tiene
+        // que devolver a la ficha, no dejar al usuario encerrado.
+        window.history.replaceState({ bookingStep: stepRef.current }, '')
+        function onPop(event) {
+            const target = event.state?.bookingStep
+            if (typeof target !== 'number') return
+            stepRef.current = target
+            setStepState(target)
+        }
+        window.addEventListener('popstate', onPop)
+        return () => window.removeEventListener('popstate', onPop)
+    }, [])
 
     // Auto-fill form from logged-in user or previous guest bookings saved in localStorage
     useEffect(() => {
@@ -107,7 +138,7 @@ export function useBookingFlow() {
         const match = servicesList.find(s => String(s.id) === String(preselectedServiceId))
         if (!match) return
         setSelectedService(match)
-        setStep(teamMembers.length > 0 ? 2 : 3)
+        setStep(teamMembers.length > 0 ? 2 : 3, { replace: true })
     }, [preselectedServiceId, servicesList, teamMembers.length, selectedService])
 
     // Load occupied slots when date changes

@@ -85,7 +85,7 @@ export default function BookingPage() {
                     )}
                 </div>
 
-                <ProgressStepper step={b.step} teamMembers={b.teamMembers} />
+                <ProgressStepper step={b.step} teamMembers={b.teamMembers} onStepClick={b.setStep} />
                 {b.error && <div className={styles.errorMsg}>{b.error}</div>}
 
                 {b.step === 1 && <ServiceStep services={b.services} selectedService={b.selectedService}
