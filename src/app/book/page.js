@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
-import { Search, Star, MapPin, Store, ChevronRight, CalendarDays, Clock } from 'lucide-react'
+import { Search, Star, Store, ChevronRight, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './book.module.css'
@@ -13,32 +14,57 @@ const RUBRO_LABELS = {
     veterinaria: 'Veterinaria', custom: 'Otro',
 }
 
-function BizCardSmall({ biz, className = '' }) {
+const CATEGORIES = [
+    { key: 'barberia', name: 'Barbería' },
+    { key: 'peluqueria', name: 'Peluquería' },
+    { key: 'unas', name: 'Uñas' },
+    { key: 'lash', name: 'Lash & Cejas' },
+    { key: 'spa', name: 'Spa' },
+    { key: 'consultorio', name: 'Consultorio' },
+    { key: 'veterinaria', name: 'Veterinaria' },
+]
+
+function formatPrice(value) {
+    return `$${Number(value).toLocaleString('es-AR')}`
+}
+
+function BizCard({ biz }) {
     const href = biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`
+    const image = biz.cover_image_url || biz.logo_url
     return (
-        <Link href={href} className={`${styles.bizCardSmall} ${className}`}>
+        <Link href={href} className={styles.bizCard}>
             <div className={styles.bizThumb}>
-                {biz.cover_image_url || biz.logo_url ? (
-                    <img src={biz.cover_image_url || biz.logo_url} alt={biz.name} />
+                {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt={`Local de ${biz.name}`} loading="lazy" />
                 ) : (
-                    <span className={styles.bizInitial}>{(biz.name || '?')[0].toUpperCase()}</span>
+                    /* Sin foto va el nombre, no una inicial sobre un degradado */
+                    <span className={styles.bizThumbName}>{biz.name}</span>
+                )}
+                {biz.open_status && (
+                    <span className={`${styles.bizStatus} ${biz.open_status.open ? styles.bizOpen : ''}`}>
+                        {biz.open_status.open ? 'Abierto' : 'Cerrado'}
+                    </span>
                 )}
             </div>
             <div className={styles.bizMeta}>
-                <span className={styles.bizName}>{biz.name}</span>
-                {biz.avg_rating > 0 && (
-                    <span className={styles.bizRating}>
-                        <Star size={12} fill="#F59E0B" color="#F59E0B" />
-                        {Number(biz.avg_rating).toFixed(1)}
-                        <span className={styles.bizReviewCount}>({biz.total_reviews})</span>
-                    </span>
+                <span className={styles.bizNameRow}>
+                    {/* Sin foto el nombre ya es la portada: no se repite acá */}
+                    {image && <span className={styles.bizName}>{biz.name}</span>}
+                    {biz.avg_rating > 0 && biz.review_count > 0 && (
+                        <span className={styles.bizRating}>
+                            <Star size={12} fill="currentColor" strokeWidth={0} />
+                            {Number(biz.avg_rating).toFixed(1)}
+                        </span>
+                    )}
+                </span>
+                <span className={styles.bizType}>
+                    {RUBRO_LABELS[biz.business_type] || biz.business_type}
+                    {biz.address && ` · ${biz.address}`}
+                </span>
+                {biz.price_from != null && (
+                    <span className={styles.bizPrice}>desde <strong>{formatPrice(biz.price_from)}</strong></span>
                 )}
-                {biz.address && (
-                    <span className={styles.bizAddr}>
-                        {biz.address.length > 30 ? biz.address.slice(0, 30) + '...' : biz.address}
-                    </span>
-                )}
-                <span className={styles.bizType}>{RUBRO_LABELS[biz.business_type] || biz.business_type}</span>
             </div>
         </Link>
     )
@@ -48,33 +74,32 @@ function RebookCard({ apt }) {
     const biz = apt.business
     if (!biz) return null
     const href = biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.business_id || apt.business_id}`
-    const dateObj = new Date(apt.date + 'T12:00:00')
-    const dateStr = dateObj.toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    const [y, m, d] = (apt.date || '').split('-').map(Number)
+    const dateStr = y ? new Date(y, m - 1, d).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' }) : ''
+    const image = biz.cover_image_url || biz.logo_url
 
     return (
         <Link href={href} className={styles.rebookCard}>
             <div className={styles.rebookThumb}>
-                {biz.cover_image_url || biz.logo_url ? (
-                    <img src={biz.cover_image_url || biz.logo_url} alt={biz.name} />
+                {image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={image} alt={`Local de ${biz.name}`} loading="lazy" />
                 ) : (
-                    <span className={styles.bizInitial}>{(biz.name || '?')[0].toUpperCase()}</span>
+                    <span className={styles.rebookInitial}>{(biz.name || '?').trim()[0].toUpperCase()}</span>
                 )}
             </div>
             <div className={styles.rebookInfo}>
                 <span className={styles.rebookBizName}>{biz.name}</span>
-                <span className={styles.rebookDate}>{dateStr}</span>
-                <span className={styles.rebookService}>
-                    {apt.price != null && `$${Number(apt.price).toLocaleString()}`}
-                    {apt.price != null && apt.service_name && ' · '}
-                    {apt.service_name && '1 artículo'}
+                <span className={styles.rebookDetail}>
+                    {apt.service_name}{dateStr && ` · ${dateStr}`}
                 </span>
-                <span className={styles.rebookCta}>Volver a reservar</span>
+                <span className={styles.rebookCta}>Repetir turno <ArrowRight size={13} /></span>
             </div>
         </Link>
     )
 }
 
-function SkeletonCards({ count = 3 }) {
+function SkeletonCards({ count = 4 }) {
     return (
         <div className={styles.scrollRow}>
             {Array.from({ length: count }).map((_, i) => (
@@ -91,26 +116,27 @@ function SkeletonCards({ count = 3 }) {
 }
 
 export default function BookListPage() {
+    const router = useRouter()
     const { user, profile, loading: authLoading } = useAuth()
     const [businesses, setBusinesses] = useState([])
     const [recentAppts, setRecentAppts] = useState([])
     const [loading, setLoading] = useState(true)
+    const [query, setQuery] = useState('')
 
     useEffect(() => {
         async function loadData() {
-            if (!supabase) { setLoading(false); return }
+            // Mismo endpoint que /explore: trae el precio más bajo, el estado de
+            // la agenda y el conteo real de servicios. Antes esta pantalla
+            // consultaba `businesses` por su cuenta y no tenía nada de eso.
+            try {
+                const res = await fetch('/api/businesses/search?limit=12')
+                const data = await res.json()
+                setBusinesses(data.businesses || [])
+            } catch {
+                setBusinesses([])
+            }
 
-            // Load businesses
-            const { data: bizData } = await supabase
-                .from('businesses')
-                .select('id, name, slug, business_type, address, phone, services, cover_image_url, logo_url, avg_rating, total_reviews')
-                .order('avg_rating', { ascending: false })
-                .limit(20)
-
-            setBusinesses(bizData || [])
-
-            // Load recent appointments if logged in
-            if (user) {
+            if (user && supabase) {
                 const { data: clientRecords } = await supabase
                     .from('clients')
                     .select('id, business_id')
@@ -147,73 +173,91 @@ export default function BookListPage() {
         loadData()
     }, [user])
 
-    const greeting = profile?.full_name
-        ? `Hola, ${profile.full_name.split(' ')[0]}`
-        : 'Para ti'
+    function handleSearch(e) {
+        e.preventDefault()
+        const q = query.trim()
+        router.push(q ? `/explore?q=${encodeURIComponent(q)}` : '/explore')
+    }
+
+    const firstName = profile?.full_name?.trim().split(' ')[0]
+    // El nombre va dentro del título, no como etiqueta suelta encima
+    const heading = firstName ? `${firstName}, ¿qué te hacés hoy?` : '¿Qué te hacés hoy?'
 
     const content = (
         <div className={styles.bookPage}>
-            {/* Header */}
-            <div className={styles.header}>
-                <h1 className={styles.pageTitle}>{greeting}</h1>
-                <Link href="/explore" className={styles.searchIcon} aria-label="Buscar">
-                    <Search size={22} />
-                </Link>
-            </div>
+            <section className={styles.hero}>
+                <h1 className={styles.heroTitle}>{heading}</h1>
+                <p className={styles.heroLede}>
+                    Barberías, peluquerías y estudios que reservás online. Sin llamar, sin esperar respuesta.
+                </p>
+
+                <form className={styles.searchForm} onSubmit={handleSearch} role="search">
+                    <Search size={20} className={styles.searchIcon} aria-hidden="true" />
+                    <input
+                        className={styles.searchInput}
+                        type="search"
+                        value={query}
+                        onChange={e => setQuery(e.target.value)}
+                        placeholder="Buscá un lugar o un tratamiento"
+                        aria-label="Buscar negocios"
+                    />
+                    <button type="submit" className={styles.searchSubmit}>Buscar</button>
+                </form>
+
+                <nav className={styles.pills} aria-label="Rubros">
+                    {CATEGORIES.map(cat => (
+                        <Link key={cat.key} href={`/explore?type=${cat.key}`} className={styles.pill}>
+                            {cat.name}
+                        </Link>
+                    ))}
+                </nav>
+            </section>
 
             {loading ? (
                 <div className={styles.sections}>
                     <div className={styles.section}>
-                        <h2 className={styles.sectionTitle}>Recomendado</h2>
+                        <h2 className={styles.sectionTitle}>Cerca tuyo</h2>
                         <SkeletonCards />
                     </div>
                 </div>
             ) : (
                 <div className={styles.sections}>
-                    {/* Volver a reservar */}
                     {recentAppts.length > 0 && (
                         <div className={styles.section}>
                             <h2 className={styles.sectionTitle}>Volver a reservar</h2>
                             <div className={styles.scrollRow}>
-                                {recentAppts.map(apt => (
-                                    <RebookCard key={apt.id} apt={apt} />
-                                ))}
+                                {recentAppts.map(apt => <RebookCard key={apt.id} apt={apt} />)}
                             </div>
                         </div>
                     )}
 
-                    {/* Recomendado */}
                     {businesses.length > 0 && (
                         <div className={styles.section}>
                             <div className={styles.sectionHeader}>
-                                <h2 className={styles.sectionTitle}>Recomendado</h2>
+                                <h2 className={styles.sectionTitle}>Cerca tuyo</h2>
                                 <Link href="/explore" className={styles.seeAll}>
                                     Ver todo <ChevronRight size={14} />
                                 </Link>
                             </div>
                             <div className={styles.scrollRow}>
-                                {businesses.slice(0, 8).map(biz => (
-                                    <BizCardSmall key={biz.id} biz={biz} />
-                                ))}
+                                {businesses.slice(0, 8).map(biz => <BizCard key={biz.id} biz={biz} />)}
                             </div>
                         </div>
                     )}
 
-                    {/* All businesses fallback */}
                     {businesses.length === 0 && recentAppts.length === 0 && (
                         <div className={styles.emptyState}>
-                            <Store size={40} />
-                            <h3>No hay negocios disponibles todavía</h3>
-                            <p>Cuando se registren negocios, los verás acá.</p>
+                            <Store size={32} />
+                            <h3>Todavía no hay negocios publicados</h3>
+                            <p>En cuanto se sumen, van a aparecer acá.</p>
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Not logged in prompt */}
             {!user && !authLoading && (
                 <div className={styles.loginPrompt}>
-                    <p>Iniciá sesión para ver tus reservas y favoritos</p>
+                    <p>Iniciá sesión para ver tus turnos y volver a reservar en un toque.</p>
                     <div className={styles.loginBtns}>
                         <Link href="/login?redirect=/book" className="btn btn-primary">Iniciar sesión</Link>
                         <Link href="/register?redirect=/book" className="btn btn-secondary">Crear cuenta</Link>
