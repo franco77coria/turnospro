@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowLeft, CalendarDays, User, Mail, Phone, LogIn, Tag, MessageSquare } from 'lucide-react'
 import Link from 'next/link'
+import { formatDateEs } from '@/lib/scheduling'
 import styles from '@/app/book/[id]/booking.module.css'
 
 const COUNTRIES = [
@@ -135,7 +136,7 @@ export default function ConfirmStep({
                             </div>
                         </div>
                         <span style={{ color: 'var(--text-secondary)' }}>
-                            {new Date(selectedDate).toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })} — {selectedTime}
+                            {formatDateEs(selectedDate, { weekday: 'short', day: 'numeric', month: 'short' })} — {selectedTime}
                         </span>
                     </div>
 

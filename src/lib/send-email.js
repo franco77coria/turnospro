@@ -3,6 +3,7 @@
 
 import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail, waitlistSlotEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
+import { formatDateEs } from '@/lib/scheduling'
 
 /**
  * Send an email. Works from both server and client contexts.
@@ -103,12 +104,7 @@ export async function sendEmail({ type, to, data }) {
 export async function sendAppointmentConfirmation({ appointment, client, business, service, professional }) {
     if (!client?.email) return { error: 'Cliente sin email' }
 
-    let dateObj = new Date(appointment.date)
-    if (typeof appointment.date === 'string' && appointment.date.includes('-')) {
-        const [y, m, d] = appointment.date.split('-').map(Number)
-        dateObj = new Date(y, m - 1, d)
-    }
-    const formattedDate = dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const formattedDate = formatDateEs(appointment.date, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'confirmation',
@@ -133,8 +129,7 @@ export async function sendAppointmentConfirmation({ appointment, client, busines
 export async function sendAppointmentReminder({ appointment, client, business, service, hoursUntil }) {
     if (!client?.email) return { error: 'Cliente sin email' }
 
-    const date = new Date(appointment.date)
-    const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const formattedDate = formatDateEs(appointment.date, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'reminder',
@@ -157,8 +152,7 @@ export async function sendAppointmentReminder({ appointment, client, business, s
 export async function sendNewBookingNotify({ appointment, client, business }) {
     if (!business?.owner_email) return { error: 'Negocio sin email de dueño' }
 
-    const date = new Date(appointment.date)
-    const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const formattedDate = formatDateEs(appointment.date, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'new_booking_notify',
@@ -182,8 +176,7 @@ export async function sendNewBookingNotify({ appointment, client, business }) {
 export async function sendCancellationEmail({ appointment, client, business }) {
     if (!client?.email) return { error: 'Cliente sin email' }
 
-    const date = new Date(appointment.date)
-    const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const formattedDate = formatDateEs(appointment.date, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'cancellation',
@@ -205,8 +198,7 @@ export async function sendCancellationEmail({ appointment, client, business }) {
 export async function sendCancellationNotify({ appointment, client, business }) {
     if (!business?.owner_email) return { error: 'Negocio sin email de dueño' }
 
-    const date = new Date(appointment.date)
-    const formattedDate = date.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+    const formattedDate = formatDateEs(appointment.date, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return sendEmail({
         type: 'cancellation_notify',

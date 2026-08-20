@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { APPOINTMENT_STATUS } from '@/lib/data'
 import { loadBusinessServices, findServiceByName } from '@/lib/services'
-import { DEFAULT_DURATION, formatDateLocal, minutesToTime, timeToMinutes } from '@/lib/scheduling'
+import { DEFAULT_DURATION, formatDateEs, formatDateLocal, minutesToTime, timeToMinutes } from '@/lib/scheduling'
 import { Check, X as XIcon, Plus, User, Pencil, Clock } from 'lucide-react'
 import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
@@ -130,7 +130,7 @@ function OwnerAppointmentsPage() {
                                 .eq('id', apt.client_id)
 
                             if (clientInfo.email) {
-                                const formattedDate = new Date(apt.date).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })
+                                const formattedDate = formatDateEs(apt.date, { weekday: 'long', day: 'numeric', month: 'long' })
                                 fetch('/api/email', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },

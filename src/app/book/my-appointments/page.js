@@ -8,6 +8,7 @@ import { useToast } from '@/components/Toast'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import {
     DEFAULT_DURATION,
+    formatDateEs,
     formatDateLocal,
     generateAvailableSlots,
     timeToMinutes,
@@ -406,7 +407,7 @@ export default function MyAppointmentsPage() {
                                         {rescheduleModal.appointment.business?.name || 'Negocio'}
                                     </div>
                                     <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginTop: 2 }}>
-                                        {rescheduleModal.appointment.service_name} — Horario actual: {rescheduleModal.appointment.date} a las {rescheduleModal.appointment.time} hs
+                                        {rescheduleModal.appointment.service_name} — Horario actual: {formatDateEs(rescheduleModal.appointment.date, { weekday: 'short', day: 'numeric', month: 'short' })} a las {rescheduleModal.appointment.time} hs
                                     </div>
                                 </div>
 

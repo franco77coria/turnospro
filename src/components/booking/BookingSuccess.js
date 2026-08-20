@@ -1,5 +1,6 @@
 import { Check, CalendarDays, Download } from 'lucide-react'
 import { googleCalendarUrl, generateICS, downloadICS } from '@/lib/calendar-export'
+import { formatDateEs } from '@/lib/scheduling'
 import styles from '@/app/book/[id]/booking.module.css'
 
 export default function BookingSuccess({
@@ -9,7 +10,7 @@ export default function BookingSuccess({
     business,
     onReset,
 }) {
-    const dateObj = new Date(selectedDate)
+    const formattedDate = formatDateEs(selectedDate, { weekday: 'long', day: 'numeric', month: 'long' })
 
     return (
         <div className={styles.bookingPage}>
@@ -29,7 +30,7 @@ export default function BookingSuccess({
                         <div className={styles.summaryRow}>
                             <span className={styles.summaryLabel}>Fecha</span>
                             <span className={styles.summaryValue}>
-                                {dateObj.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+                                {formattedDate}
                             </span>
                         </div>
                         <div className={styles.summaryRow}>
