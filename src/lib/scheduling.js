@@ -125,10 +125,38 @@ export function generateAvailableSlots({
     // Paso automático: el turno siguiente arranca justo cuando termina el anterior.
     const step = cfg.slotInterval || serviceDuration
 
-    const slots = []
-    // El servicio tiene que terminar dentro del horario de atención.
+    // Filtrar ocupados relevantes para calcular aperturas
+    const relevantOccupied = teamMemberId
+        ? occupied.filter(o => !o.team_member_id || o.team_member_id === teamMemberId)
+        : occupied
+
+    const candidateSlots = new Set()
+
+    // 1. Grilla base desde el horario de apertura
     for (let m = cfg.startMin; m + serviceDuration <= cfg.endMin; m += step) {
-        slots.push(m)
+        candidateSlots.add(m)
+    }
+
+    // 2. Horarios que arrancan justo cuando termina un turno ocupado (+ buffer)
+    for (const apt of relevantOccupied) {
+        if (!apt || typeof apt.endMin !== 'number') continue
+        const openMin = apt.endMin + cfg.bufferTime
+        for (let m = openMin; m + serviceDuration <= cfg.endMin; m += step) {
+            if (m < cfg.startMin) continue
+            candidateSlots.add(m)
+            if (findConflict(m, m + serviceDuration, relevantOccupied, { bufferTime: cfg.bufferTime, teamMemberId })) {
+                break
+            }
+        }
+
+        // 3. Horarios que terminan justo antes de que arranque un turno ocupado (- buffer)
+        if (typeof apt.startMin === 'number') {
+            const closeMin = apt.startMin - cfg.bufferTime
+            const preSlot = closeMin - serviceDuration
+            if (preSlot >= cfg.startMin) {
+                candidateSlots.add(preSlot)
+            }
+        }
     }
 
     const isToday = date ? date === formatDateLocal(now) : false
@@ -136,12 +164,15 @@ export function generateAvailableSlots({
         ? now.getHours() * 60 + now.getMinutes() + (enforceMinAdvance ? cfg.minAdvanceHours * 60 : 0)
         : -Infinity
 
-    return slots
+    return Array.from(candidateSlots)
+        .filter(startMin => startMin >= cfg.startMin)
+        .filter(startMin => startMin + serviceDuration <= cfg.endMin)
         .filter(startMin => startMin >= minStartToday)
         .filter(startMin => !findConflict(startMin, startMin + serviceDuration, occupied, {
             bufferTime: cfg.bufferTime,
             teamMemberId,
         }))
+        .sort((a, b) => a - b)
         .map(minutesToTime)
 }
 

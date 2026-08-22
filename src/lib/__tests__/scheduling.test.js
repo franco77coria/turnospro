@@ -73,15 +73,15 @@ describe('scheduling', () => {
             expect(slots).toEqual(['09:00', '09:30', '10:00'])
         })
 
-        it('descarta los horarios que se pisan con un turno existente', () => {
+        it('descarta los horarios que se pisan con un turno existente y habilita el hueco inmediato', () => {
             const occupied = toOccupiedRanges([{ id: 'a', time: '10:00', duration: 45, status: 'confirmed' }])
             const slots = generateAvailableSlots({
                 settings: { work_hours: { start: '09:00', end: '12:00' } },
                 duration: 30,
                 occupied,
             })
-            // Ocupado 10:00-10:45 → caen 10:00 y 10:30
-            expect(slots).toEqual(['09:00', '09:30', '11:00', '11:30'])
+            // Ocupado 10:00-10:45 → 10:00 y 10:30 no van, pero 10:45 (fin del turno) y 11:15 sí están disponibles
+            expect(slots).toEqual(['09:00', '09:30', '10:45', '11:00', '11:15', '11:30'])
         })
 
         it('aplica el buffer a los dos lados del turno existente', () => {
@@ -91,9 +91,25 @@ describe('scheduling', () => {
                 duration: 30,
                 occupied,
             })
-            // Ocupado real 10:00-10:30; con buffer la zona vedada es 09:45-10:45.
-            // 09:30-10:00 la toca, así que también cae.
-            expect(slots).toEqual(['09:00', '11:00', '11:30'])
+            // Ocupado real 10:00-10:30; con buffer 15m la zona vedada es 09:45-10:45.
+            // 09:15 termina 09:45 (justo antes del buffer). 10:45 arranca justo después del buffer.
+            expect(slots).toEqual(['09:00', '09:15', '10:45', '11:00', '11:15', '11:30'])
+        })
+
+        it('un turno a las 16:45 permite reservar el siguiente a las 17:30 (caso BARONE)', () => {
+            const occupied = toOccupiedRanges([{ id: 'b', time: '16:45', duration: 45, status: 'confirmed' }])
+            const slots = generateAvailableSlots({
+                settings: { work_hours: { start: '09:00', end: '20:00' } },
+                duration: 45,
+                occupied,
+            })
+            // 17:30 arranca justo cuando termina el de 16:45
+            expect(slots).toContain('17:30')
+            // 16:00 termina justo cuando arranca el de 16:45
+            expect(slots).toContain('16:00')
+            // 16:30 y 17:15 chocan con 16:45-17:30
+            expect(slots).not.toContain('16:30')
+            expect(slots).not.toContain('17:15')
         })
 
         it('ignora los turnos cancelados: el horario vuelve a estar libre', () => {
