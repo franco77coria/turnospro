@@ -758,3 +758,87 @@
         grid-template-columns: repeat(2, 1fr);
     }
 }
+
+/* Blocked Slots Styling */
+.aptBlockBlocked {
+    background: repeating-linear-gradient(
+        -45deg,
+        rgba(100, 116, 139, 0.08),
+        rgba(100, 116, 139, 0.08) 8px,
+        rgba(100, 116, 139, 0.18) 8px,
+        rgba(100, 116, 139, 0.18) 16px
+    ) !important;
+    border-left-color: #64748b !important;
+    border-color: rgba(100, 116, 139, 0.4) !important;
+}
+
+.aptBlockBlocked .aptBlockName {
+    color: #334155;
+    font-weight: 700;
+}
+
+.blockReasonGrid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.blockReasonBtn {
+    padding: 8px 14px;
+    border-radius: var(--r-full);
+    font-size: var(--font-size-xs);
+    font-weight: 600;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--t-fast);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.blockReasonBtn:hover {
+    border-color: var(--ink-mute);
+}
+
+.blockReasonBtnSelected {
+    background: var(--ink);
+    color: white;
+    border-color: var(--ink);
+    box-shadow: var(--shadow-xs);
+}
+
+.modalTabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    background: var(--bg-secondary);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+}
+
+.modalTab {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--t-fast);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.modalTabActive {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-xs);
+}

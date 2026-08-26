@@ -5,12 +5,12 @@
     font-size: var(--font-size-md);
     font-weight: 600;
     margin-bottom: var(--space-2);
-    color: var(--cream);
+    color: var(--text-primary);
 }
 
 .hint {
     font-size: var(--font-size-xs);
-    color: color-mix(in oklab, var(--cream) 50%, transparent);
+    color: var(--text-tertiary);
     margin: 0 0 var(--space-4);
     line-height: 1.5;
 }
@@ -21,7 +21,7 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: color-mix(in oklab, var(--cream) 65%, transparent);
+    color: var(--text-secondary);
     margin-bottom: var(--space-2);
 }
 
@@ -47,7 +47,7 @@
     aspect-ratio: 16 / 6;
     object-fit: cover;
     border-radius: var(--radius-md);
-    border: 1px solid color-mix(in oklab, var(--cream) 15%, transparent);
+    border: 1px solid var(--border);
     display: block;
 }
 
@@ -55,14 +55,15 @@
     width: 100%;
     aspect-ratio: 16 / 6;
     border-radius: var(--radius-md);
-    border: 1px dashed color-mix(in oklab, var(--cream) 25%, transparent);
+    border: 1px dashed var(--border);
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    color: color-mix(in oklab, var(--cream) 45%, transparent);
+    color: var(--text-tertiary);
     font-size: var(--font-size-xs);
+    background: var(--bg-secondary);
 }
 
 /* ── Galería ── */
@@ -75,7 +76,7 @@
 .counter {
     font-size: var(--font-size-xs);
     font-weight: 700;
-    color: color-mix(in oklab, var(--cream) 50%, transparent);
+    color: var(--text-tertiary);
 }
 
 .loading {
@@ -96,7 +97,7 @@
     aspect-ratio: 1 / 1;
     border-radius: var(--radius-sm);
     overflow: hidden;
-    border: 1px solid color-mix(in oklab, var(--cream) 15%, transparent);
+    border: 1px solid var(--border);
 }
 
 .thumb img {
@@ -157,9 +158,9 @@
 .addTile {
     aspect-ratio: 1 / 1;
     border-radius: var(--radius-sm);
-    border: 1px dashed color-mix(in oklab, var(--cream) 28%, transparent);
-    background: transparent;
-    color: color-mix(in oklab, var(--cream) 55%, transparent);
+    border: 1px dashed var(--border);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
     display: flex;
     flex-direction: column;
     align-items: center;

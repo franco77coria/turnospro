@@ -41,6 +41,16 @@ function SettingsContent() {
         start: '09:00',
         end: '20:00',
     })
+    const [customHoursByDay, setCustomHoursByDay] = useState(false)
+    const [workHoursByDay, setWorkHoursByDay] = useState({
+        0: { start: '09:00', end: '20:00' },
+        1: { start: '09:00', end: '20:00' },
+        2: { start: '09:00', end: '20:00' },
+        3: { start: '09:00', end: '20:00' },
+        4: { start: '09:00', end: '20:00' },
+        5: { start: '09:00', end: '20:00' },
+        6: { start: '09:00', end: '20:00' },
+    })
 
     // Work days (0=Sunday, 1=Monday, ..., 6=Saturday)
     const [workDays, setWorkDays] = useState([1, 2, 3, 4, 5, 6])
@@ -97,10 +107,36 @@ function SettingsContent() {
                 business_type: business.business_type || '',
                 description: business.settings?.description || '',
             })
+            const defaultStart = business.settings?.work_hours?.start || '09:00'
+            const defaultEnd = business.settings?.work_hours?.end || '20:00'
             setWorkHoursForm({
-                start: business.settings?.work_hours?.start || '09:00',
-                end: business.settings?.work_hours?.end || '20:00',
+                start: defaultStart,
+                end: defaultEnd,
             })
+            if (business.settings?.work_hours_by_day && Object.keys(business.settings.work_hours_by_day).length > 0) {
+                setCustomHoursByDay(true)
+                setWorkHoursByDay({
+                    0: { start: defaultStart, end: defaultEnd },
+                    1: { start: defaultStart, end: defaultEnd },
+                    2: { start: defaultStart, end: defaultEnd },
+                    3: { start: defaultStart, end: defaultEnd },
+                    4: { start: defaultStart, end: defaultEnd },
+                    5: { start: defaultStart, end: defaultEnd },
+                    6: { start: defaultStart, end: defaultEnd },
+                    ...business.settings.work_hours_by_day,
+                })
+            } else {
+                setCustomHoursByDay(false)
+                setWorkHoursByDay({
+                    0: { start: defaultStart, end: defaultEnd },
+                    1: { start: defaultStart, end: defaultEnd },
+                    2: { start: defaultStart, end: defaultEnd },
+                    3: { start: defaultStart, end: defaultEnd },
+                    4: { start: defaultStart, end: defaultEnd },
+                    5: { start: defaultStart, end: defaultEnd },
+                    6: { start: defaultStart, end: defaultEnd },
+                })
+            }
             setWorkDays(business.settings?.work_days || [1, 2, 3, 4, 5, 6])
             setMinCancelHours(business.settings?.min_cancel_hours ?? 2)
             setBufferTime(business.settings?.buffer_time ?? 0)
@@ -193,6 +229,7 @@ function SettingsContent() {
                     ...business?.settings,
                     description: form.description,
                     work_hours: workHoursForm,
+                    work_hours_by_day: customHoursByDay ? workHoursByDay : null,
                     work_days: workDays,
                     min_cancel_hours: parseInt(minCancelHours) || 2,
                     buffer_time: parseInt(bufferTime) || 0,
@@ -214,6 +251,7 @@ function SettingsContent() {
     }
 
     const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+    const FULL_DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
 
     if (authLoading || !business?.id) {
         return (
@@ -227,7 +265,7 @@ function SettingsContent() {
 
     return (
         <div style={{ maxWidth: 1200, width: '100%', margin: '0 auto', padding: '0 var(--space-4) var(--space-8) var(--space-4)' }}>
-            <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)', fontFamily: 'var(--font-display)', color: 'var(--cream)' }}>Configuración</h1>
+            <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-6)', fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Configuración</h1>
 
             <form onSubmit={handleSave}>
                 <div style={{
@@ -240,7 +278,7 @@ function SettingsContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         {/* Business Info */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--cream)' }}>Datos del negocio</h3>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--text-primary)' }}>Datos del negocio</h3>
                             <div className="form-group">
                                 <label className="label">Nombre del negocio</label>
                                 <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
@@ -271,7 +309,7 @@ function SettingsContent() {
                                 <input className="input" value={form.address}
                                     placeholder="Ej: Coronel Superí 626, Palermo, CABA"
                                     onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
-                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     Poné también el barrio o la ciudad: con eso el mapa de tu ficha cae en el lugar exacto.
                                 </span>
                             </div>
@@ -279,48 +317,110 @@ function SettingsContent() {
 
                         {/* Work Schedule */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
-                                <Clock size={18} /> Horario de atención
-                            </h3>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
-                                <div className="form-group">
-                                    <label className="label">Apertura</label>
-                                    <input className="input" type="time" value={workHoursForm.start}
-                                        onChange={e => setWorkHoursForm(p => ({ ...p, start: e.target.value }))} />
-                                </div>
-                                <div className="form-group">
-                                    <label className="label">Cierre</label>
-                                    <input className="input" type="time" value={workHoursForm.end}
-                                        onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
+                                <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
+                                    <Clock size={18} /> Horario de atención
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                    <button
+                                        type="button"
+                                        className={`btn btn-sm ${!customHoursByDay ? 'btn-primary' : 'btn-secondary'}`}
+                                        onClick={() => setCustomHoursByDay(false)}
+                                        style={{ fontSize: 'var(--font-size-xs)' }}
+                                    >
+                                        Mismo horario
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`btn btn-sm ${customHoursByDay ? 'btn-primary' : 'btn-secondary'}`}
+                                        onClick={() => setCustomHoursByDay(true)}
+                                        style={{ fontSize: 'var(--font-size-xs)' }}
+                                    >
+                                        Por día
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Work Days */}
-                            <div className="form-group" style={{ marginTop: 'var(--space-3)' }}>
+                            {/* Días de trabajo */}
+                            <div className="form-group" style={{ marginBottom: 'var(--space-4)' }}>
                                 <label className="label">Días de trabajo</label>
                                 <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                                    {DAY_NAMES.map((name, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button"
-                                            onClick={() => toggleWorkDay(idx)}
-                                            style={{
-                                                padding: '8px 14px',
-                                                borderRadius: 'var(--radius-md)',
-                                                border: '1px solid ' + (workDays.includes(idx) ? 'var(--pink)' : 'var(--line)'),
-                                                background: workDays.includes(idx) ? 'var(--pink)' : 'var(--bg-card)',
-                                                color: workDays.includes(idx) ? 'white' : 'var(--cream)',
-                                                fontSize: 'var(--font-size-sm)',
-                                                fontWeight: 600,
-                                                cursor: 'pointer',
-                                                transition: 'all var(--t-fast)',
-                                            }}
-                                        >
-                                            {name}
-                                        </button>
-                                    ))}
+                                    {DAY_NAMES.map((name, idx) => {
+                                        const isSelected = workDays.includes(idx)
+                                        return (
+                                            <button
+                                                key={idx}
+                                                type="button"
+                                                onClick={() => toggleWorkDay(idx)}
+                                                style={{
+                                                    padding: '8px 14px',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    border: `1px solid ${isSelected ? 'var(--pink)' : 'var(--border)'}`,
+                                                    background: isSelected ? 'var(--pink)' : 'var(--bg-secondary)',
+                                                    color: isSelected ? 'white' : 'var(--text-primary)',
+                                                    fontSize: 'var(--font-size-sm)',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                    transition: 'all var(--t-fast)',
+                                                }}
+                                            >
+                                                {name}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
                             </div>
+
+                            {!customHoursByDay ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                    <div className="form-group">
+                                        <label className="label">Apertura general</label>
+                                        <input className="input" type="time" value={workHoursForm.start}
+                                            onChange={e => setWorkHoursForm(p => ({ ...p, start: e.target.value }))} />
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">Cierre general</label>
+                                        <input className="input" type="time" value={workHoursForm.end}
+                                            onChange={e => setWorkHoursForm(p => ({ ...p, end: e.target.value }))} />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', background: 'var(--bg-secondary)', padding: 'var(--space-3)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                        Configura el horario específico para cada día que atiendes:
+                                    </span>
+                                    {workDays.map(dayIdx => (
+                                        <div key={dayIdx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-2)', flexWrap: 'wrap', padding: '6px 0', borderBottom: '1px dashed var(--border)' }}>
+                                            <span style={{ minWidth: 90, fontWeight: 600, fontSize: 'var(--font-size-sm)', color: 'var(--text-primary)' }}>
+                                                {FULL_DAY_NAMES[dayIdx]}
+                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                                <input
+                                                    className="input"
+                                                    type="time"
+                                                    style={{ width: 110, padding: '4px 8px', fontSize: 'var(--font-size-sm)' }}
+                                                    value={workHoursByDay[dayIdx]?.start || workHoursForm.start}
+                                                    onChange={e => setWorkHoursByDay(prev => ({
+                                                        ...prev,
+                                                        [dayIdx]: { ...(prev[dayIdx] || workHoursForm), start: e.target.value }
+                                                    }))}
+                                                />
+                                                <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>a</span>
+                                                <input
+                                                    className="input"
+                                                    type="time"
+                                                    style={{ width: 110, padding: '4px 8px', fontSize: 'var(--font-size-sm)' }}
+                                                    value={workHoursByDay[dayIdx]?.end || workHoursForm.end}
+                                                    onChange={e => setWorkHoursByDay(prev => ({
+                                                        ...prev,
+                                                        [dayIdx]: { ...(prev[dayIdx] || workHoursForm), end: e.target.value }
+                                                    }))}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* Fotos de la ficha pública */}
@@ -328,10 +428,10 @@ function SettingsContent() {
 
                         {/* Redes sociales */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <Link2 size={18} /> Redes sociales
                             </h3>
-                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
                                 Se muestran en tu ficha pública. Podés poner el usuario o pegar el link del perfil.
                             </p>
 
@@ -358,10 +458,10 @@ function SettingsContent() {
 
                         {/* Booking Link & QR Code */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <Link2 size={18} /> Link de tu ficha y Código QR
                             </h3>
-                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
                                 Este link abre tu ficha pública: fotos, servicios con precio, equipo, horarios y reseñas.
                                 Desde ahí el cliente reserva.
                             </p>
@@ -380,8 +480,8 @@ function SettingsContent() {
                             </div>
 
                             {/* QR Code */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-card)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--line)', flexWrap: 'wrap', justifyContent: 'center' }}>
-                                <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border)', flexWrap: 'wrap', justifyContent: 'center' }}>
+                                <div id="booking-qr-code" style={{ padding: 'var(--space-2)', background: 'white', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
                                     <QRCodeSVG 
                                         value={
                                             business.slug
@@ -394,8 +494,8 @@ function SettingsContent() {
                                     />
                                 </div>
                                 <div style={{ flex: '1 1 200px', minWidth: 200, textAlign: 'center' }}>
-                                    <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--cream)', textAlign: 'left' }}>Código QR de reservas</h4>
-                                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-2)', lineHeight: 1.4, textAlign: 'left' }}>
+                                    <h4 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-1)', color: 'var(--text-primary)', textAlign: 'left' }}>Código QR de reservas</h4>
+                                    <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)', lineHeight: 1.4, textAlign: 'left' }}>
                                         Imprimí este código para que tus clientes puedan escanear y reservar directamente.
                                     </p>
                                     <button type="button" className="btn btn-primary btn-sm" onClick={() => {
@@ -418,10 +518,10 @@ function SettingsContent() {
 
                         {/* Embeddable Widget */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <Link2 size={18} /> Widget para tu sitio web
                             </h3>
-                            <p style={{ fontSize: 'var(--font-size-sm)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                            <p style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                                 Copiá y pegá este código HTML en tu página web (WordPress, Wix, etc.) para integrar el botón de reservas.
                             </p>
                             <div style={{ position: 'relative' }}>
@@ -429,7 +529,7 @@ function SettingsContent() {
                                     className="input" 
                                     readOnly 
                                     rows={3}
-                                    style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: 'rgba(0,0,0,0.2)', resize: 'none' }}
+                                    style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: 'var(--bg-secondary)', resize: 'none' }}
                                     value={`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
                                 />
                                 <button type="button" className="btn btn-secondary btn-sm" 
@@ -448,7 +548,7 @@ function SettingsContent() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         {/* Booking Settings */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <Shield size={18} /> Políticas de turnos
                             </h3>
 
@@ -456,7 +556,7 @@ function SettingsContent() {
                                 <label className="label">Horas mínimas para cancelar</label>
                                 <input className="input" type="number" min="0" max="72" value={minCancelHours}
                                     onChange={e => setMinCancelHours(e.target.value)} />
-                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     Los clientes no podrán cancelar con menos de {minCancelHours}h de anticipación
                                 </span>
                             </div>
@@ -465,11 +565,11 @@ function SettingsContent() {
                                 <label className="label">Tiempo buffer entre turnos (minutos)</label>
                                 <input className="input" type="number" min="0" max="60" step="5" value={bufferTime}
                                     onChange={e => setBufferTime(e.target.value)} />
-                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     Descanso o preparación entre turno y turno. <strong>No es la duración del turno</strong> — esa la define cada servicio.
                                 </span>
                                 {bufferGap > 0 && (
-                                    <span style={{ display: 'block', marginTop: 'var(--space-1)', fontSize: 'var(--font-size-xs)', color: bufferGap >= 30 ? '#e0a33e' : 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    <span style={{ display: 'block', marginTop: 'var(--space-1)', fontSize: 'var(--font-size-xs)', color: bufferGap >= 30 ? '#e0a33e' : 'var(--text-tertiary)' }}>
                                         Se aplica antes <em>y</em> después de cada turno: un servicio de 45 min va a bloquear {45 + bufferGap * 2} min de agenda.
                                         {bufferGap >= 30 && ' Con este valor van a quedar muy pocos horarios disponibles para tus clientes.'}
                                     </span>
@@ -487,7 +587,7 @@ function SettingsContent() {
                                     <option value="45">Cada 45 minutos</option>
                                     <option value="60">Cada 60 minutos</option>
                                 </select>
-                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     {slotDuration
                                         ? `Los horarios arrancan cada ${slotDuration} min, sin importar cuánto dure el servicio. Puede dejar huecos muertos.`
                                         : 'Cada horario arranca justo cuando termina el anterior: un servicio de 45 min se ofrece 09:00, 09:45, 10:30…'}
@@ -499,7 +599,7 @@ function SettingsContent() {
                                     <label className="label">Anticipación mínima (horas)</label>
                                     <input className="input" type="number" min="0" max="168" value={minAdvance}
                                         onChange={e => setMinAdvance(e.target.value)} />
-                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                         No se puede reservar con menos de {minAdvance}h antes
                                     </span>
                                 </div>
@@ -507,19 +607,19 @@ function SettingsContent() {
                                     <label className="label">Anticipación máxima (días)</label>
                                     <input className="input" type="number" min="1" max="365" value={maxAdvance}
                                         onChange={e => setMaxAdvance(e.target.value)} />
-                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                         Pueden reservar hasta {maxAdvance} días adelante
                                     </span>
                                 </div>
                             </div>
 
-                            <div className="form-group" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--line)' }}>
-                                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <div className="form-group" style={{ marginTop: 'var(--space-3)', paddingTop: 'var(--space-3)', borderTop: '1px dashed var(--border)' }}>
+                                <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                     <Shield size={14} color="var(--pink)" /> Seña / Depósito Requerido (%)
                                 </label>
                                 <input className="input" type="number" min="0" max="100" value={depositPercentage}
                                     onChange={e => setDepositPercentage(e.target.value)} />
-                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     Porcentaje que el cliente debe pagar por adelantado para confirmar el turno (0 = no requiere seña)
                                 </span>
                             </div>
@@ -527,7 +627,7 @@ function SettingsContent() {
 
                         {/* Closed Dates (Holidays) */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <Calendar size={18} /> Días cerrados / Feriados
                             </h3>
 
@@ -542,11 +642,11 @@ function SettingsContent() {
                                                 background: 'var(--bg-secondary)',
                                                 borderRadius: 'var(--radius-md)',
                                                 fontSize: 'var(--font-size-sm)',
-                                                border: '1px solid var(--line)'
+                                                border: '1px solid var(--border)'
                                             }}>
-                                                <span style={{ color: 'var(--cream)' }}>
+                                                <span style={{ color: 'var(--text-primary)' }}>
                                                     <strong>{dateObj.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>
-                                                    {cd.reason && <span style={{ color: 'color-mix(in oklab, var(--cream) 50%, transparent)', marginLeft: 8 }}>— {cd.reason}</span>}
+                                                    {cd.reason && <span style={{ color: 'var(--text-secondary)', marginLeft: 8 }}>— {cd.reason}</span>}
                                                 </span>
                                                 <button type="button" onClick={() => removeClosedDate(i)}
                                                     style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger, #DC2626)', padding: 4 }}>
@@ -578,10 +678,10 @@ function SettingsContent() {
 
                         {/* Team Absences */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--cream)' }}>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                 <UserX size={18} /> Ausencias del equipo
                             </h3>
-                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                                 Registra vacaciones o ausencias. Esos días no aparecerán disponibles para reservas.
                             </p>
 
@@ -595,19 +695,19 @@ function SettingsContent() {
                                             <div key={abs.id} style={{
                                                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                                 padding: 'var(--space-2) var(--space-3)',
-                                                background: 'rgba(255, 184, 0, 0.1)',
-                                                border: '1px solid rgba(255, 184, 0, 0.3)',
+                                                background: 'var(--bg-secondary)',
+                                                border: '1px solid var(--border)',
                                                 borderRadius: 'var(--radius-md)',
                                                 fontSize: 'var(--font-size-sm)',
-                                                color: 'var(--cream)'
+                                                color: 'var(--text-primary)'
                                             }}>
                                                 <span>
                                                     <strong>{member?.name || 'Profesional'}</strong>
-                                                    <span style={{ color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginLeft: 8 }}>
+                                                    <span style={{ color: 'var(--text-secondary)', marginLeft: 8 }}>
                                                         {start.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} — {end.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
                                                     </span>
                                                     {abs.reason && abs.reason !== 'Ausencia' && (
-                                                        <span style={{ color: 'color-mix(in oklab, var(--cream) 50%, transparent)', marginLeft: 8 }}>({abs.reason})</span>
+                                                        <span style={{ color: 'var(--text-tertiary)', marginLeft: 8 }}>({abs.reason})</span>
                                                     )}
                                                 </span>
                                                 <button type="button" onClick={() => removeTeamAbsence(abs.id)}
@@ -653,7 +753,7 @@ function SettingsContent() {
                                     </button>
                                 </div>
                             ) : (
-                                <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     No hay miembros del equipo. Agrega profesionales en la sección Equipo.
                                 </p>
                             )}
@@ -661,10 +761,10 @@ function SettingsContent() {
 
                         {/* Account Info */}
                         <div className="card">
-                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--cream)' }}>Mi cuenta</h3>
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--text-primary)' }}>Mi cuenta</h3>
                             <div className="form-group">
                                 <label className="label">Email</label>
-                                <input className="input" value={profile?.email || ''} disabled style={{ opacity: 0.6 }} />
+                                <input className="input" value={profile?.email || ''} disabled style={{ opacity: 0.8 }} />
                             </div>
                             <div className="form-group">
                                 <label className="label">Rol</label>
@@ -679,7 +779,7 @@ function SettingsContent() {
                         {/* Danger Zone */}
                         <div className="card" style={{ borderColor: 'var(--danger)' }}>
                             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, color: 'var(--danger)', marginBottom: 'var(--space-2)' }}>Zona peligrosa</h3>
-                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 60%, transparent)', marginBottom: 'var(--space-4)' }}>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-4)' }}>
                                 Estas acciones son irreversibles.
                             </p>
                             <button type="button" className="btn btn-danger btn-sm" onClick={() => toast.info('Esta función no está disponible aún. Contactá al administrador.')}><Trash2 size={14} /> Eliminar negocio</button>

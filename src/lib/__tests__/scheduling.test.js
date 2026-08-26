@@ -45,6 +45,25 @@ describe('scheduling', () => {
         it('work_days vacío cae al default en vez de dejar el negocio sin días', () => {
             expect(resolveScheduleSettings({ work_days: [] }).workDays).toEqual([1, 2, 3, 4, 5, 6])
         })
+
+        it('respeta work_hours_by_day para una fecha específica', () => {
+            const settings = {
+                work_hours: { start: '09:00', end: '20:00' },
+                work_hours_by_day: {
+                    3: { start: '14:00', end: '20:00' }, // Miércoles
+                    6: { start: '09:00', end: '13:00' }, // Sábado
+                }
+            }
+            // 2026-08-26 es Miércoles (día 3)
+            const wednesday = resolveScheduleSettings(settings, '2026-08-26')
+            expect(minutesToTime(wednesday.startMin)).toBe('14:00')
+            expect(minutesToTime(wednesday.endMin)).toBe('20:00')
+
+            // 2026-08-27 es Jueves (día 4, sin custom -> usa default)
+            const thursday = resolveScheduleSettings(settings, '2026-08-27')
+            expect(minutesToTime(thursday.startMin)).toBe('09:00')
+            expect(minutesToTime(thursday.endMin)).toBe('20:00')
+        })
     })
 
     describe('generateAvailableSlots', () => {

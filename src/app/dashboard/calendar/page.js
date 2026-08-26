@@ -16,7 +16,7 @@ import {
     timeToMinutes,
     toOccupiedRanges,
 } from '@/lib/scheduling'
-import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, Check, ArrowRight, ArrowLeft, Pencil, AlertTriangle } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, Check, ArrowRight, ArrowLeft, Pencil, AlertTriangle, Lock, Trash2, CalendarX } from 'lucide-react'
 import Link from 'next/link'
 import styles from './calendar.module.css'
 
@@ -26,6 +26,15 @@ const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 // uno de 30 min mide 42 px. La altura del bloque ES la duración.
 const PX_PER_MIN = 1.4
 const MIN_BLOCK_MINUTES = 15
+
+const BLOCK_REASONS = [
+    'Médico / Salud',
+    'Facultad / Estudio',
+    'Trámite personal',
+    'Almuerzo / Descanso',
+    'Personal',
+    'Otro',
+]
 
 function getWeekDates(date) {
     const d = new Date(date)
@@ -48,6 +57,22 @@ export default function CalendarPage() {
     const [showNewModal, setShowNewModal] = useState(false)
     const [newApt, setNewApt] = useState({ client_id: null, client_name: '', service_name: '', date: '', time: '', duration: DEFAULT_DURATION, team_member_id: null })
     const [recurrence, setRecurrence] = useState({ enabled: false, type: 'weekly', count: 4 })
+    
+    // Schedule Blocking State
+    const [showBlockModal, setShowBlockModal] = useState(false)
+    const [blockForm, setBlockForm] = useState({
+        reason: 'Médico / Salud',
+        customReason: '',
+        date: '',
+        startTime: '09:00',
+        endTime: '10:00',
+        notes: '',
+        team_member_id: null,
+        recurrence: { enabled: false, count: 4 },
+    })
+    const [savingBlock, setSavingBlock] = useState(false)
+    const [blockError, setBlockError] = useState('')
+
     const [teamMembers, setTeamMembers] = useState([])
     const [services, setServices] = useState([])
     const [clients, setClients] = useState([])
@@ -68,6 +93,152 @@ export default function CalendarPage() {
     const [editError, setEditError] = useState('')
 
     const scheduleSettings = useMemo(() => resolveScheduleSettings(business?.settings), [business?.settings])
+
+    function openBlockModal(initialDate = null, initialTime = null) {
+        const d = initialDate || formatDate(currentDate)
+        const startT = initialTime || '09:00'
+        const endT = minutesToTime(timeToMinutes(startT) + 60)
+        setBlockForm({
+            reason: 'Médico / Salud',
+            customReason: '',
+            date: d,
+            startTime: startT,
+            endTime: endT,
+            notes: '',
+            team_member_id: profile?.role === 'Profesional' && currentMember ? currentMember.id : null,
+            recurrence: { enabled: false, count: 4 },
+        })
+        setBlockError('')
+        setShowNewModal(false)
+        setShowBlockModal(true)
+    }
+
+    async function handleCreateBlock(e) {
+        e.preventDefault()
+        if (!supabase || !business?.id) return
+        setBlockError('')
+        setSavingBlock(true)
+        try {
+            const reasonText = blockForm.reason === 'Otro' ? (blockForm.customReason?.trim() || 'Personal') : blockForm.reason
+            const serviceName = `⛔ Bloqueo: ${reasonText}`
+
+            const startMin = timeToMinutes(blockForm.startTime)
+            const endMin = timeToMinutes(blockForm.endTime)
+            if (endMin <= startMin) {
+                setBlockError('La hora de fin debe ser posterior a la hora de inicio.')
+                setSavingBlock(false)
+                return
+            }
+            const duration = endMin - startMin
+
+            const checkRes = await fetch('/api/appointments/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    business_id: business.id,
+                    date: blockForm.date,
+                    time: blockForm.startTime,
+                    duration,
+                    team_member_id: blockForm.team_member_id || null,
+                    buffer_time: 0,
+                    ignore_closures: true,
+                }),
+            })
+            const checkData = await checkRes.json()
+            if (!checkData.available) {
+                setBlockError(checkData.reason || 'Este horario ya está ocupado por otro turno o bloqueo.')
+                setSavingBlock(false)
+                return
+            }
+
+            const appointmentData = {
+                business_id: business.id,
+                client_id: null,
+                service_name: serviceName,
+                notes: blockForm.notes ? `Bloqueo: ${blockForm.notes}` : 'Bloqueo de agenda',
+                date: blockForm.date,
+                time: blockForm.startTime,
+                duration,
+                status: 'confirmed',
+                team_member_id: blockForm.team_member_id || null,
+                price: 0,
+            }
+
+            const { data: createdApt, error: aptError } = await supabase
+                .from('appointments')
+                .insert([appointmentData])
+                .select()
+                .single()
+            if (aptError) throw aptError
+
+            if (blockForm.recurrence.enabled && blockForm.recurrence.count > 1) {
+                const recurringApts = []
+                const skipped = []
+                for (let i = 1; i < blockForm.recurrence.count; i++) {
+                    const nextDate = new Date(blockForm.date + 'T12:00:00')
+                    nextDate.setDate(nextDate.getDate() + (7 * i))
+                    const nextDateStr = formatDate(nextDate)
+
+                    const rCheckRes = await fetch('/api/appointments/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            business_id: business.id,
+                            date: nextDateStr,
+                            time: blockForm.startTime,
+                            duration,
+                            team_member_id: blockForm.team_member_id || null,
+                            buffer_time: 0,
+                            ignore_closures: true,
+                        }),
+                    })
+                    const rCheck = await rCheckRes.json()
+                    if (rCheck.available) {
+                        recurringApts.push({
+                            ...appointmentData,
+                            date: nextDateStr,
+                            parent_appointment_id: createdApt.id,
+                            recurrence: { type: 'weekly', parent_id: createdApt.id },
+                        })
+                    } else {
+                        skipped.push(nextDateStr)
+                    }
+                }
+                if (recurringApts.length > 0) {
+                    await supabase.from('appointments').insert(recurringApts)
+                }
+                if (skipped.length > 0) {
+                    alert(`Se crearon ${recurringApts.length + 1} bloqueos.\n\nNo se pudieron crear ${skipped.length} repeticiones porque el horario ya estaba ocupado:\n${skipped.join('\n')}`)
+                }
+            }
+
+            setShowBlockModal(false)
+            await loadAppointments()
+        } catch (err) {
+            console.error('Error creating schedule block:', err)
+            setBlockError(err?.message || 'Error al bloquear el horario. Intentá de nuevo.')
+        } finally {
+            setSavingBlock(false)
+        }
+    }
+
+    async function handleUnblock(aptId) {
+        if (!confirm('¿Desbloquear este horario para que vuelva a estar disponible?')) return
+        setSavingEdit(true)
+        try {
+            const { error: delError } = await supabase
+                .from('appointments')
+                .delete()
+                .eq('id', aptId)
+            if (delError) throw delError
+            setEditingApt(null)
+            await loadAppointments()
+        } catch (err) {
+            setEditError(err.message || 'Error al eliminar el bloqueo')
+        } finally {
+            setSavingEdit(false)
+        }
+    }
 
     function handleOpenEdit(apt) {
         setEditError('')
@@ -522,6 +693,38 @@ export default function CalendarPage() {
         const durationMin = apt.endMin - apt.startMin
         const heightPx = Math.max(durationMin, MIN_BLOCK_MINUTES) * PX_PER_MIN
         const widthPct = 100 / apt.columns
+        const isBlocked = apt.service_name?.startsWith('⛔') || apt.service_name?.toLowerCase().includes('bloqueo')
+
+        if (isBlocked) {
+            const blockTitle = apt.service_name?.replace(/^⛔\s*Bloqueo:\s*/i, '').replace(/^\[Bloqueo\]\s*/i, '') || 'Bloqueado'
+            return (
+                <div
+                    key={apt.id}
+                    className={`${styles.aptBlock} ${styles.aptBlockBlocked} ${durationMin < 30 ? styles.aptBlockTight : ''}`}
+                    style={{
+                        top: (apt.startMin - rangeStart) * PX_PER_MIN,
+                        height: heightPx - 2,
+                        left: `calc(${apt.column * widthPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                    }}
+                    title={`Bloqueado · ${blockTitle} · ${minutesToTime(apt.startMin)}–${minutesToTime(apt.endMin)} (${durationMin} min)`}
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        handleOpenEdit(apt)
+                    }}
+                >
+                    <span className={styles.aptBlockTime}>
+                        <Lock size={10} style={{ display: 'inline', marginRight: 3 }} />
+                        {minutesToTime(apt.startMin)}–{minutesToTime(apt.endMin)}
+                    </span>
+                    <span className={styles.aptBlockName}>⛔ {blockTitle}</span>
+                    {!compact && durationMin >= 45 && (
+                        <span className={styles.aptBlockService}>Horario bloqueado · {durationMin} min</span>
+                    )}
+                </div>
+            )
+        }
+
         return (
             <div
                 key={apt.id}
@@ -577,9 +780,14 @@ export default function CalendarPage() {
                         {currentDate.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' })}
                     </span>
                 </div>
-                <button className="btn btn-primary" onClick={openNewModal}>
-                    <Plus size={16} /> Nuevo turno
-                </button>
+                <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                    <button className="btn btn-secondary" onClick={() => openBlockModal()}>
+                        <Lock size={15} /> Bloquear horario
+                    </button>
+                    <button className="btn btn-primary" onClick={openNewModal}>
+                        <Plus size={16} /> Nuevo turno
+                    </button>
+                </div>
             </div>
 
             {teamMembers.length > 0 && profile?.role !== 'Profesional' && (
@@ -689,6 +897,22 @@ export default function CalendarPage() {
                                 </div>
                             </div>
                             <button className="btn btn-ghost btn-icon" onClick={() => setShowNewModal(false)}><X size={16} /></button>
+                        </div>
+
+                        {/* Modal Switch Tabs */}
+                        <div style={{ padding: '0 var(--space-4)', paddingTop: 'var(--space-2)' }}>
+                            <div className={styles.modalTabs}>
+                                <button type="button" className={`${styles.modalTab} ${styles.modalTabActive}`}>
+                                    🗓️ Turno con cliente
+                                </button>
+                                <button
+                                    type="button"
+                                    className={styles.modalTab}
+                                    onClick={() => openBlockModal(newApt.date, newApt.time)}
+                                >
+                                    <Lock size={13} /> Bloquear horario
+                                </button>
+                            </div>
                         </div>
 
                         {/* Progress bar */}
@@ -1004,11 +1228,198 @@ export default function CalendarPage() {
                 </div>
             )}
 
+            {/* MODAL BLOQUEAR HORARIO */}
+            {showBlockModal && (
+                <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowBlockModal(false)}>
+                    <div className="modal" style={{ maxWidth: 480 }}>
+                        <div className="modal-header">
+                            <div>
+                                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                    <Lock size={18} color="var(--pink)" /> Bloquear horario de agenda
+                                </h3>
+                                <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
+                                    Nadie podrá reservar en este rango
+                                </span>
+                            </div>
+                            <button className="btn btn-ghost btn-icon" onClick={() => setShowBlockModal(false)}><X size={16} /></button>
+                        </div>
+
+                        {/* Modal Switch Tabs */}
+                        <div style={{ padding: '0 var(--space-4)', paddingTop: 'var(--space-2)' }}>
+                            <div className={styles.modalTabs}>
+                                <button
+                                    type="button"
+                                    className={styles.modalTab}
+                                    onClick={() => {
+                                        setShowBlockModal(false)
+                                        openNewModal()
+                                    }}
+                                >
+                                    🗓️ Turno con cliente
+                                </button>
+                                <button type="button" className={`${styles.modalTab} ${styles.modalTabActive}`}>
+                                    <Lock size={13} /> Bloquear horario
+                                </button>
+                            </div>
+                        </div>
+
+                        <form onSubmit={handleCreateBlock}>
+                            <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                {blockError && (
+                                    <div style={{ background: 'var(--danger-light)', color: 'var(--danger)', padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-md)', fontSize: 'var(--font-size-sm)' }}>
+                                        {blockError}
+                                    </div>
+                                )}
+
+                                {/* Reason Selector */}
+                                <div>
+                                    <label className="label" style={{ marginBottom: 'var(--space-2)' }}>Motivo del bloqueo</label>
+                                    <div className={styles.blockReasonGrid}>
+                                        {BLOCK_REASONS.map(reason => (
+                                            <button
+                                                key={reason}
+                                                type="button"
+                                                className={`${styles.blockReasonBtn} ${blockForm.reason === reason ? styles.blockReasonBtnSelected : ''}`}
+                                                onClick={() => setBlockForm(p => ({ ...p, reason }))}
+                                            >
+                                                {reason}
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    {blockForm.reason === 'Otro' && (
+                                        <input
+                                            className="input"
+                                            placeholder="Escribí el motivo personalizado..."
+                                            value={blockForm.customReason}
+                                            onChange={e => setBlockForm(p => ({ ...p, customReason: e.target.value }))}
+                                            autoFocus
+                                            required
+                                        />
+                                    )}
+                                </div>
+
+                                {/* Date & Time */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 'var(--space-3)' }}>
+                                    <div className="form-group">
+                                        <label className="label">Fecha</label>
+                                        <input
+                                            className="input"
+                                            type="date"
+                                            value={blockForm.date}
+                                            onChange={e => setBlockForm(p => ({ ...p, date: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                        <div className="form-group">
+                                            <label className="label">Hora inicio</label>
+                                            <input
+                                                className="input"
+                                                type="time"
+                                                step="300"
+                                                value={blockForm.startTime}
+                                                onChange={e => setBlockForm(p => ({ ...p, startTime: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label">Hora fin</label>
+                                            <input
+                                                className="input"
+                                                type="time"
+                                                step="300"
+                                                value={blockForm.endTime}
+                                                onChange={e => setBlockForm(p => ({ ...p, endTime: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {blockForm.startTime && blockForm.endTime && timeToMinutes(blockForm.endTime) > timeToMinutes(blockForm.startTime) && (
+                                        <p style={{ margin: 0, fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <Clock size={12} /> Duración bloqueada: {timeToMinutes(blockForm.endTime) - timeToMinutes(blockForm.startTime)} minutos
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Professional (if team exists) */}
+                                {teamMembers.length > 0 && profile?.role !== 'Profesional' && (
+                                    <div className="form-group">
+                                        <label className="label">Profesional asignado</label>
+                                        <select
+                                            className="input"
+                                            value={blockForm.team_member_id || ''}
+                                            onChange={e => setBlockForm(p => ({ ...p, team_member_id: e.target.value || null }))}
+                                        >
+                                            <option value="">Toda la agenda (general)</option>
+                                            {teamMembers.map(m => (
+                                                <option key={m.id} value={m.id}>{m.name}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+
+                                {/* Recurrence (Repetir semanalmente) */}
+                                <div style={{ padding: 'var(--space-3) var(--space-4)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                                    <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', cursor: 'pointer', fontSize: 'var(--font-size-sm)', fontWeight: 600 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={blockForm.recurrence.enabled}
+                                            onChange={e => setBlockForm(p => ({ ...p, recurrence: { ...p.recurrence, enabled: e.target.checked } }))}
+                                        />
+                                        Repetir este bloqueo semanalmente (ej: Facultad, cursos)
+                                    </label>
+                                    {blockForm.recurrence.enabled && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                                            <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)' }}>Durante las próximas:</span>
+                                            <select
+                                                className="input"
+                                                style={{ width: 140, padding: '4px 8px', fontSize: 'var(--font-size-sm)' }}
+                                                value={blockForm.recurrence.count}
+                                                onChange={e => setBlockForm(p => ({ ...p, recurrence: { ...p.recurrence, count: parseInt(e.target.value, 10) || 4 } }))}
+                                            >
+                                                <option value="4">4 semanas (1 mes)</option>
+                                                <option value="8">8 semanas (2 meses)</option>
+                                                <option value="12">12 semanas (3 meses)</option>
+                                                <option value="16">16 semanas (4 meses)</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-group">
+                                    <label className="label">Notas adicionales (opcional)</label>
+                                    <input
+                                        className="input"
+                                        placeholder="Ej: Turno médico en Clínica Güemes..."
+                                        value={blockForm.notes}
+                                        onChange={e => setBlockForm(p => ({ ...p, notes: e.target.value }))}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="modal-footer">
+                                <button type="button" className="btn btn-secondary" onClick={() => setShowBlockModal(false)}>Cancelar</button>
+                                <button type="submit" className="btn btn-primary" disabled={savingBlock} style={{ flex: 1 }}>
+                                    {savingBlock ? <div className="loading-spinner" /> : <><Lock size={15} /> Confirmar bloqueo</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {editingApt && (
                 <div className="modal-overlay" onClick={e => e.target === e.currentTarget && setEditingApt(null)}>
                     <div className="modal" style={{ maxWidth: 450 }}>
                         <div className="modal-header">
-                            <h3><Pencil size={16} /> Editar turno</h3>
+                            <h3>
+                                {editingApt.service_name?.startsWith('⛔') || editingApt.service_name?.toLowerCase().includes('bloqueo')
+                                    ? <><Lock size={16} color="var(--pink)" /> Bloqueo de agenda</>
+                                    : <><Pencil size={16} /> Editar turno</>}
+                            </h3>
                             <button className="btn btn-ghost btn-icon" onClick={() => setEditingApt(null)}><X size={16} /></button>
                         </div>
                         <form onSubmit={handleSaveEdit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
@@ -1017,78 +1428,143 @@ export default function CalendarPage() {
                                     {editError}
                                 </div>
                             )}
-                            <div className="form-group">
-                                <label className="label">Cliente</label>
-                                <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
-                                <div className="form-group">
-                                    <label className="label">Fecha</label>
-                                    <input className="input" type="date" value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} required />
-                                </div>
-                                <div className="form-group">
-                                    <label className="label">Hora</label>
-                                    <input className="input" type="time" step="300" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
-                                </div>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)' }}>
-                                <div className="form-group">
-                                    <label className="label">Servicio</label>
-                                    <select
-                                        className="input"
-                                        value={editForm.service_name}
-                                        onChange={e => {
-                                            const svc = findServiceByName(services, e.target.value)
-                                            setEditForm(p => ({
-                                                ...p,
-                                                service_name: e.target.value,
-                                                duration: svc?.duration ?? p.duration,
-                                            }))
-                                        }}
-                                        required
-                                    >
-                                        {/* El servicio del turno puede haberse borrado del catálogo */}
-                                        {!findServiceByName(services, editForm.service_name) && editForm.service_name && (
-                                            <option value={editForm.service_name}>{editForm.service_name} (fuera del catálogo)</option>
-                                        )}
-                                        {services.map(s => (
-                                            <option key={s.id} value={s.name}>{s.name} · {s.duration} min</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="form-group">
-                                    <label className="label">Duración (min)</label>
-                                    <input
-                                        className="input" type="number" min="5" max="480" step="5"
-                                        value={editForm.duration}
-                                        onChange={e => setEditForm(p => ({ ...p, duration: e.target.value }))}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                            {editForm.time && (
-                                <p className={styles.editRangeHint}>
-                                    <Clock size={12} /> Ocupa de {editForm.time} a {minutesToTime(timeToMinutes(editForm.time) + (parseInt(editForm.duration, 10) || DEFAULT_DURATION))}
-                                </p>
+
+                            {editingApt.service_name?.startsWith('⛔') || editingApt.service_name?.toLowerCase().includes('bloqueo') ? (
+                                <>
+                                    <div className="form-group">
+                                        <label className="label">Motivo del bloqueo</label>
+                                        <input
+                                            className="input"
+                                            type="text"
+                                            value={editForm.service_name}
+                                            onChange={e => setEditForm(p => ({ ...p, service_name: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                                        <div className="form-group">
+                                            <label className="label">Fecha</label>
+                                            <input className="input" type="date" value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label">Hora</label>
+                                            <input className="input" type="time" step="300" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">Duración (minutos)</label>
+                                        <input
+                                            className="input"
+                                            type="number"
+                                            min="5"
+                                            max="720"
+                                            step="5"
+                                            value={editForm.duration}
+                                            onChange={e => setEditForm(p => ({ ...p, duration: e.target.value }))}
+                                            required
+                                        />
+                                    </div>
+                                    {editForm.time && (
+                                        <p className={styles.editRangeHint}>
+                                            <Clock size={12} /> Bloquea de {editForm.time} a {minutesToTime(timeToMinutes(editForm.time) + (parseInt(editForm.duration, 10) || DEFAULT_DURATION))}
+                                        </p>
+                                    )}
+                                    <div className="form-group">
+                                        <label className="label">Notas</label>
+                                        <textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Detalles del bloqueo..." />
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-4)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--border)' }}>
+                                        <button
+                                            type="button"
+                                            className="btn btn-danger btn-sm"
+                                            onClick={() => handleUnblock(editingApt.id)}
+                                            disabled={savingEdit}
+                                        >
+                                            <Trash2 size={14} /> Desbloquear horario
+                                        </button>
+                                        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setEditingApt(null)}>Cancelar</button>
+                                            <button type="submit" className="btn btn-primary btn-sm" disabled={savingEdit}>
+                                                {savingEdit ? <div className="loading-spinner" /> : 'Guardar'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="form-group">
+                                        <label className="label">Cliente</label>
+                                        <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+                                        <div className="form-group">
+                                            <label className="label">Fecha</label>
+                                            <input className="input" type="date" value={editForm.date} onChange={e => setEditForm(p => ({ ...p, date: e.target.value }))} required />
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label">Hora</label>
+                                            <input className="input" type="time" step="300" value={editForm.time} onChange={e => setEditForm(p => ({ ...p, time: e.target.value }))} required />
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-2)' }}>
+                                        <div className="form-group">
+                                            <label className="label">Servicio</label>
+                                            <select
+                                                className="input"
+                                                value={editForm.service_name}
+                                                onChange={e => {
+                                                    const svc = findServiceByName(services, e.target.value)
+                                                    setEditForm(p => ({
+                                                        ...p,
+                                                        service_name: e.target.value,
+                                                        duration: svc?.duration ?? p.duration,
+                                                    }))
+                                                }}
+                                                required
+                                            >
+                                                {!findServiceByName(services, editForm.service_name) && editForm.service_name && (
+                                                    <option value={editForm.service_name}>{editForm.service_name} (fuera del catálogo)</option>
+                                                )}
+                                                {services.map(s => (
+                                                    <option key={s.id} value={s.name}>{s.name} · {s.duration} min</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="form-group">
+                                            <label className="label">Duración (min)</label>
+                                            <input
+                                                className="input" type="number" min="5" max="480" step="5"
+                                                value={editForm.duration}
+                                                onChange={e => setEditForm(p => ({ ...p, duration: e.target.value }))}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
+                                    {editForm.time && (
+                                        <p className={styles.editRangeHint}>
+                                            <Clock size={12} /> Ocupa de {editForm.time} a {minutesToTime(timeToMinutes(editForm.time) + (parseInt(editForm.duration, 10) || DEFAULT_DURATION))}
+                                        </p>
+                                    )}
+                                    <div className="form-group">
+                                        <label className="label">Estado</label>
+                                        <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
+                                            {Object.values(APPOINTMENT_STATUS).map(s => (
+                                                <option key={s.id} value={s.id}>{s.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="label">Notas</label>
+                                        <textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Detalles o notas..." />
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
+                                        <button type="button" className="btn btn-ghost" onClick={() => setEditingApt(null)}>Cancelar</button>
+                                        <button type="submit" className="btn btn-primary" disabled={savingEdit}>
+                                            {savingEdit ? <div className="loading-spinner" /> : 'Guardar cambios'}
+                                        </button>
+                                    </div>
+                                </>
                             )}
-                            <div className="form-group">
-                                <label className="label">Estado</label>
-                                <select className="input" value={editForm.status} onChange={e => setEditForm(p => ({ ...p, status: e.target.value }))}>
-                                    {Object.values(APPOINTMENT_STATUS).map(s => (
-                                        <option key={s.id} value={s.id}>{s.label}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label className="label">Notas</label>
-                                <textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Detalles o notas..." />
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-2)', marginTop: 'var(--space-3)' }}>
-                                <button type="button" className="btn btn-ghost" onClick={() => setEditingApt(null)}>Cancelar</button>
-                                <button type="submit" className="btn btn-primary" disabled={savingEdit}>
-                                    {savingEdit ? <div className="loading-spinner" /> : 'Guardar cambios'}
-                                </button>
-                            </div>
                         </form>
                     </div>
                 </div>

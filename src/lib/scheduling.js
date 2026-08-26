@@ -58,12 +58,34 @@ export function rangesOverlap(aStart, aEnd, bStart, bEnd) {
  * `slotInterval` en null significa "automático": el paso lo define la duración
  * del servicio, así un servicio de 45 min arranca cada 45 min.
  */
-export function resolveScheduleSettings(settings = {}) {
+export function resolveScheduleSettings(settings = {}, date = null) {
     const s = settings || {}
     const rawInterval = parseInt(s.slot_duration, 10)
+    let startStr = s.work_hours?.start || '09:00'
+    let endStr = s.work_hours?.end || '20:00'
+
+    if (date !== null && date !== undefined && s.work_hours_by_day) {
+        let dayNum = null
+        if (typeof date === 'number') {
+            dayNum = date
+        } else if (typeof date === 'string') {
+            const [y, m, d] = date.split('-').map(Number)
+            if (y && m && d) {
+                dayNum = new Date(y, m - 1, d).getDay()
+            }
+        } else if (date instanceof Date) {
+            dayNum = date.getDay()
+        }
+
+        if (dayNum !== null && s.work_hours_by_day[dayNum]?.start && s.work_hours_by_day[dayNum]?.end) {
+            startStr = s.work_hours_by_day[dayNum].start
+            endStr = s.work_hours_by_day[dayNum].end
+        }
+    }
+
     return {
-        startMin: timeToMinutes(s.work_hours?.start || '09:00'),
-        endMin: timeToMinutes(s.work_hours?.end || '20:00'),
+        startMin: timeToMinutes(startStr),
+        endMin: timeToMinutes(endStr),
         workDays: Array.isArray(s.work_days) && s.work_days.length > 0 ? s.work_days : [1, 2, 3, 4, 5, 6],
         slotInterval: Number.isFinite(rawInterval) && rawInterval > 0 ? rawInterval : null,
         bufferTime: Math.max(0, parseInt(s.buffer_time, 10) || 0),
@@ -120,7 +142,7 @@ export function generateAvailableSlots({
     enforceMinAdvance = true,
     now = new Date(),
 }) {
-    const cfg = resolveScheduleSettings(settings)
+    const cfg = resolveScheduleSettings(settings, date)
     const serviceDuration = duration > 0 ? duration : DEFAULT_DURATION
     // Paso automático: el turno siguiente arranca justo cuando termina el anterior.
     const step = cfg.slotInterval || serviceDuration
@@ -248,6 +270,22 @@ export function resolveCalendarRange(settings, appointments = []) {
     const cfg = resolveScheduleSettings(settings)
     let startMin = cfg.startMin
     let endMin = cfg.endMin
+
+    const s = settings || {}
+    if (s.work_hours_by_day && typeof s.work_hours_by_day === 'object') {
+        const days = Array.isArray(s.work_days) && s.work_days.length > 0 ? s.work_days : [1, 2, 3, 4, 5, 6]
+        for (const d of days) {
+            const dHours = s.work_hours_by_day[d]
+            if (dHours?.start) {
+                const sm = timeToMinutes(dHours.start)
+                if (sm < startMin) startMin = sm
+            }
+            if (dHours?.end) {
+                const em = timeToMinutes(dHours.end)
+                if (em > endMin) endMin = em
+            }
+        }
+    }
 
     for (const apt of appointments) {
         if (!apt?.time) continue
