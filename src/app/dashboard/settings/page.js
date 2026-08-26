@@ -167,6 +167,10 @@ function SettingsContent() {
         setTimeout(() => setCopied(false), 2000)
     }
 
+    // El buffer se descuenta de los dos lados del turno: 45 de buffer sobre un
+    // servicio de 45 min consume 135 min de agenda. Se muestra el costo real.
+    const bufferGap = Math.max(0, parseInt(bufferTime, 10) || 0)
+
     async function handleSave(e) {
         e.preventDefault()
         setSaving(true)
@@ -462,8 +466,14 @@ function SettingsContent() {
                                 <input className="input" type="number" min="0" max="60" step="5" value={bufferTime}
                                     onChange={e => setBufferTime(e.target.value)} />
                                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
-                                    Descanso o preparación entre turno y turno
+                                    Descanso o preparación entre turno y turno. <strong>No es la duración del turno</strong> — esa la define cada servicio.
                                 </span>
+                                {bufferGap > 0 && (
+                                    <span style={{ display: 'block', marginTop: 'var(--space-1)', fontSize: 'var(--font-size-xs)', color: bufferGap >= 30 ? '#e0a33e' : 'color-mix(in oklab, var(--cream) 50%, transparent)' }}>
+                                        Se aplica antes <em>y</em> después de cada turno: un servicio de 45 min va a bloquear {45 + bufferGap * 2} min de agenda.
+                                        {bufferGap >= 30 && ' Con este valor van a quedar muy pocos horarios disponibles para tus clientes.'}
+                                    </span>
+                                )}
                             </div>
 
                             <div className="form-group">

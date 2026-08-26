@@ -45,6 +45,9 @@ export default function DashboardLayout({ children }) {
           work_hours: { start: '09:00', end: '20:00' },
           work_days: [1, 2, 3, 4, 5, 6],
           slot_duration: null,
+          // 0 explicito: el buffer se descuenta de los dos lados del turno, asi
+          // que cualquier valor >0 recorta la agenda mas de lo que aparenta.
+          buffer_time: 0,
         }
       }).catch(err => {
         console.error('Auto-create business error:', err)

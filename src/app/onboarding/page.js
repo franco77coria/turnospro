@@ -85,6 +85,9 @@ export default function OnboardingPage() {
                     work_days: [1, 2, 3, 4, 5, 6],
                     // null = el paso de la agenda lo define la duración del servicio
                     slot_duration: null,
+                    // 0 explicito: el buffer se descuenta de los dos lados del
+                    // turno, asi que recorta la agenda mas de lo que aparenta.
+                    buffer_time: 0,
                     min_cancel_hours: 2,
                 }
             })
