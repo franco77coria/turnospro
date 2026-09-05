@@ -10,11 +10,12 @@ function groupSlotsByPeriod(slots) {
     const afternoon = [] // 12:00 - 18:00
     const evening = [] // >= 18:00
 
-    for (const t of slots) {
-        const hour = parseInt(t.split(':')[0], 10)
-        if (hour < 12) morning.push(t)
-        else if (hour < 18) afternoon.push(t)
-        else evening.push(t)
+    for (const item of slots) {
+        const timeStr = typeof item === 'string' ? item : item.time
+        const hour = parseInt(timeStr.split(':')[0], 10)
+        if (hour < 12) morning.push(item)
+        else if (hour < 18) afternoon.push(item)
+        else evening.push(item)
     }
 
     return [
@@ -60,6 +61,7 @@ export default function DateTimeStep({
     }
 
     const groups = groupSlotsByPeriod(slots)
+    const hasAnyAvailable = slots.some(s => (typeof s === 'string' ? true : s.available))
 
     // Parse selected date for display
     const selectedDateObj = selectedDate ? new Date(selectedDate + 'T12:00:00') : null
@@ -139,25 +141,63 @@ export default function DateTimeStep({
                         </div>
                     ) : (
                         <div className={styles.timeGroups}>
+                            {!hasAnyAvailable && (
+                                <div className={styles.allOccupiedNotice}>
+                                    <p>Todos los horarios de esta fecha ya están reservados.</p>
+                                    {!showWaitlist ? (
+                                        <button className={styles.waitlistBtn} onClick={() => setShowWaitlist(true)}>
+                                            <Bell size={14} /> Avisarme si se libera un turno
+                                        </button>
+                                    ) : (
+                                        <WaitlistForm
+                                            businessId={businessId}
+                                            date={selectedDate}
+                                            teamMemberId={teamMemberId}
+                                            serviceName={serviceName}
+                                            onClose={() => setShowWaitlist(false)}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
                             {groups.map(group => {
                                 const Icon = group.icon
+                                const availableCount = group.slots.filter(s => (typeof s === 'string' ? true : s.available)).length
                                 return (
                                     <div key={group.id} className={styles.timeGroup}>
                                         <div className={styles.groupHeader}>
                                             <Icon size={14} />
                                             <span>{group.label}</span>
-                                            <span className={styles.groupCount}>{group.slots.length}</span>
+                                            <span className={styles.groupCount}>
+                                                {availableCount > 0 ? `${availableCount} libre${availableCount > 1 ? 's' : ''}` : 'Sin libres'}
+                                            </span>
                                         </div>
                                         <div className={styles.timeGrid}>
-                                            {group.slots.map(t => (
-                                                <button
-                                                    key={t}
-                                                    className={`${styles.timeChip} ${selectedTime === t ? styles.timeSelected : ''}`}
-                                                    onClick={() => onSelectTime(t)}
-                                                >
-                                                    {t}
-                                                </button>
-                                            ))}
+                                            {group.slots.map(slot => {
+                                                const timeStr = typeof slot === 'string' ? slot : slot.time
+                                                const isAvailable = typeof slot === 'string' ? true : slot.available
+                                                const isSelected = selectedTime === timeStr
+
+                                                return (
+                                                    <button
+                                                        key={timeStr}
+                                                        type="button"
+                                                        disabled={!isAvailable}
+                                                        className={`
+                                                            ${styles.timeChip} 
+                                                            ${isSelected ? styles.timeSelected : ''} 
+                                                            ${!isAvailable ? styles.timeOccupied : ''}
+                                                        `}
+                                                        onClick={() => isAvailable && onSelectTime(timeStr)}
+                                                        title={!isAvailable ? `${timeStr} - No disponible (Ocupado)` : `Reservar a las ${timeStr}`}
+                                                    >
+                                                        <span className={styles.timeText}>{timeStr}</span>
+                                                        {!isAvailable && (
+                                                            <span className={styles.occupiedLabel}>Ocupado</span>
+                                                        )}
+                                                    </button>
+                                                )
+                                            })}
                                         </div>
                                     </div>
                                 )

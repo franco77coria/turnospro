@@ -168,7 +168,7 @@ export function useBookingFlow() {
         })
     }, [selectedDate, business?.id, selectedProfessional?.id])
 
-    // Horarios disponibles — misma implementación que usa el dashboard
+    // Horarios disponibles y ocupados (para mostrarlos griseados)
     function getTimeSlots() {
         if (!business) return []
         return generateAvailableSlots({
@@ -177,6 +177,7 @@ export function useBookingFlow() {
             occupied: occupiedSlots,
             date: selectedDate,
             enforceMinAdvance: true,
+            includeOccupied: true,
         })
     }
 

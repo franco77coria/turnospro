@@ -182,6 +182,23 @@ describe('scheduling', () => {
             })
             expect(paraTm1).toEqual([])
         })
+
+        it('con includeOccupied=true devuelve la lista completa de horarios con flag available', () => {
+            const occupied = toOccupiedRanges([
+                { id: 'a', time: '10:45', duration: 45, status: 'confirmed' },
+            ])
+            const slots = generateAvailableSlots({
+                settings: { work_hours: { start: '10:00', end: '12:15' } },
+                duration: 45,
+                occupied,
+                includeOccupied: true,
+            })
+            expect(slots).toEqual([
+                { time: '10:00', available: true, reason: null },
+                { time: '10:45', available: false, reason: 'occupied' },
+                { time: '11:30', available: true, reason: null },
+            ])
+        })
     })
 
     describe('findConflict', () => {

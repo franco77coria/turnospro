@@ -141,11 +141,17 @@ export function generateAvailableSlots({
     teamMemberId = null,
     enforceMinAdvance = true,
     now = new Date(),
+    includeOccupied = false,
 }) {
     const cfg = resolveScheduleSettings(settings, date)
     const serviceDuration = duration > 0 ? duration : DEFAULT_DURATION
     // Paso automático: el turno siguiente arranca justo cuando termina el anterior (lineal y contiguo).
     const step = cfg.slotInterval || serviceDuration
+
+    const isToday = date ? date === formatDateLocal(now) : false
+    const minStartToday = isToday
+        ? now.getHours() * 60 + now.getMinutes() + (enforceMinAdvance ? cfg.minAdvanceHours * 60 : 0)
+        : -Infinity
 
     const candidateSlots = []
 
@@ -154,10 +160,24 @@ export function generateAvailableSlots({
         candidateSlots.push(m)
     }
 
-    const isToday = date ? date === formatDateLocal(now) : false
-    const minStartToday = isToday
-        ? now.getHours() * 60 + now.getMinutes() + (enforceMinAdvance ? cfg.minAdvanceHours * 60 : 0)
-        : -Infinity
+    if (includeOccupied) {
+        return candidateSlots
+            .filter(startMin => startMin >= cfg.startMin)
+            .filter(startMin => startMin + serviceDuration <= cfg.endMin)
+            .sort((a, b) => a - b)
+            .map(startMin => {
+                const isPast = startMin < minStartToday
+                const hasConflict = !!findConflict(startMin, startMin + serviceDuration, occupied, {
+                    bufferTime: cfg.bufferTime,
+                    teamMemberId,
+                })
+                return {
+                    time: minutesToTime(startMin),
+                    available: !isPast && !hasConflict,
+                    reason: isPast ? 'past' : (hasConflict ? 'occupied' : null),
+                }
+            })
+    }
 
     return candidateSlots
         .filter(startMin => startMin >= cfg.startMin)

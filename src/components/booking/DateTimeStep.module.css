@@ -260,7 +260,7 @@
 }
 
 .timeChip {
-    padding: 8px 12px;
+    padding: 7px 12px;
     border-radius: var(--r-full);
     border: 1px solid var(--line);
     background: var(--bg-card);
@@ -270,17 +270,22 @@
     color: var(--ink);
     cursor: pointer;
     transition: all var(--t-fast);
-    min-width: 64px;
+    min-width: 66px;
     text-align: center;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
 }
 
-.timeChip:hover {
+.timeChip:hover:not(:disabled) {
     border-color: var(--pink);
     background: color-mix(in oklab, var(--pink) 3%, transparent);
     color: var(--pink);
 }
 
-.timeChip:active {
+.timeChip:active:not(:disabled) {
     transform: scale(0.96);
 }
 
@@ -294,6 +299,49 @@
 .timeSelected:hover {
     background: var(--pink);
     color: white;
+}
+
+.timeOccupied {
+    opacity: 0.45;
+    background: color-mix(in oklab, var(--ink) 4%, transparent);
+    border-color: color-mix(in oklab, var(--line) 80%, transparent);
+    cursor: not-allowed;
+    user-select: none;
+    pointer-events: none;
+}
+
+.timeOccupied .timeText {
+    text-decoration: line-through;
+    color: var(--ink-mute);
+}
+
+.occupiedLabel {
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-mute);
+    line-height: 1;
+}
+
+.allOccupiedNotice {
+    background: color-mix(in oklab, var(--pink) 4%, var(--bg-card));
+    border: 1px dashed color-mix(in oklab, var(--pink) 30%, var(--line));
+    border-radius: var(--r-lg);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.allOccupiedNotice p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-weight: 600;
 }
 
 /* Continue button */
