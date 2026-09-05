@@ -92,15 +92,16 @@ describe('scheduling', () => {
             expect(slots).toEqual(['09:00', '09:30', '10:00'])
         })
 
-        it('descarta los horarios que se pisan con un turno existente y habilita el hueco inmediato', () => {
+        it('descarta los horarios que se pisan con un turno existente manteniendo la grilla lineal', () => {
             const occupied = toOccupiedRanges([{ id: 'a', time: '10:00', duration: 45, status: 'confirmed' }])
             const slots = generateAvailableSlots({
                 settings: { work_hours: { start: '09:00', end: '12:00' } },
                 duration: 30,
                 occupied,
             })
-            // Ocupado 10:00-10:45 → 10:00 y 10:30 no van, pero 10:45 (fin del turno) y 11:15 sí están disponibles
-            expect(slots).toEqual(['09:00', '09:30', '10:45', '11:00', '11:15', '11:30'])
+            // Grilla de 30m: 09:00, 09:30, 10:00, 10:30, 11:00, 11:30
+            // Ocupado 10:00-10:45 → 10:00 y 10:30 se descartan; quedan 09:00, 09:30, 11:00, 11:30 lineales
+            expect(slots).toEqual(['09:00', '09:30', '11:00', '11:30'])
         })
 
         it('aplica el buffer a los dos lados del turno existente', () => {
@@ -111,24 +112,23 @@ describe('scheduling', () => {
                 occupied,
             })
             // Ocupado real 10:00-10:30; con buffer 15m la zona vedada es 09:45-10:45.
-            // 09:15 termina 09:45 (justo antes del buffer). 10:45 arranca justo después del buffer.
-            expect(slots).toEqual(['09:00', '09:15', '10:45', '11:00', '11:15', '11:30'])
+            // Grilla base de 30 min: 09:00 (termina 09:30, libre), 09:30 (termina 10:00, choca con zona vedada),
+            // 10:00 y 10:30 chocan, 11:00 (11:00-11:30 libre), 11:30 (11:30-12:00 libre)
+            expect(slots).toEqual(['09:00', '11:00', '11:30'])
         })
 
-        it('un turno a las 16:45 permite reservar el siguiente a las 17:30 (caso BARONE)', () => {
-            const occupied = toOccupiedRanges([{ id: 'b', time: '16:45', duration: 45, status: 'confirmed' }])
+        it('un turno a las 16:45 con apertura 10:00 mantiene la grilla continua de 45 min (caso BARONE)', () => {
+            const occupied = toOccupiedRanges([{ id: 'b', time: '16:00', duration: 45, status: 'confirmed' }])
             const slots = generateAvailableSlots({
-                settings: { work_hours: { start: '09:00', end: '20:00' } },
+                settings: { work_hours: { start: '10:00', end: '21:45' } },
                 duration: 45,
                 occupied,
             })
-            // 17:30 arranca justo cuando termina el de 16:45
-            expect(slots).toContain('17:30')
-            // 16:00 termina justo cuando arranca el de 16:45
-            expect(slots).toContain('16:00')
-            // 16:30 y 17:15 chocan con 16:45-17:30
-            expect(slots).not.toContain('16:30')
-            expect(slots).not.toContain('17:15')
+            // 10:00 + 45m: 10:00, 10:45, 11:30, 12:15, 13:00, 13:45, 14:30, 15:15, 16:00, 16:45, 17:30...
+            // Con 16:00 ocupado, 15:15 y 16:45 quedan perfectamente contiguos
+            expect(slots).toContain('15:15')
+            expect(slots).toContain('16:45')
+            expect(slots).not.toContain('16:00')
         })
 
         it('ignora los turnos cancelados: el horario vuelve a estar libre', () => {
