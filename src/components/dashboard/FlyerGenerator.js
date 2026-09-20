@@ -95,7 +95,7 @@ export default function FlyerGenerator() {
             const tema = resolverTema(business?.settings?.theme)
             const { claro } = derivarPaleta(tema.primario, tema.secundario)
 
-            const base = appUrl().replace(/^https?:\/\//, '')
+            const base = appUrl().replace(/^https?:\/\/(www\.)?/, '')
             const ruta = business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`
 
             dibujarFlyer(ctx, {
