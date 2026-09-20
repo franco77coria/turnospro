@@ -8,10 +8,13 @@ import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 import { isSuperAdmin } from '@/lib/superadmin'
+import { usePathname } from 'next/navigation'
+import { planVigente, rutaPermitidaSinPlan } from '@/lib/plan'
 
 export default function DashboardLayout({ children }) {
   const { user, loading, profile, business, createBusiness } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
   const creatingBusinessRef = useRef(false)
 
   // Redirect to login if not authenticated
@@ -20,6 +23,18 @@ export default function DashboardLayout({ children }) {
       router.replace('/login')
     }
   }, [user, loading, router])
+
+  // Plan vencido: al panel no se entra hasta regularizar. Queda abierta la
+  // pantalla de suscripción —si no, el negocio no tendría forma de pagar— y
+  // la de ajustes, para que pueda sacar sus datos.
+  // Esto es comodidad, no el control: el servidor vuelve a verificar en
+  // /api/appointments, porque una pantalla no frena a nadie con curl.
+  const superadmin = isSuperAdmin(profile?.email)
+  useEffect(() => {
+    if (loading || !business || superadmin) return
+    if (planVigente(business) || rutaPermitidaSinPlan(pathname)) return
+    router.replace('/dashboard/subscription?status=vencido')
+  }, [loading, business, pathname, router, superadmin])
 
   // Auto-create business for superadmin if needed
   useEffect(() => {

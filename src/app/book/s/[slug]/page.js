@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import { notFound } from 'next/navigation'
+import { planVigente } from '@/lib/plan'
 import Link from 'next/link'
 import Image from 'next/image'
 import { MapPin, Phone, Star, Clock, ArrowRight, MessageCircle } from 'lucide-react'
@@ -43,7 +44,7 @@ async function loadProfile(slug) {
 
     const { data: business } = await supabase
         .from('businesses')
-        .select('id, name, slug, business_type, address, phone, settings, cover_image_url, logo_url, avg_rating, total_reviews, created_at')
+        .select('id, name, slug, business_type, address, phone, settings, cover_image_url, logo_url, avg_rating, total_reviews, created_at, plan_status, plan_expires_at')
         .eq('slug', slug)
         .maybeSingle()
 
@@ -144,6 +145,16 @@ export default async function BusinessProfilePage({ params }) {
     const data = await loadProfile(slug)
 
     if (!data) notFound()
+
+    // Plan vencido: la ficha deja de tomar reservas.
+    // Dejarla viva con el panel bloqueado sería peor que cortar: al negocio
+    // le seguirían entrando turnos que no puede ver, y los clientes llegarían
+    // al local sin que nadie los espere.
+    // El cartel es neutro a propósito: quien entra a reservar no tiene por
+    // qué enterarse de que el negocio no pagó su cuota.
+    if (!planVigente(data.business)) {
+        return <FichaPausada nombre={data.business.name?.trim() || 'Este negocio'} />
+    }
 
     const { business, services, team, photos, reviews, busy } = data
     const settings = business.settings || {}
@@ -458,5 +469,30 @@ export default async function BusinessProfilePage({ params }) {
                 <span className={styles.stickyBtn}>Reservar</span>
             </Link>
         </div>
+    )
+}
+
+
+/** Ficha de un negocio que no está recibiendo reservas. */
+function FichaPausada({ nombre }) {
+    return (
+        <main style={{
+            minHeight: '70vh', display: 'grid', placeItems: 'center',
+            padding: 'var(--space-6)', textAlign: 'center',
+        }}>
+            <div style={{ maxWidth: '44ch' }}>
+                <h1 style={{
+                    fontFamily: 'var(--font-display)', fontSize: 'var(--font-size-2xl)',
+                    fontWeight: 800, marginBottom: 'var(--space-3)',
+                }}>
+                    {nombre}
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 'var(--space-5)' }}>
+                    No está tomando reservas online en este momento. Si necesitás un turno,
+                    lo mejor es escribirle o llamar directamente.
+                </p>
+                <a href="/explore" className="btn btn-secondary">Ver otros negocios</a>
+            </div>
+        </main>
     )
 }

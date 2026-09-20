@@ -22,6 +22,7 @@ import {
 } from './scheduling'
 import { nowInTimezone } from './timezone'
 import { isBusinessClosed, isTeamMemberAbsent } from './availability'
+import { planVigente } from './plan'
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
 
@@ -42,12 +43,24 @@ export async function validarReserva(supabase, {
 }) {
     const { data: business } = await supabase
         .from('businesses')
-        .select('id, settings, timezone')
+        .select('id, settings, timezone, plan_status, plan_expires_at')
         .eq('id', business_id)
         .maybeSingle()
 
     if (!business) {
         return { ok: false, status: 404, error: 'El negocio no existe' }
+    }
+
+    // Plan vencido: no se toman turnos nuevos. Se verifica acá y no solo en
+    // la pantalla porque este endpoint se llama con curl.
+    // El mensaje es neutro a propósito: el cliente del negocio no tiene por
+    // qué enterarse de que su barbería no pagó la cuota.
+    if (!planVigente(business)) {
+        return {
+            ok: false,
+            status: 409,
+            error: 'Este negocio no está recibiendo reservas en este momento.',
+        }
     }
 
     // ── 1. El servicio tiene que existir en el catálogo del negocio ───────
