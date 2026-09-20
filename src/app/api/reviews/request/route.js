@@ -5,6 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { sendEmail } from '@/lib/send-email'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { ReviewRequestSchema, parseBody } from '@/lib/schemas'
+import { appUrl } from '@/lib/app-url'
 
 export async function POST(request) {
     try {
@@ -57,8 +58,8 @@ export async function POST(request) {
             return NextResponse.json({ error: 'No tenés permisos para este negocio' }, { status: 403 })
         }
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-        const reviewUrl = `${appUrl}/book/${business_id}#reviews`
+        const baseUrl = appUrl()
+        const reviewUrl = `${baseUrl}/book/${business_id}#reviews`
 
         await sendEmail({
             type: 'review_request',

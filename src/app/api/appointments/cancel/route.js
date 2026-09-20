@@ -11,6 +11,7 @@ import { applyRateLimit } from '@/lib/rate-limit'
 import { CancelTokenSchema, parseBody } from '@/lib/schemas'
 import { formatDateEs } from '@/lib/scheduling'
 import { z } from 'zod'
+import { appUrl } from '@/lib/app-url'
 
 const SessionCancelSchema = z.object({
     appointment_id: z.string().uuid(),
@@ -215,7 +216,7 @@ export async function POST(request) {
 
         const formattedDate = formatDateEs(appointment.date)
         const formattedTime = appointment.time?.slice(0, 5)
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+        const baseUrl = appUrl()
 
         if (appointment.clients?.email) {
             try {
@@ -230,7 +231,7 @@ export async function POST(request) {
                         businessName: appointment.businesses?.name || 'GLOWUP',
                         businessType: appointment.businesses?.business_type || 'custom',
                         businessPhone: appointment.businesses?.phone,
-                        bookUrl: `${appUrl}/book/${appointment.business_id}`,
+                        bookUrl: `${baseUrl}/book/${appointment.business_id}`,
                     }
                 })
             } catch (e) {
@@ -259,7 +260,7 @@ export async function POST(request) {
                             time: formattedTime,
                             businessName: appointment.businesses?.name || 'GLOWUP',
                             businessType: appointment.businesses?.business_type || 'custom',
-                            dashboardUrl: `${appUrl}/dashboard/appointments`,
+                            dashboardUrl: `${baseUrl}/dashboard/appointments`,
                         }
                     })
                 } catch (e) {

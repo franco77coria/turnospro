@@ -14,9 +14,21 @@
 
 import crypto from 'crypto'
 
+// El secreto que firma los links de cancelación NO puede caer nunca en un
+// valor público. Antes la cadena de fallbacks terminaba en la anon key (que
+// viaja en el bundle del cliente) y en una constante versionada en el repo:
+// con cualquiera de las dos, cualquiera podía forjar el token de un turno
+// ajeno y cancelarlo. CRON_SECRET se acepta como puente para no romper los
+// links ya enviados, pero es un secreto de servidor, no público.
 const getCancelSecret = () => {
-    const secret = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    return secret || 'glowup-cancel-secret-2026'
+    const secret = process.env.CANCEL_TOKEN_SECRET || process.env.CRON_SECRET
+    if (!secret) {
+        throw new Error(
+            'CANCEL_TOKEN_SECRET no está configurado. Los links de cancelación ' +
+            'quedan deshabilitados hasta que se defina un secreto de servidor.'
+        )
+    }
+    return secret
 }
 
 async function hmacSign(data) {

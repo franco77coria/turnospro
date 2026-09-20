@@ -1,4 +1,5 @@
 // Email HTML templates para TU GLOWUP
+import { appUrl } from '@/lib/app-url'
 // Diseño idéntico a la Web App: paleta Cream (#FFF6F0), Ink (#1A0E1F), Pink (#FF2E8E) y Violet (#6E2BFF).
 
 export function escapeHtml(value) {
@@ -20,7 +21,7 @@ export function safeUrl(value) {
 function baseLayout(content, businessName) {
     const safeBiz = escapeHtml(businessName)
     const initial = safeBiz ? safeBiz[0].toUpperCase() : 'G'
-    const appHref = safeUrl(process.env.NEXT_PUBLIC_APP_URL || 'https://tu-glowup.com')
+    const appHref = safeUrl(appUrl())
 
     return `<!DOCTYPE html>
 <html lang="es">

@@ -41,6 +41,11 @@ function firmaCoincide(esperada, recibida) {
  * Devuelve false ante cualquier parte faltante, para que la falta de firma
  * no se convierta en un pase libre.
  */
+// Una firma válida pero vieja sigue siendo válida para siempre si no se mira
+// el `ts`. Sin esto, quien capture UNA notificación aprobada puede reenviarla
+// todos los meses y renovarse el plan gratis.
+const TOLERANCIA_FIRMA_MS = 5 * 60 * 1000
+
 function firmaValida(secreto, signature, requestId, dataId) {
     if (!signature || !requestId || !dataId) return false
 
@@ -49,6 +54,14 @@ function firmaValida(secreto, signature, requestId, dataId) {
     )
     const { ts, v1 } = partes
     if (!ts || !v1) return false
+
+    // `ts` de Mercado Pago viene en milisegundos.
+    const tsNum = Number(ts)
+    if (!Number.isFinite(tsNum)) return false
+    if (Math.abs(Date.now() - tsNum) > TOLERANCIA_FIRMA_MS) {
+        console.warn('[mp-webhook] firma fuera de la ventana de tolerancia', { ts })
+        return false
+    }
 
     const manifiesto = `id:${dataId};request-id:${requestId};ts:${ts};`
     const esperada = crypto.createHmac('sha256', secreto).update(manifiesto).digest('hex')
@@ -71,7 +84,13 @@ export async function POST(request) {
         // --- Validación de firma, antes que cualquier otra cosa ---
         const secreto = env('MERCADOPAGO_WEBHOOK_SECRET')
         const esProduccion = process.env.VERCEL_ENV === 'production'
-        const esSimulacion = String(paymentId) === '123456' || body?.live_mode === false
+
+        // `live_mode` venía del CUERPO del pedido, es decir, del que llama.
+        // Mandando {"live_mode": false} se salteaba la firma por completo y se
+        // podía reenviar el id de un pago aprobado para regalarse el plan.
+        // La simulación solo se reconoce por el id fijo que manda el panel de
+        // Mercado Pago, y únicamente fuera de producción.
+        const esSimulacion = !esProduccion && String(paymentId) === '123456'
 
         if (!secreto) {
             if (esProduccion) {
@@ -128,6 +147,24 @@ export async function POST(request) {
                 const supabase = getAdminSupabase()
                 const planInfo = PLANS[plan_id]
 
+                // Candado de idempotencia: si este pago ya se aplicó, la
+                // constraint única lo rechaza y salimos sin tocar el plan.
+                // Mercado Pago reintenta las notificaciones por diseño.
+                const { error: dupError } = await supabase
+                    .from('mp_pagos_aplicados')
+                    .insert([{ payment_id: String(paymentId), business_id, plan_id }])
+
+                if (dupError) {
+                    if (dupError.code === '23505') {
+                        console.log('[mp-webhook] pago ya aplicado, se ignora', { paymentId })
+                        return NextResponse.json({ status: 'ok', reason: 'already_applied' })
+                    }
+                    // No sabemos si se aplicó o no: mejor no tocar la suscripción
+                    // y que Mercado Pago reintente.
+                    console.error('[mp-webhook] no se pudo registrar el pago:', dupError)
+                    return NextResponse.json({ error: 'No se pudo registrar el pago' }, { status: 500 })
+                }
+
                 // El tope lo manda el plan, no el external_reference: ese viaja
                 // por el checkout y no es confiable como fuente de permisos.
                 const maxLocs = Math.min(
@@ -135,8 +172,23 @@ export async function POST(request) {
                     planInfo.maxLocations
                 )
 
-                // Calcular vencimiento: 30 días a partir de hoy
-                const expiresAt = new Date()
+                // 30 días desde el vencimiento actual, no desde hoy: quien
+                // renueva antes de que se le venza no tiene por qué perder
+                // los días que le quedaban.
+                const { data: bizActual } = await supabase
+                    .from('businesses')
+                    .select('plan_expires_at')
+                    .eq('id', business_id)
+                    .maybeSingle()
+
+                const vencimientoActual = bizActual?.plan_expires_at
+                    ? new Date(bizActual.plan_expires_at)
+                    : null
+                const base = vencimientoActual && vencimientoActual > new Date()
+                    ? vencimientoActual
+                    : new Date()
+
+                const expiresAt = new Date(base)
                 expiresAt.setDate(expiresAt.getDate() + 30)
 
                 // Actualizar negocio

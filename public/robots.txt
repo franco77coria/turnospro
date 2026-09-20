@@ -1,6 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /dashboard/
-Disallow: /onboarding/
-
-Sitemap: https://tu-glowup.com/sitemap.xml

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
+import { appUrl } from '@/lib/app-url'
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://glowup.com.ar'
+const BASE_URL = appUrl()
 
 export default async function sitemap() {
     // Static pages

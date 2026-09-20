@@ -7,6 +7,7 @@ import { createSupabaseAdmin } from '@/lib/supabase-admin'
 import { verifyCronAuth } from '@/lib/cron-auth'
 import { nowInTimezone } from '@/lib/timezone'
 import { formatDateEs, formatDateLocal } from '@/lib/scheduling'
+import { appUrl } from '@/lib/app-url'
 
 // This endpoint is called by Vercel Cron
 // Runs every hour to check for upcoming appointments in the next 2 hours
@@ -130,7 +131,7 @@ export async function GET(request) {
                         businessName: apt.businesses?.name || 'GLOWUP',
                         businessType: apt.businesses?.business_type || 'custom',
                         businessPhone: apt.businesses?.phone,
-                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+                        appointmentUrl: `${appUrl()}/dashboard/appointments`,
                     })
 
                     await resend.emails.send({

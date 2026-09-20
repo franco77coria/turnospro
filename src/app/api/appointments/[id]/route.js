@@ -5,6 +5,7 @@ import { cookies } from 'next/headers'
 import { checkRescheduleAvailability } from '@/lib/availability'
 import { DEFAULT_DURATION } from '@/lib/scheduling'
 import { z } from 'zod'
+import { appUrl } from '@/lib/app-url'
 
 const UpdateSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (YYYY-MM-DD)').optional(),
@@ -143,7 +144,7 @@ export async function PATCH(request, { params }) {
                         businessName: appointment.businesses?.name || 'Tu GlowUp',
                         businessType: 'custom',
                         businessPhone: appointment.businesses?.phone,
-                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                        appointmentUrl: `${appUrl()}/book/my-appointments`,
                         appointmentId: id,
                     }
                 }).catch(() => {})

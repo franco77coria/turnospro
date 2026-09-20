@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { EmailRequestSchema, parseBody } from '@/lib/schemas'
+import { appUrl } from '@/lib/app-url'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -42,9 +43,15 @@ export async function POST(request) {
         switch (type) {
             case 'confirmation':
                 if (data.appointmentId) {
-                    const cancelToken = await generateCancelToken(data.appointmentId)
-                    const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
-                    data.cancelUrl = `${appUrl}/cancel/${cancelToken}`
+                    // Ver send-email.js: el link de cancelación es opcional,
+                    // la confirmación no.
+                    try {
+                        const cancelToken = await generateCancelToken(data.appointmentId)
+                        const baseUrl = appUrl()
+                        data.cancelUrl = `${baseUrl}/cancel/${cancelToken}`
+                    } catch (tokenErr) {
+                        console.error('[api/email] no se pudo firmar el link de cancelación:', tokenErr.message)
+                    }
                 }
                 html = confirmationEmail(data)
                 subject = `Turno confirmado — ${data.serviceName} | ${data.businessName}`

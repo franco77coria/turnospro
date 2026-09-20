@@ -7,6 +7,8 @@ import { cookies } from 'next/headers'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { BookingSchema, parseBody } from '@/lib/schemas'
 import { sendEmail } from '@/lib/send-email'
+import { maskEmail, maskName } from '@/lib/log'
+import { appUrl } from '@/lib/app-url'
 
 // Helper para enviar confirmación de turno vía WhatsApp al cliente (Desactivado temporalmente - Uso exclusivo de Email)
 async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time) {
@@ -302,7 +304,10 @@ async function sendBookingSideEffects(supabase, {
     const debug = { steps: [] }
     const log = (msg) => { debug.steps.push(msg); console.log('[SideEffects]', msg) }
 
-    log(`START appointmentId=${appointmentId} guest_email=${guest_email} user_email=${user_email} send_emails=${send_emails} client_id=${client_id}`)
+    // Los datos del cliente NO se escriben en claro: estos logs quedan
+    // guardados en Vercel y son, en la práctica, una copia de la base de
+    // clientes del negocio.
+    log(`START appointmentId=${appointmentId} tieneGuestEmail=${Boolean(guest_email)} tieneUserEmail=${Boolean(user_email)} send_emails=${send_emails} tieneClientId=${Boolean(client_id)}`)
 
     // Atomically consume coupon if provided
     if (coupon_id) {
@@ -325,7 +330,7 @@ async function sendBookingSideEffects(supabase, {
 
         if (client_id) {
             const { data: c } = await supabase.from('clients').select('name, email, phone').eq('id', client_id).maybeSingle()
-            log(`Client lookup: ${JSON.stringify(c)}`)
+            log(`Client lookup: ${c ? 'encontrado' : 'sin datos'}`)
             if (c?.name) clientName = c.name
             if (c?.email) clientEmail = c.email
             if (c?.phone) clientPhone = c.phone
@@ -333,8 +338,8 @@ async function sendBookingSideEffects(supabase, {
 
         // Triple fallback
         if (!clientEmail) clientEmail = user_email || guest_email || null
-        log(`RESOLVED clientEmail=${clientEmail} clientName=${clientName}`)
-        debug.clientEmail = clientEmail
+        log(`RESOLVED clientEmail=${maskEmail(clientEmail)} clientName=${maskName(clientName)}`)
+        debug.clientEmail = maskEmail(clientEmail)
 
         // 3. Parse date
         let dateObj = new Date()
@@ -369,7 +374,7 @@ async function sendBookingSideEffects(supabase, {
 
         // 5a. Email al CLIENTE — await directo
         if (clientEmail) {
-            log(`SENDING confirmation email to ${clientEmail}...`)
+            log(`SENDING confirmation email to ${maskEmail(clientEmail)}...`)
             try {
                 const result = await sendEmail({
                     type: 'confirmation',
@@ -383,7 +388,7 @@ async function sendBookingSideEffects(supabase, {
                         businessName: business?.name || 'Tu GlowUp',
                         businessType: business?.business_type || 'custom',
                         businessPhone: business?.phone,
-                        appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                        appointmentUrl: `${appUrl()}/book/my-appointments`,
                         appointmentId,
                     }
                 })
@@ -403,7 +408,7 @@ async function sendBookingSideEffects(supabase, {
             try {
                 const { data: ownerProfile } = await supabase
                     .from('profiles').select('email').eq('id', business.owner_id).maybeSingle()
-                log(`Owner profile: ${JSON.stringify(ownerProfile)}`)
+                log(`Owner profile: ${ownerProfile ? maskEmail(ownerProfile.email) : 'no encontrado'}`)
 
                 if (ownerProfile?.email) {
                     const ownerResult = await sendEmail({
@@ -414,7 +419,7 @@ async function sendBookingSideEffects(supabase, {
                             serviceName: service_name, date: formattedLong, time, duration,
                             businessName: business?.name || 'Tu GlowUp',
                             businessType: business?.business_type || 'custom',
-                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
+                            dashboardUrl: `${appUrl()}/dashboard/appointments`,
                         }
                     })
                     log(`Owner email result: ${JSON.stringify(ownerResult)}`)

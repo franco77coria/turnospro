@@ -5,6 +5,7 @@ import { ToastProvider } from '@/components/Toast'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import JsonLd, { buildWebSiteSchema } from '@/components/JsonLd'
 import { Analytics } from '@vercel/analytics/next'
+import { appUrl } from '@/lib/app-url'
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -36,7 +37,7 @@ export const metadata = {
   },
   description: 'Reservá tu próximo turno en peluquerías, barberías, spas, consultorios y más. Encontrá disponibilidad en tiempo real y reservá sin llamar a nadie.',
   manifest: '/manifest.json',
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://glowup.com.ar'),
+  metadataBase: new URL(appUrl()),
   openGraph: {
     title: 'GLOWUP — Brillá hoy',
     description: 'Reservá tu próximo turno online. Peluquerías, barberías, spas, consultorios y más.',

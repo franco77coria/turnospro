@@ -8,6 +8,7 @@ import { sendEmail } from '@/lib/send-email'
 import { checkRescheduleAvailability } from '@/lib/availability'
 import { DEFAULT_DURATION } from '@/lib/scheduling'
 import { z } from 'zod'
+import { appUrl } from '@/lib/app-url'
 
 const RescheduleSchema = z.object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (YYYY-MM-DD)'),
@@ -139,7 +140,7 @@ export async function POST(request, { params }) {
                     businessName,
                     businessType: apt.businesses?.business_type || 'custom',
                     businessPhone: apt.businesses?.phone,
-                    appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+                    appointmentUrl: `${appUrl()}/book/my-appointments`,
                     appointmentId: id,
                 }
             }).catch(e => console.error('Error enviando email de reprogramación al cliente:', e))
@@ -168,7 +169,7 @@ export async function POST(request, { params }) {
                             duration: apt.duration,
                             businessName,
                             businessType: apt.businesses?.business_type || 'custom',
-                            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/dashboard/appointments`,
+                            dashboardUrl: `${appUrl()}/dashboard/appointments`,
                         }
                     }).catch(e => console.error('Error enviando email de reprogramación al dueño:', e))
                 }

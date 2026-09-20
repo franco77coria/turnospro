@@ -1,4 +1,5 @@
 // Helper de integración con Mercado Pago para Suscripciones SaaS B2B de TurnosPro
+import { appUrl as getAppUrl } from '@/lib/app-url'
 
 export const PLANS = {
     base: {
@@ -78,7 +79,7 @@ export async function createPlanPreference({ business, planId, userEmail }) {
         throw new Error('Plan no válido para checkout automático')
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://tu-glowup.com'
+    const appUrl = getAppUrl()
 
     // Si no está configurado el Access Token de Mercado Pago, devolvemos un link simulado o lanzamos error claro
     if (!accessToken) {

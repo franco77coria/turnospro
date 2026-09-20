@@ -1,6 +1,7 @@
 import { sendWhatsAppText } from '@/lib/whatsapp'
 import { sendEmail } from '@/lib/send-email'
 import { formatDateEs } from '@/lib/scheduling'
+import { appUrl } from '@/lib/app-url'
 
 /**
  * Notify waitlist entries when a slot becomes available (cancellation).
@@ -38,10 +39,10 @@ export async function notifyWaitlist(supabase, {
 
         if (!matches.length) return { notified: 0 }
 
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || ''
+        const baseUrl = appUrl()
         const bookingLink = businessSlug
-            ? `${appUrl}/book/s/${businessSlug}`
-            : `${appUrl}/book/${businessId}`
+            ? `${baseUrl}/book/s/${businessSlug}`
+            : `${baseUrl}/book/${businessId}`
 
         const formattedDate = formatDateEs(date)
 

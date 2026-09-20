@@ -1,3 +1,5 @@
+import { appUrl, absoluteUrl } from '@/lib/app-url'
+
 /**
  * JSON-LD structured data component for SEO.
  * Renders a <script type="application/ld+json"> tag.
@@ -51,7 +53,7 @@ export function buildLocalBusinessSchema(business) {
         ...(business.address && { address: { '@type': 'PostalAddress', streetAddress: business.address } }),
         ...(business.phone && { telephone: business.phone }),
         ...(business.slug && {
-            url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://glowup.com.ar'}/book/s/${business.slug}`,
+            url: absoluteUrl(`/book/s/${business.slug}`),
         }),
         ...(business.avg_rating > 0 && {
             aggregateRating: {
@@ -69,7 +71,7 @@ export function buildLocalBusinessSchema(business) {
  * Generate WebSite schema for the homepage
  */
 export function buildWebSiteSchema() {
-    const url = process.env.NEXT_PUBLIC_APP_URL || 'https://glowup.com.ar'
+    const url = appUrl()
     return {
         '@context': 'https://schema.org',
         '@type': 'WebSite',

@@ -2,13 +2,16 @@
   "name": "GLOWUP — Gestión de turnos",
   "short_name": "GLOWUP",
   "description": "Reservá y gestioná tus turnos desde tu celular. Peluquerías, barberías, spas y más.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#4F46E5",
-  "categories": ["business", "productivity"],
+  "theme_color": "#FF2E8E",
+  "categories": [
+    "business",
+    "productivity"
+  ],
   "lang": "es-AR",
   "prefer_related_applications": false,
   "icons": [
@@ -39,16 +42,15 @@
   "screenshots": [],
   "shortcuts": [
     {
-      "name": "Mi Dashboard",
-      "short_name": "Dashboard",
-      "url": "/dashboard",
-      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+      "name": "Mis turnos",
+      "short_name": "Turnos",
+      "url": "/book/my-appointments"
     },
     {
       "name": "Explorar negocios",
       "short_name": "Explorar",
-      "url": "/explore",
-      "icons": [{ "src": "/favicon.ico", "sizes": "48x48" }]
+      "url": "/explore"
     }
-  ]
+  ],
+  "id": "/"
 }

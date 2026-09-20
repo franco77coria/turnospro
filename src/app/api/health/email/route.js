@@ -2,11 +2,25 @@ export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { verifyCronAuth } from '@/lib/cron-auth'
 
+/**
+ * Diagnóstico de envío de email. Estaba ABIERTO: cualquiera podía pedir
+ * ?to=<cualquier dirección> y disparar un envío real desde el dominio
+ * verificado, usándolo de relay de spam y quemando la cuota de Resend (y con
+ * ella, la entregabilidad de las confirmaciones de turno reales).
+ * Ahora exige el mismo secreto de servidor que el cron.
+ */
 export async function GET(request) {
+    const unauth = verifyCronAuth(request)
+    if (unauth) return unauth
+
     try {
         const { searchParams } = new URL(request.url)
-        const to = searchParams.get('to') || '1133985163f@gmail.com'
+        const to = searchParams.get('to')
+        if (!to || !/^[^@\s]+@[^@\s]+\.[a-z]{2,}$/i.test(to)) {
+            return NextResponse.json({ error: 'Parámetro ?to= requerido y válido' }, { status: 400 })
+        }
 
         const apiKey = process.env.RESEND_API_KEY
         if (!apiKey) {

@@ -12,6 +12,7 @@ import { useToast } from '@/components/Toast'
 import BusinessPhotosCard from '@/components/business/BusinessPhotosCard'
 import { SOCIAL_NETWORKS, serializeSocials } from '@/lib/socials'
 import { SocialMark } from '@/components/business/SocialLinks'
+import { appUrl } from '@/lib/app-url'
 
 export default function SettingsPage() {
     return (
@@ -196,8 +197,8 @@ function SettingsContent() {
 
     const handleCopyLink = () => {
         const url = business.slug
-            ? `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/s/${business.slug}`
-            : `${process.env.NEXT_PUBLIC_APP_URL || window.location.origin}/book/${business.id}`
+            ? `${appUrl()}/book/s/${business.slug}`
+            : `${appUrl()}/book/${business.id}`
         navigator.clipboard.writeText(url)
         setCopied(true)
         setTimeout(() => setCopied(false), 2000)
@@ -470,8 +471,8 @@ function SettingsContent() {
                             <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
                                 <input className="input" value={
                                     business.slug
-                                        ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
-                                        : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
+                                        ? `${appUrl()}/book/s/${business.slug}`
+                                        : `${appUrl()}/book/${business.id}`
                                 } readOnly style={{ opacity: 0.8, flex: '1 1 200px' }} />
                                 <button type="button" className="btn btn-secondary btn-sm" onClick={handleCopyLink}
                                     style={{ whiteSpace: 'nowrap', minWidth: 80, flex: '1 1 auto' }}>
@@ -485,8 +486,8 @@ function SettingsContent() {
                                     <QRCodeSVG 
                                         value={
                                             business.slug
-                                                ? `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/s/${business.slug}`
-                                                : `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.id}`
+                                                ? `${appUrl()}/book/s/${business.slug}`
+                                                : `${appUrl()}/book/${business.id}`
                                         } 
                                         size={100} 
                                         level="M" 
@@ -530,12 +531,12 @@ function SettingsContent() {
                                     readOnly 
                                     rows={3}
                                     style={{ fontFamily: 'monospace', fontSize: '12px', backgroundColor: 'var(--bg-secondary)', resize: 'none' }}
-                                    value={`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
+                                    value={`<iframe src="${appUrl()}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`}
                                 />
                                 <button type="button" className="btn btn-secondary btn-sm" 
                                     style={{ position: 'absolute', top: '10px', right: '10px' }}
                                     onClick={() => {
-                                        navigator.clipboard.writeText(`<iframe src="${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
+                                        navigator.clipboard.writeText(`<iframe src="${appUrl()}/book/${business.slug || business.id}?widget=true" width="100%" height="600" frameborder="0" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></iframe>`);
                                         toast.success('Código copiado');
                                     }}>
                                     <Copy size={14} /> Copiar

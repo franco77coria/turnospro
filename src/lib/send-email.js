@@ -4,6 +4,7 @@
 import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail, waitlistSlotEmail } from '@/lib/email-templates'
 import { generateCancelToken } from '@/lib/cancel-token'
 import { formatDateEs } from '@/lib/scheduling'
+import { appUrl } from '@/lib/app-url'
 
 /**
  * Send an email. Works from both server and client contexts.
@@ -30,9 +31,16 @@ export async function sendEmail({ type, to, data }) {
             switch (type) {
                 case 'confirmation':
                     if (data.appointmentId) {
-                        const cancelToken = await generateCancelToken(data.appointmentId)
-                        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'
-                        data.cancelUrl = `${appUrl}/cancel/${cancelToken}`
+                        // Sin secreto de firma no hay link de cancelación, pero el
+                        // email de confirmación igual tiene que salir: el turno ya
+                        // está reservado y el cliente necesita el comprobante.
+                        try {
+                            const cancelToken = await generateCancelToken(data.appointmentId)
+                            const baseUrl = appUrl()
+                            data.cancelUrl = `${baseUrl}/cancel/${cancelToken}`
+                        } catch (tokenErr) {
+                            console.error('[send-email] no se pudo firmar el link de cancelación:', tokenErr.message)
+                        }
                     }
                     html = confirmationEmail(data)
                     subject = `Turno confirmado — ${data.serviceName} | ${data.businessName}`
@@ -119,7 +127,7 @@ export async function sendAppointmentConfirmation({ appointment, client, busines
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.tu-glowup.com'}/book/my-appointments`,
+            appointmentUrl: `${appUrl()}/book/my-appointments`,
             appointmentId: appointment.id || appointment.appointmentId,
         }
     })
@@ -143,7 +151,7 @@ export async function sendAppointmentReminder({ appointment, client, business, s
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            appointmentUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/my-appointments`,
+            appointmentUrl: `${appUrl()}/book/my-appointments`,
         }
     })
 }
@@ -167,7 +175,7 @@ export async function sendNewBookingNotify({ appointment, client, business }) {
             duration: appointment.duration,
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
-            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+            dashboardUrl: `${appUrl()}/dashboard/appointments`,
         }
     })
 }
@@ -189,7 +197,7 @@ export async function sendCancellationEmail({ appointment, client, business }) {
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
             businessPhone: business?.phone,
-            bookUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/book/${business?.id}`,
+            bookUrl: `${appUrl()}/book/${business?.id}`,
         }
     })
 }
@@ -211,7 +219,7 @@ export async function sendCancellationNotify({ appointment, client, business }) 
             time: appointment.time,
             businessName: business?.name || 'GLOWUP',
             businessType: business?.business_type || 'custom',
-            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL || ''}/dashboard/appointments`,
+            dashboardUrl: `${appUrl()}/dashboard/appointments`,
         }
     })
 }
