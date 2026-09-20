@@ -37,9 +37,22 @@ export function validateInternationalPhone(phone) {
 export function formatPhoneDisplay(phone) {
     if (!phone) return ''
     const cleaned = phone.replace(/[^\d+]/g, '')
-    // Simple grouping: +XX XX XXXX-XXXX for Argentine numbers
+
+    // +54 9 11 6872-7107
     if (cleaned.startsWith('+54') && cleaned.length >= 13) {
         return `+54 ${cleaned.slice(3, 5)} ${cleaned.slice(5, 9)}-${cleaned.slice(9)}`
     }
+
+    // La mayoría de los clientes carga el número local, sin código de país:
+    // 10 dígitos (11 6872-7107). Antes se mostraba el chorizo sin separar.
+    if (!cleaned.startsWith('+') && cleaned.length === 10) {
+        return `${cleaned.slice(0, 2)} ${cleaned.slice(2, 6)}-${cleaned.slice(6)}`
+    }
+
+    // 11 dígitos con el 9 de celular delante del área.
+    if (!cleaned.startsWith('+') && cleaned.length === 11 && cleaned.startsWith('9')) {
+        return `9 ${cleaned.slice(1, 3)} ${cleaned.slice(3, 7)}-${cleaned.slice(7)}`
+    }
+
     return cleaned
 }

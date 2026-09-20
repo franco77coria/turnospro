@@ -8,6 +8,7 @@ import { DEFAULT_DURATION, formatDateEs, formatDateLocal, minutesToTime, timeToM
 import { Check, X as XIcon, Plus, User, Pencil, Clock } from 'lucide-react'
 import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
+import ClientContact from '@/components/dashboard/ClientContact'
 import MyAppointmentsPage from '@/app/book/my-appointments/page'
 import styles from './appointments.module.css'
 
@@ -60,7 +61,7 @@ function OwnerAppointmentsPage() {
         try {
             let query = supabase
                 .from('appointments')
-                .select('*, clients(name, phone), team_members(name)')
+                .select('*, clients(id, name, phone, email, total_visits, notes), team_members(name)')
                 .eq('business_id', business.id)
 
             if (profile?.role === 'Profesional') {
@@ -329,10 +330,18 @@ function OwnerAppointmentsPage() {
                                         </span>
                                     </td>
                                     <td>
-                                        <span style={{ cursor: apt.client_id ? 'pointer' : 'default', textDecoration: apt.client_id ? 'underline' : 'none' }}
-                                            onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
-                                            {apt.clients?.name || '—'}
-                                        </span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-start' }}>
+                                            <span style={{ fontWeight: 600, cursor: apt.client_id ? 'pointer' : 'default', textDecoration: apt.client_id ? 'underline' : 'none' }}
+                                                onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
+                                                {apt.clients?.name || '—'}
+                                            </span>
+                                            {apt.clients?.total_visits > 1 && (
+                                                <span className="badge badge-neutral" style={{ fontSize: 10 }}>
+                                                    {apt.clients.total_visits} visitas
+                                                </span>
+                                            )}
+                                            <ClientContact appointment={apt} businessName={business?.name} />
+                                        </div>
                                     </td>
                                     <td>{apt.service_name}</td>
                                     <td className="hide-mobile">{apt.team_members?.name || '—'}</td>
@@ -364,6 +373,7 @@ function OwnerAppointmentsPage() {
                                 {apt.clients?.name || 'Cliente'}
                             </span>
                             <span className={styles.aptCardService}>{apt.service_name}</span>
+                            <ClientContact appointment={apt} businessName={business?.name} />
                             <div className={styles.aptCardMeta}>
                                 {statusBadge(apt.status)}
                                 {apt.team_members?.name && (

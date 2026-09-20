@@ -18,6 +18,7 @@ import {
 } from '@/lib/scheduling'
 import { ChevronLeft, ChevronRight, Plus, X, Search, Clock, Check, ArrowRight, ArrowLeft, Pencil, AlertTriangle, Lock, Trash2, CalendarX } from 'lucide-react'
 import Link from 'next/link'
+import ClientContact from '@/components/dashboard/ClientContact'
 import styles from './calendar.module.css'
 
 const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
@@ -357,7 +358,7 @@ export default function CalendarPage() {
         const end = formatDate(wd[6])
         const { data, error: queryError } = await supabase
             .from('appointments')
-            .select('*, clients(name, email, phone), team_members(name)')
+            .select('*, clients(id, name, email, phone, total_visits, notes), team_members(name)')
             .eq('business_id', business.id)
             .gte('date', start)
             .lte('date', end)
@@ -1495,6 +1496,14 @@ export default function CalendarPage() {
                                     <div className="form-group">
                                         <label className="label">Cliente</label>
                                         <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
+                                        <div style={{ marginTop: 'var(--space-2)' }}>
+                                            <ClientContact appointment={editingApt} businessName={business?.name} />
+                                        </div>
+                                        {editingApt.clients?.notes && (
+                                            <p style={{ marginTop: 'var(--space-2)', fontSize: 12, color: 'var(--text-tertiary)' }}>
+                                                {editingApt.clients.notes}
+                                            </p>
+                                        )}
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
                                         <div className="form-group">
