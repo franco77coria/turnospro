@@ -11,12 +11,6 @@ import { maskEmail, maskName } from '@/lib/log'
 import { validarReserva } from '@/lib/booking-guard'
 import { appUrl } from '@/lib/app-url'
 
-// Helper para enviar confirmación de turno vía WhatsApp al cliente (Desactivado temporalmente - Uso exclusivo de Email)
-async function sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time) {
-    // Canal de WhatsApp desactivado por requerimiento (uso exclusivo de Email via Resend)
-    return
-}
-
 async function notifyPush(supabase, business_id, client_id, service_name, date, time) {
     if (!client_id) return
     try {
@@ -272,7 +266,6 @@ export async function POST(request) {
 
             notifyPush(supabase, business_id, client_id, service_name, date, time)
             notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
-            sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
             await sendBookingSideEffects(supabase, {
                 appointmentId, business_id, client_id, team_member_id,
                 service_name, date, time, duration, send_emails, coupon_id,
@@ -309,7 +302,6 @@ export async function POST(request) {
 
                 notifyPush(supabase, business_id, client_id, service_name, date, time)
                 notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
-                sendAppointmentWhatsAppConfirmation(supabase, business_id, client_id, service_name, date, time)
                 await sendBookingSideEffects(supabase, {
                     appointmentId: created.id, business_id, client_id, team_member_id,
                     service_name, date, time, duration, send_emails, coupon_id,
