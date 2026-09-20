@@ -1,0 +1,161 @@
+.modal {
+    max-width: 480px;
+    width: 100%;
+}
+
+.titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-display);
+    font-size: var(--font-size-md);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.grupo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.etiqueta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.opcional {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    background: var(--bg-secondary);
+    padding: 2px 6px;
+    border-radius: var(--r-full);
+}
+
+/* ── Chips de tipo ── */
+
+.tipos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.chip {
+    padding: 6px 12px;
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: var(--r-full);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: border-color var(--t-fast) var(--ease-out),
+                background var(--t-fast) var(--ease-out),
+                color var(--t-fast) var(--ease-out);
+}
+
+.chip:hover {
+    border-color: var(--accent);
+}
+
+.chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.chipActivo {
+    background: var(--accent-light);
+    border-color: var(--accent);
+    color: var(--pink-ink);
+}
+
+/* ── Texto ── */
+
+.textarea {
+    resize: vertical;
+    min-height: 92px;
+    line-height: 1.55;
+    font-family: inherit;
+}
+
+.contador {
+    align-self: flex-end;
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+.checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--text-tertiary);
+    line-height: 1.45;
+    cursor: pointer;
+    margin-bottom: var(--space-4);
+}
+
+.checkbox input {
+    margin-top: 2px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+}
+
+.error {
+    font-size: var(--font-size-sm);
+    color: var(--danger);
+    margin-bottom: var(--space-3);
+}
+
+.acciones {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-2);
+}
+
+/* ── Confirmación ── */
+
+.exito {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-8) var(--space-6);
+    text-align: center;
+}
+
+.exitoIcono {
+    width: 54px;
+    height: 54px;
+    border-radius: var(--r-full);
+    display: grid;
+    place-items: center;
+    background: var(--success-light);
+    color: var(--success);
+}
+
+.exitoTexto {
+    font-size: var(--font-size-md);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    max-width: 30ch;
+}
+
+@media (max-width: 420px) {
+    .acciones {
+        flex-direction: column-reverse;
+    }
+
+    .acciones > * {
+        width: 100%;
+    }
+}

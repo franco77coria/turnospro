@@ -5,6 +5,7 @@ import Link from 'next/link'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import DarkModeToggle from '@/components/DarkModeToggle'
 import ThemePicker from '@/components/ThemePicker'
+import FeedbackTrigger from '@/components/FeedbackTrigger'
 import { supabase } from '@/lib/supabase'
 import { useState } from 'react'
 import styles from './profile.module.css'
@@ -107,6 +108,16 @@ export default function ProfilePage() {
                     {/* Color de la app — preferencia personal del cliente */}
                     <div className={styles.menuCard} style={{ padding: 'var(--space-4)' }}>
                         <ColorDeLaApp />
+                    </div>
+
+                    {/* Feedback */}
+                    <div className={styles.menuCard}>
+                        <div className={styles.menuItem} style={{ padding: 0 }}>
+                            <FeedbackTrigger
+                                variante="fila"
+                                className={styles.menuLabel}
+                            />
+                        </div>
                     </div>
 
                     <div className={styles.menuCard}>

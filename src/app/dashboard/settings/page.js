@@ -11,6 +11,7 @@ import { PERMISSIONS } from '@/lib/data'
 import { useToast } from '@/components/Toast'
 import BusinessPhotosCard from '@/components/business/BusinessPhotosCard'
 import ThemePicker from '@/components/ThemePicker'
+import FeedbackTrigger from '@/components/FeedbackTrigger'
 import { SOCIAL_NETWORKS, serializeSocials } from '@/lib/socials'
 import { SocialMark } from '@/components/business/SocialLinks'
 import { appUrl } from '@/lib/app-url'
@@ -432,6 +433,17 @@ function SettingsContent() {
 
                         {/* Fotos de la ficha pública */}
                         <BusinessPhotosCard business={business} />
+
+                        {/* Feedback del dueño */}
+                        <div className="card">
+                            <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-2)', color: 'var(--text-primary)' }}>
+                                ¿Cómo te está yendo con GlowUp?
+                            </h3>
+                            <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: '0 0 var(--space-4)', lineHeight: 1.5 }}>
+                                Contanos qué te sirve y qué cambiarías. Lo leemos todo y sirve para decidir qué construir.
+                            </p>
+                            <FeedbackTrigger />
+                        </div>
 
                         {/* Color de marca */}
                         <div className="card">

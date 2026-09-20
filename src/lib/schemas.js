@@ -135,6 +135,19 @@ export const WhatsAppSendSchema = z.object({
     data: z.record(z.string(), z.any()),
 })
 
+// ─── Feedback ───
+export const FeedbackSchema = z.object({
+    // Opcional a propósito: obligar a puntuar baja la cantidad de respuestas,
+    // y un comentario sin nota igual sirve.
+    puntaje: z.number().int().min(1).max(5).nullish(),
+    tipo: z.enum(['gusta', 'cambiaria', 'falla', 'idea', 'otro']).default('otro'),
+    mensaje: z.string().trim().min(3, 'Contanos un poco más').max(2000),
+    rol: z.enum(['cliente', 'negocio']).default('cliente'),
+    ruta: optionalShortText(300),
+    business_id: uuid.nullish(),
+    contactable: z.boolean().optional().default(false),
+})
+
 // ─── Helpers ───
 
 /**
