@@ -3,6 +3,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
 import { Plus, X, Search, Trash2, AlertTriangle, Tag } from 'lucide-react'
+import { formatVisitsLabel } from '@/lib/client-visits'
 import styles from './clients.module.css'
 
 export default function ClientsPage() {
@@ -157,7 +158,16 @@ export default function ClientsPage() {
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                                             <div className="avatar avatar-sm">{c.name?.[0]?.toUpperCase()}</div>
-                                            <span style={{ fontWeight: 500 }}>{c.name}</span>
+                                            <div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                                                    <span style={{ fontWeight: 500 }}>{c.name}</span>
+                                                    {formatVisitsLabel(c.total_visits) && (
+                                                        <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>
+                                                            {formatVisitsLabel(c.total_visits)}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                     <td>
@@ -200,7 +210,14 @@ export default function ClientsPage() {
                     <div key={c.id} className={`card card-compact ${styles.clientCard}`} onClick={() => openEdit(c)}>
                         <div className="avatar">{c.name?.[0]?.toUpperCase()}</div>
                         <div className={styles.clientCardBody}>
-                            <span className={styles.clientCardName}>{c.name}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
+                                <span className={styles.clientCardName}>{c.name}</span>
+                                {formatVisitsLabel(c.total_visits) && (
+                                    <span className="badge badge-neutral" style={{ fontSize: '0.65rem' }}>
+                                        {formatVisitsLabel(c.total_visits)}
+                                    </span>
+                                )}
+                            </div>
                             {c.phone && <span className={styles.clientCardPhone}>{c.phone}</span>}
                             {c.email && <span className={styles.clientCardEmail}>{c.email}</span>}
                             {c.notes && <span className={styles.clientCardNotes}>{c.notes}</span>}

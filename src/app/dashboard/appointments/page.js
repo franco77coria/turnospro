@@ -10,6 +10,7 @@ import Link from 'next/link'
 import ClientProfileCard from '@/components/ClientProfileCard'
 import ClientContact from '@/components/dashboard/ClientContact'
 import MyAppointmentsPage from '@/app/book/my-appointments/page'
+import { formatVisitsLabel } from '@/lib/client-visits'
 import styles from './appointments.module.css'
 
 export default function AppointmentsPage() {
@@ -159,6 +160,19 @@ function OwnerAppointmentsPage() {
         if (status === 'completed') {
             const apt = appointments.find(a => a.id === id)
             if (apt) {
+                // Sincronizar visitas del cliente también desde la app como respaldo
+                if (apt.client_id) {
+                    try {
+                        const nextVisits = (apt.clients?.total_visits || 0) + 1
+                        await supabase.from('clients')
+                            .update({
+                                total_visits: nextVisits,
+                                last_visit: new Date().toISOString()
+                            })
+                            .eq('id', apt.client_id)
+                    } catch (_) {}
+                }
+
                 // Use price stored on appointment first, then fall back to service lookup
                 let price = apt.price
                 if (!price) {
@@ -335,9 +349,9 @@ function OwnerAppointmentsPage() {
                                                 onClick={() => apt.client_id && setSelectedClientId(selectedClientId === apt.client_id ? null : apt.client_id)}>
                                                 {apt.clients?.name || '—'}
                                             </span>
-                                            {apt.clients?.total_visits > 1 && (
+                                            {formatVisitsLabel(apt.clients?.total_visits) && (
                                                 <span className="badge badge-neutral" style={{ fontSize: 10 }}>
-                                                    {apt.clients.total_visits} visitas
+                                                    {formatVisitsLabel(apt.clients.total_visits)}
                                                 </span>
                                             )}
                                             <ClientContact appointment={apt} businessName={business?.name} />

@@ -118,7 +118,24 @@ export async function PATCH(request, { params }) {
             throw updateErr
         }
 
-        // 4. Notify client via email if date or time changed
+        // 4. Sincronizar visitas del cliente si cambió el estado respecto a completed
+        if (updates.status !== undefined && updates.status !== appointment.status && appointment.client_id) {
+            try {
+                const { count } = await supabase
+                    .from('appointments')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('client_id', appointment.client_id)
+                    .eq('status', 'completed')
+
+                const clientUpdates = { total_visits: count || 0 }
+                if (updates.status === 'completed') {
+                    clientUpdates.last_visit = new Date().toISOString()
+                }
+                await supabase.from('clients').update(clientUpdates).eq('id', appointment.client_id)
+            } catch (_) {}
+        }
+
+        // 5. Notify client via email if date or time changed
         if ((updates.date || updates.time) && appointment.client_id) {
             const { data: client } = await supabase
                 .from('clients')
