@@ -24,6 +24,7 @@ export async function GET(request) {
             // cover_image_url faltaba: la tarjeta lo consultaba y nunca llegaba,
             // así que un negocio con portada cargada igual mostraba el degradado.
             .select('id, name, business_type, address, slug, settings, cover_image_url, avg_rating, total_reviews')
+            .not('slug', 'is', null)
             .limit(limit)
 
         if (q.trim()) {

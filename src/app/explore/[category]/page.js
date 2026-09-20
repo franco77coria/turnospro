@@ -44,6 +44,7 @@ async function getBusinessesByCategory(category) {
             .from('businesses')
             .select('id, name, slug, address, business_type, cover_image_url, avg_rating, total_reviews')
             .eq('business_type', category)
+            .not('slug', 'is', null)
             .order('avg_rating', { ascending: false })
             .limit(50)
         return data || []

@@ -22,6 +22,7 @@ export default async function sitemap() {
         const { data: businesses } = await supabase
             .from('businesses')
             .select('id, slug, updated_at')
+            .not('slug', 'is', null)
             .limit(1000)
 
         businessPages = (businesses || []).map(biz => ({

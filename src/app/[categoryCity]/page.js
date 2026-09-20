@@ -76,6 +76,7 @@ async function getBusinesses(businessType, city) {
             .from('businesses')
             .select('id, name, slug, address, cover_image_url, avg_rating, total_reviews')
             .eq('business_type', businessType)
+            .not('slug', 'is', null)
             .ilike('address', `%${city}%`)
             .order('avg_rating', { ascending: false })
             .limit(50)
