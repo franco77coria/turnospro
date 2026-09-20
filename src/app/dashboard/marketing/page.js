@@ -2,9 +2,10 @@
 import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabase'
 import { useState, useEffect, useCallback } from 'react'
-import { Plus, X, Gift, Percent, CreditCard, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, X, Gift, Percent, CreditCard, ToggleLeft, ToggleRight, Image as ImageIcon } from 'lucide-react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
+import FlyerGenerator from '@/components/dashboard/FlyerGenerator'
 
 export default function MarketingPage() {
     return (
@@ -139,6 +140,22 @@ function MarketingContent() {
                 }}>
                     <Plus size={14} /> Nuevo Cupón
                 </button>
+            </div>
+
+            {/* Flyer de turnos libres */}
+            <div className="card" style={{ marginBottom: 'var(--space-6)' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 'var(--space-3)', marginBottom: 'var(--space-2)' }}>
+                    <div>
+                        <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
+                            <ImageIcon size={18} /> Flyer de turnos libres
+                        </h3>
+                        <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: 'var(--space-1) 0 var(--space-4)', lineHeight: 1.5 }}>
+                            Mostrá los horarios que te quedan del día y publicalo en Instagram o mandalo por WhatsApp.
+                        </p>
+                    </div>
+                    <span className="badge badge-neutral" style={{ flexShrink: 0 }}>Beta</span>
+                </div>
+                <FlyerGenerator />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 'var(--space-4)' }}>
