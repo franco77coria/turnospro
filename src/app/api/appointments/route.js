@@ -8,6 +8,7 @@ import { applyRateLimit } from '@/lib/rate-limit'
 import { BookingSchema, parseBody } from '@/lib/schemas'
 import { sendEmail } from '@/lib/send-email'
 import { maskEmail, maskName } from '@/lib/log'
+import { validarReserva } from '@/lib/booking-guard'
 import { appUrl } from '@/lib/app-url'
 
 // Helper para enviar confirmación de turno vía WhatsApp al cliente (Desactivado temporalmente - Uso exclusivo de Email)
@@ -218,6 +219,35 @@ export async function POST(request) {
                 return NextResponse.json({ error: 'El cliente no pertenece a este negocio' }, { status: 400 })
             }
         }
+
+        // 4.bis Validación de servidor.
+        //
+        // Todo lo anterior confía en lo que mandó el cliente. El formulario
+        // solo ofrece horarios válidos, pero este endpoint se puede llamar con
+        // curl: sin esto entraban turnos en el pasado, fuera del horario de
+        // atención, en días cerrados, y con el precio que el cliente quisiera.
+        const esStaff = user ? await usuarioEsStaff(supabase, business_id, user.id) : false
+
+        const validacion = await validarReserva(supabase, {
+            business_id,
+            service_name,
+            date,
+            time,
+            duration,
+            team_member_id,
+            // El dueño encaja turnos fuera de la grilla a propósito (un hueco,
+            // un feriado que igual atiende). Un visitante anónimo, no.
+            permitirFueraDeHorario: esStaff,
+        })
+
+        if (!validacion.ok) {
+            return NextResponse.json({ error: validacion.error }, { status: validacion.status })
+        }
+
+        // El precio y la duración los fija el catálogo del negocio, nunca el body.
+        price = validacion.price
+        duration = validacion.duration
+        service_name = validacion.serviceName
 
         // 5. Atomic booking RPC (race-condition safe) — with fallback to insert.
         try {
@@ -438,4 +468,28 @@ async function sendBookingSideEffects(supabase, {
         debug.error = e.message
         return debug
     }
+}
+
+
+/** ¿El usuario es dueño o miembro activo del equipo de este negocio? */
+async function usuarioEsStaff(supabase, businessId, userId) {
+    if (!businessId || !userId) return false
+
+    const { data: biz } = await supabase
+        .from('businesses')
+        .select('owner_id')
+        .eq('id', businessId)
+        .maybeSingle()
+
+    if (biz?.owner_id === userId) return true
+
+    const { data: member } = await supabase
+        .from('team_members')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('user_id', userId)
+        .eq('active', true)
+        .maybeSingle()
+
+    return !!member
 }
