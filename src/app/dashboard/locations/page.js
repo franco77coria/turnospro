@@ -59,16 +59,25 @@ function LocationsContent() {
             }
 
             if (editLocation) {
-                await supabase.from('locations').update(form).eq('id', editLocation.id)
+                const { error } = await supabase.from('locations').update(form).eq('id', editLocation.id)
+                if (error) throw error
             } else {
-                await supabase.from('locations').insert([{ ...form, business_id: business.id }])
+                const planId = business?.plan_id || 'trial'
+                const maxLocations = business?.max_locations || (planId === 'multi' ? 3 : 1)
+                if (locations.length >= maxLocations) {
+                    toast.error(`Alcanzaste el límite de ${maxLocations} sucursal(es) de tu plan.`)
+                    setSaving(false)
+                    return
+                }
+                const { error } = await supabase.from('locations').insert([{ ...form, business_id: business.id }])
+                if (error) throw error
             }
             setShowModal(false)
             setEditLocation(null)
             loadLocations()
         } catch (err) {
             console.error('Error saving location:', err)
-            toast.error('Error al guardar sucursal')
+            toast.error(err.message || 'Error al guardar sucursal')
         }
         setSaving(false)
     }
@@ -102,7 +111,7 @@ function LocationsContent() {
 
         if (locations.length >= maxLocations) {
             if (maxLocations < 3) {
-                toast.info('Tu plan actual permite 1 sucursal. Actualizá a Plan Múltiples Sucursales ($30.000/mes) para habilitar hasta 3 sucursales.')
+                toast.info('Tu plan actual permite 1 sucursal. Actualizá a Plan Múltiples Sucursales ($35.000/mes) para habilitar hasta 3 sucursales.')
             } else {
                 toast.info('Has alcanzado el límite de 3 sucursales de tu plan. Contactanos para solicitar un Plan Personalizado.')
             }

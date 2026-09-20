@@ -52,15 +52,13 @@ afterEach(() => {
 })
 
 const negocio = { id: 'biz-1', name: 'Barbería de Prueba' }
-const alta = (over = {}) => ({ business: negocio, planId: 'base', userEmail: 'a@b.com', ...over })
+const alta = (over = {}) => ({ business: negocio, planId: 'pro', userEmail: 'a@b.com', ...over })
 
 describe('PLANS', () => {
-    it('define los tres planes con su precio y tope de sucursales', () => {
-        expect(PLANS.base.price).toBe(15000)
-        expect(PLANS.base.maxLocations).toBe(1)
+    it('define los planes con su precio y tope de sucursales', () => {
         expect(PLANS.pro.price).toBe(20000)
         expect(PLANS.pro.maxLocations).toBe(1)
-        expect(PLANS.multi.price).toBe(30000)
+        expect(PLANS.multi.price).toBe(35000)
         expect(PLANS.multi.maxLocations).toBe(3)
         expect(PLANS.custom.maxLocations).toBe(999)
     })
@@ -81,7 +79,7 @@ describe('createPlanSubscription — débito automático mensual', () => {
         expect(llamadas[0].body.auto_recurring).toEqual({
             frequency: 1,
             frequency_type: 'months',
-            transaction_amount: 30000,
+            transaction_amount: 35000,
             currency_id: 'ARS',
         })
     })
@@ -197,7 +195,7 @@ describe('createPlanPreference — pago suelto (modelo anterior)', () => {
         const llamadas = mockMercadoPago()
         await createPlanPreference(alta())
         expect(llamadas[0].url).toBe('https://api.mercadopago.com/checkout/preferences')
-        expect(llamadas[0].body.items[0].unit_price).toBe(15000)
+        expect(llamadas[0].body.items[0].unit_price).toBe(20000)
     })
 
     it('apunta el webhook al dominio propio', async () => {

@@ -77,7 +77,7 @@ export default function SubscriptionPage() {
 
     const handleSubscribe = async (planKey) => {
         if (planKey === 'custom') {
-            window.open(`https://wa.me/5491112345678?text=${encodeURIComponent(`Hola! Tengo más de 3 sucursales y me interesa un plan personalizado para mi negocio: ${business.name}`)}`, '_blank')
+            window.open(`https://wa.me/5491133985163?text=${encodeURIComponent(`Hola! Tengo más de 3 sucursales y me interesa un plan personalizado para mi negocio: ${business.name}`)}`, '_blank')
             return
         }
 
@@ -188,83 +188,40 @@ export default function SubscriptionPage() {
                 <p style={{ color: 'var(--text-secondary, #6B7280)', fontSize: '15px' }}>Elegí el plan perfecto y pagá mensualmente de forma 100% segura con Mercado Pago.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', alignItems: 'stretch' }}>
                 
-                {/* PLAN BASE */}
-                <div style={{
-                    background: '#fff',
-                    borderRadius: '16px',
-                    border: currentPlanId === 'base' ? '2px solid #3B82F6' : '1px solid #E5E7EB',
-                    padding: '24px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justify: 'space-between',
-                    position: 'relative',
-                    boxShadow: currentPlanId === 'base' ? '0 8px 30px rgba(59, 130, 246, 0.12)' : 'none'
-                }}>
-                    {currentPlanId === 'base' && (
-                        <span style={{ position: 'absolute', top: '-12px', right: '20px', background: '#3B82F6', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: '12px' }}>
-                            Tu plan actual
-                        </span>
-                    )}
-                    <div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 6px' }}>Plan Base</h3>
-                        <p style={{ fontSize: '13px', color: '#6B7280', minHeight: '36px' }}>{PLANS.base.description}</p>
-                        <div style={{ margin: '16px 0', borderBottom: '1px solid #F3F4F6', paddingBottom: '16px' }}>
-                            <span style={{ fontSize: '32px', fontWeight: 900, color: '#111827' }}>$15.000</span>
-                            <span style={{ color: '#6B7280', fontSize: '14px' }}> / mes</span>
-                        </div>
-                        <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                            {PLANS.base.features.map((f, i) => (
-                                <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#374151' }}>
-                                    <Check size={16} color="#10B981" />
-                                    {f}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                    <button
-                        className="btn btn-primary"
-                        onClick={() => handleSubscribe('base')}
-                        disabled={submittingPlan === 'base'}
-                        style={{ width: '100%', background: '#111827', borderColor: '#111827' }}
-                    >
-                        {submittingPlan === 'base' ? 'Conectando Mercado Pago...' : 'Suscribirme por $15.000/mes'}
-                    </button>
-                </div>
-
                 {/* PLAN PRO */}
                 <div style={{
                     background: '#fff',
                     borderRadius: '16px',
-                    border: currentPlanId === 'pro' ? '2px solid #8B5CF6' : '1px solid #C4B5FD',
+                    border: (currentPlanId === 'pro' || currentPlanId === 'base') ? '2px solid #8B5CF6' : '1px solid #C4B5FD',
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     position: 'relative',
                     boxShadow: '0 8px 30px rgba(139, 92, 246, 0.12)'
                 }}>
                     <span style={{ position: 'absolute', top: '-12px', left: '20px', background: '#8B5CF6', color: '#fff', fontSize: '11px', fontWeight: 800, padding: '2px 10px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: 4 }}>
                         <Sparkles size={12} /> Más Recomendado
                     </span>
-                    {currentPlanId === 'pro' && (
+                    {(currentPlanId === 'pro' || currentPlanId === 'base') && (
                         <span style={{ position: 'absolute', top: '-12px', right: '20px', background: '#8B5CF6', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 10px', borderRadius: '12px' }}>
                             Tu plan actual
                         </span>
                     )}
                     <div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '10px 0 6px', color: '#6D28D9' }}>Plan Pro</h3>
+                        <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '10px 0 6px', color: '#6D28D9' }}>Plan Pro</h3>
                         <p style={{ fontSize: '13px', color: '#6B7280', minHeight: '36px' }}>{PLANS.pro.description}</p>
                         <div style={{ margin: '16px 0', borderBottom: '1px solid #F3F4F6', paddingBottom: '16px' }}>
-                            <span style={{ fontSize: '32px', fontWeight: 900, color: '#6D28D9' }}>$20.000</span>
+                            <span style={{ fontSize: '34px', fontWeight: 900, color: '#6D28D9' }}>$20.000</span>
                             <span style={{ color: '#6B7280', fontSize: '14px' }}> / mes</span>
                         </div>
                         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {PLANS.pro.features.map((f, i) => (
                                 <li key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: '#374151' }}>
                                     <Check size={16} color="#8B5CF6" />
-                                    <span style={{ fontWeight: i >= 2 ? 600 : 400 }}>{f}</span>
+                                    <span style={{ fontWeight: i === 0 ? 700 : 400 }}>{f}</span>
                                 </li>
                             ))}
                         </ul>
@@ -287,7 +244,7 @@ export default function SubscriptionPage() {
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                     position: 'relative',
                     boxShadow: currentPlanId === 'multi' ? '0 8px 30px rgba(236, 72, 153, 0.12)' : 'none'
                 }}>
@@ -297,10 +254,10 @@ export default function SubscriptionPage() {
                         </span>
                     )}
                     <div>
-                        <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '0 0 6px' }}>Múltiples Sucursales</h3>
+                        <h3 style={{ fontSize: '20px', fontWeight: 800, margin: '0 0 6px' }}>Múltiples Sucursales</h3>
                         <p style={{ fontSize: '13px', color: '#6B7280', minHeight: '36px' }}>{PLANS.multi.description}</p>
                         <div style={{ margin: '16px 0', borderBottom: '1px solid #F3F4F6', paddingBottom: '16px' }}>
-                            <span style={{ fontSize: '32px', fontWeight: 900, color: '#111827' }}>$30.000</span>
+                            <span style={{ fontSize: '34px', fontWeight: 900, color: '#111827' }}>$35.000</span>
                             <span style={{ color: '#6B7280', fontSize: '14px' }}> / mes</span>
                         </div>
                         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -318,7 +275,7 @@ export default function SubscriptionPage() {
                         disabled={submittingPlan === 'multi'}
                         style={{ width: '100%', background: '#111827', borderColor: '#111827' }}
                     >
-                        {submittingPlan === 'multi' ? 'Conectando Mercado Pago...' : 'Suscribirme por $30.000/mes'}
+                        {submittingPlan === 'multi' ? 'Conectando Mercado Pago...' : 'Suscribirme por $35.000/mes'}
                     </button>
                 </div>
 
@@ -330,16 +287,16 @@ export default function SubscriptionPage() {
                     padding: '24px',
                     display: 'flex',
                     flexDirection: 'column',
-                    justify: 'space-between',
+                    justifyContent: 'space-between',
                 }}>
                     <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#4B5563', marginBottom: '4px' }}>
                             <Building size={18} />
-                            <h3 style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>+3 Sucursales</h3>
+                            <h3 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Plan Personalizado</h3>
                         </div>
                         <p style={{ fontSize: '13px', color: '#6B7280', minHeight: '36px' }}>{PLANS.custom.description}</p>
                         <div style={{ margin: '16px 0', borderBottom: '1px dashed #E5E7EB', paddingBottom: '16px' }}>
-                            <span style={{ fontSize: '26px', fontWeight: 800, color: '#374151' }}>A medida</span>
+                            <span style={{ fontSize: '28px', fontWeight: 800, color: '#374151' }}>A medida</span>
                         </div>
                         <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                             {PLANS.custom.features.map((f, i) => (

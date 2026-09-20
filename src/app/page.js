@@ -367,49 +367,26 @@ export default function Landing() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, alignItems: 'stretch' }}>
 
-            {/* Plan Base */}
-            <Reveal delay={80}>
-              <div style={{ background: 'var(--bg)', borderRadius: 24, padding: 32, border: '1px solid var(--line)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Plan Base</h3>
-                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Ideal para profesionales independientes y emprendedores.</p>
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--ink)' }}>$15.000</span>
-                    <span style={{ fontSize: 14, color: 'var(--ink-mute)', fontWeight: 600 }}>/ mes</span>
-                  </div>
-                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: 'var(--ink-soft)' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> 1 Sucursal</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Agenda online 24/7</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Confirmaciones por Email</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Gestión de Clientes</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> 7 días de prueba gratis</li>
-                  </ul>
-                </div>
-                <Link href="/register" className="gu-btn gu-btn-sm" style={{ width: '100%', justifyContent: 'center', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
-                  Empezar prueba gratis
-                </Link>
-              </div>
-            </Reveal>
-
             {/* Plan Pro */}
-            <Reveal delay={160}>
+            <Reveal delay={80}>
               <div style={{ background: 'var(--bg)', borderRadius: 24, padding: 32, border: '2px solid var(--pink)', position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', boxShadow: '0 12px 30px rgba(255, 46, 142, 0.15)' }}>
                 <span style={{ position: 'absolute', top: -14, right: 24, background: 'var(--pink)', color: '#ffffff', fontSize: 12, fontWeight: 800, padding: '4px 14px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Más Popular
                 </span>
                 <div>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Plan Pro</h3>
-                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Para negocios que quieren control total y crecimiento.</p>
+                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Para salones, barberías y estéticas que buscan control total y crecimiento.</p>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
                     <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--ink)' }}>$20.000</span>
                     <span style={{ fontSize: 14, color: 'var(--ink-mute)', fontWeight: 600 }}>/ mes</span>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: 'var(--ink-soft)' }}>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> 1 Sucursal Pro (Todas las funciones)</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Control de Inventario & Productos</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Sistema de Comisiones de Personal</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Caja & Finanzas Avanzadas</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Soporte Prioritario</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> 1 Sucursal (Todas las funciones)</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Agenda online 24/7 y turnos ilimitados</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Control de inventario y stock</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Comisiones de equipo y personal</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Caja diaria y reportes financieros</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> 7 días de prueba gratis</li>
                   </ul>
                 </div>
                 <Link href="/register" className="gu-btn gu-btn-pink gu-btn-lg" style={{ width: '100%', justifyContent: 'center' }}>
@@ -419,26 +396,50 @@ export default function Landing() {
             </Reveal>
 
             {/* Plan Múltiples Sucursales */}
-            <Reveal delay={240}>
+            <Reveal delay={160}>
               <div style={{ background: 'var(--bg)', borderRadius: 24, padding: 32, border: '1px solid var(--line)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Múltiples Sucursales</h3>
-                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Para marcas en expansión y franquicias.</p>
+                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Para marcas en expansión, franquicias y cadenas.</p>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
-                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--ink)' }}>$30.000</span>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--ink)' }}>$35.000</span>
                     <span style={{ fontSize: 14, color: 'var(--ink-mute)', fontWeight: 600 }}>/ mes</span>
                   </div>
                   <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: 'var(--ink-soft)' }}>
                     <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Hasta 3 Sucursales incluidas</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Multi-equipo & Roles avanzados</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Todas las funcionalidades Pro habilitadas</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Multi-equipo y roles por sede</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Inventario y caja por sucursal</li>
                     <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Reportes consolidados</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Todas las funcionalidades Pro</li>
-                    <li style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 12, color: 'var(--ink-mute)' }}>&gt; 3 sucursales: Plan Personalizado</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--pink)" /> Soporte prioritario 24/7</li>
                   </ul>
                 </div>
                 <Link href="/register" className="gu-btn gu-btn-sm" style={{ width: '100%', justifyContent: 'center', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
                   Empezar 3 Sucursales
                 </Link>
+              </div>
+            </Reveal>
+
+            {/* Plan Personalizado */}
+            <Reveal delay={240}>
+              <div style={{ background: 'var(--surface)', borderRadius: 24, padding: 32, border: '1px dashed var(--line)', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                <div>
+                  <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, margin: '0 0 8px' }}>Plan Personalizado</h3>
+                  <p style={{ fontSize: 14, color: 'var(--ink-mute)', margin: '0 0 20px' }}>Para cadenas grandes con más de 3 sucursales.</p>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
+                    <span style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 800, color: 'var(--ink)' }}>A medida</span>
+                  </div>
+                  <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14, color: 'var(--ink-soft)' }}>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Más de 3 sucursales sin límite</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Asesor dedicado y soporte exclusivo</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Migración asistida de clientes</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Capacitación completa a tu equipo</li>
+                    <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Integraciones a medida</li>
+                  </ul>
+                </div>
+                <a href="https://wa.me/5491133985163?text=Hola!%20Me%20interesa%20un%20plan%20personalizado%20para%20m%C3%A1s%20de%203%20sucursales%20en%20TurnosPro" target="_blank" rel="noopener noreferrer" className="gu-btn gu-btn-sm" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
+                  Contactar Asesor
+                </a>
               </div>
             </Reveal>
 

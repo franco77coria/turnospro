@@ -2,43 +2,29 @@
 import { appUrl as getAppUrl } from '@/lib/app-url'
 
 export const PLANS = {
-    base: {
-        id: 'base',
-        name: 'Plan Base',
-        price: 15000,
-        currency: 'ARS',
-        maxLocations: 1,
-        description: '1 Sucursal, agenda online 24/7, clientes y gestión de caja básica.',
-        features: [
-            '1 Sucursal',
-            'Agenda online 24/7',
-            'Turnos ilimitados',
-            'Gestión básica de clientes',
-            'Gestión de caja diaria',
-            'Notificaciones por Email',
-        ]
-    },
     pro: {
         id: 'pro',
         name: 'Plan Pro',
         price: 20000,
         currency: 'ARS',
         maxLocations: 1,
-        description: '1 Sucursal con TODAS las funcionalidades avanzadas habilitadas.',
+        description: '1 Sucursal con TODAS las funcionalidades habilitadas.',
         features: [
             '1 Sucursal',
-            'Todas las funciones del Plan Base',
-            'Comisiones de personal y equipo',
-            'Control de inventario y stock',
-            'CRM avanzado y fidelización',
-            'Reportes financieros y métricas completas',
+            'Agenda online 24/7 y turnos ilimitados',
+            'Gestión de clientes y CRM con historial',
+            'Control de inventario y stock de productos',
+            'Sistema de comisiones de personal',
+            'Caja diaria y finanzas completas',
+            'WhatsApp directo con mensajes prearmados',
             'Notificaciones por Email',
+            'Generador de flyers para redes sociales',
         ]
     },
     multi: {
         id: 'multi',
         name: 'Plan Múltiples Sucursales',
-        price: 30000,
+        price: 35000,
         currency: 'ARS',
         maxLocations: 3,
         description: 'Hasta 3 sucursales con todas las funciones pro de la plataforma.',
@@ -46,7 +32,8 @@ export const PLANS = {
             'Hasta 3 Sucursales',
             'Todas las funcionalidades Pro habilitadas',
             'Gestión unificada de equipo por sede',
-            'CRM y reportes consolidados por sucursal',
+            'Inventario y caja por sucursal',
+            'CRM y reportes consolidados',
             'Notificaciones por Email',
             'Soporte prioritario 24/7',
         ]
@@ -64,6 +51,24 @@ export const PLANS = {
             'Capacitación dedicada para tu equipo',
             'Integraciones personalizadas',
             'Soporte directo exclusivo',
+        ]
+    },
+    base: {
+        id: 'base',
+        name: 'Plan Pro',
+        price: 20000,
+        currency: 'ARS',
+        maxLocations: 1,
+        description: '1 Sucursal con TODAS las funcionalidades habilitadas.',
+        features: [
+            '1 Sucursal',
+            'Agenda online 24/7 y turnos ilimitados',
+            'Gestión de clientes y CRM con historial',
+            'Control de inventario y stock de productos',
+            'Sistema de comisiones de personal',
+            'Caja diaria y finanzas completas',
+            'WhatsApp directo con mensajes prearmados',
+            'Notificaciones por Email',
         ]
     }
 }
