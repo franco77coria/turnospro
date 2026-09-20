@@ -7,18 +7,26 @@ import { Check, Zap, Building, Sparkles, AlertCircle, Clock, ExternalLink, Shiel
 import { useSearchParams } from 'next/navigation'
 import { useToast } from '@/components/Toast'
 
+const ETIQUETA_ESTADO = {
+    active: 'Suscripción activa',
+    trialing: 'Período de prueba',
+    cancelled: 'Baja programada',
+    paused: 'Suscripción pausada',
+}
+
 export default function SubscriptionPage() {
-    const { business, user, loading: authLoading } = useAuth()
+    const { business, user, loading: authLoading, refreshProfile } = useAuth()
     const searchParams = useSearchParams()
     const toast = useToast()
     const [submittingPlan, setSubmittingPlan] = useState(null)
     const [notification, setNotification] = useState('')
+    const [cancelando, setCancelando] = useState(false)
 
     useEffect(() => {
         const status = searchParams.get('status')
         const plan = searchParams.get('plan')
 
-        if (status === 'success' || status === 'demo_success') {
+        if (status === 'suscripto' || status === 'success' || status === 'demo_success') {
             toast.success('¡Pago procesado exitosamente! Tu plan ha sido actualizado.')
             setNotification(`¡Gracias por suscribirte! Tu negocio cuenta con las ventajas del ${PLANS[plan]?.name || 'plan elegido'}.`)
         } else if (status === 'failure') {
@@ -40,6 +48,32 @@ export default function SubscriptionPage() {
     const planStatus = business.plan_status || 'trialing'
     const expiresAt = business.plan_expires_at ? new Date(business.plan_expires_at) : null
     const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : 0
+
+    // El plan cancelado o pausado NO pierde los días ya pagados: sigue
+    // andando hasta plan_expires_at, solo deja de renovarse.
+    const tieneSuscripcionViva = Boolean(business.mp_preapproval_id) && planStatus === 'active'
+
+    const handleCancelar = async () => {
+        if (!window.confirm(
+            'Se da de baja la renovación automática. Seguís usando GLOWUP hasta ' +
+            (expiresAt ? expiresAt.toLocaleDateString('es-AR') : 'que venza el plan') +
+            ', y no se te cobra más. ¿Confirmás?'
+        )) return
+
+        setCancelando(true)
+        try {
+            const res = await fetch(`/api/mercadopago/subscribe?business_id=${business.id}`, {
+                method: 'DELETE',
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok) throw new Error(data.error || 'No se pudo cancelar')
+            toast.success('Baja registrada. No se te cobra más.')
+            await refreshProfile?.()
+        } catch (err) {
+            toast.error(err.message || 'No se pudo cancelar la suscripción')
+        }
+        setCancelando(false)
+    }
 
     const handleSubscribe = async (planKey) => {
         if (planKey === 'custom') {
@@ -91,9 +125,9 @@ export default function SubscriptionPage() {
                                 textTransform: 'uppercase',
                                 background: planStatus === 'active' ? '#ECFDF5' : '#FFFBEB',
                                 color: planStatus === 'active' ? '#047857' : '#B45309',
-                                border: `1px solid ${planStatus === 'active' ? '#A7F3D0' : '#FDE68A'}`
+                                border: `1px solid ${planStatus === 'active' ? '#A7F3D0' : '#FDE68A'}`,
                             }}>
-                                {planStatus === 'active' ? 'Suscripción Activa' : planStatus === 'trialing' ? 'Período de Prueba' : 'Plan Vencido'}
+                                {ETIQUETA_ESTADO[planStatus] || 'Plan vencido'}
                             </span>
                         </div>
                         <p style={{ color: 'var(--text-secondary, #6B7280)', margin: 0, fontSize: '14px' }}>
@@ -109,7 +143,32 @@ export default function SubscriptionPage() {
                         {expiresAt && (
                             <div style={{ fontSize: '12px', color: daysLeft <= 3 ? '#DC2626' : '#059669', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', marginTop: '2px' }}>
                                 <Clock size={12} />
-                                {planStatus === 'trialing' ? `${daysLeft} días de prueba restantes` : `Vence el ${expiresAt.toLocaleDateString('es-AR')}`}
+                                {planStatus === 'trialing'
+                                    ? `${daysLeft} días de prueba restantes`
+                                    : planStatus === 'active'
+                                        ? `Se renueva el ${expiresAt.toLocaleDateString('es-AR')}`
+                                        : `Activo hasta el ${expiresAt.toLocaleDateString('es-AR')}`}
+                            </div>
+                        )}
+
+                        {tieneSuscripcionViva && (
+                            <button
+                                type="button"
+                                onClick={handleCancelar}
+                                disabled={cancelando}
+                                style={{
+                                    marginTop: 10, background: 'none', border: 'none', padding: 0,
+                                    font: 'inherit', fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                                    color: 'var(--text-tertiary, #9CA3AF)', textDecoration: 'underline',
+                                }}
+                            >
+                                {cancelando ? 'Dando de baja…' : 'Dar de baja la renovación'}
+                            </button>
+                        )}
+
+                        {planStatus === 'cancelled' && (
+                            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-tertiary, #9CA3AF)', maxWidth: 210, textAlign: 'right', lineHeight: 1.45 }}>
+                                No se te cobra más. Seguís usando GLOWUP hasta la fecha de arriba.
                             </div>
                         )}
                     </div>
