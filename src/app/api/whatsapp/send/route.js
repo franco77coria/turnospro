@@ -32,19 +32,42 @@ export async function POST(request) {
         }
         const { to, type, data } = parsed.data
 
-        let phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-
-        if (data.businessId && typeof data.businessId === 'string' && /^[0-9a-f-]{36}$/i.test(data.businessId)) {
-            const { data: business } = await supabase
-                .from('businesses')
-                .select('whatsapp_phone, settings')
-                .eq('id', data.businessId)
-                .single()
-
-            if (business?.settings?.whatsapp_phone_number_id) {
-                phoneNumberId = business.settings.whatsapp_phone_number_id
-            }
+        // Estar logueado no alcanzaba: cualquier cuenta podía mandarle un
+        // WhatsApp a CUALQUIER número desde el remitente verificado del
+        // negocio. Hay que ser dueño o parte del equipo del negocio que se
+        // dice representar.
+        if (!data.businessId || typeof data.businessId !== 'string' || !/^[0-9a-f-]{36}$/i.test(data.businessId)) {
+            return NextResponse.json({ error: 'businessId requerido' }, { status: 400 })
         }
+
+        const { data: business } = await supabase
+            .from('businesses')
+            .select('id, owner_id, whatsapp_phone, settings')
+            .eq('id', data.businessId)
+            .maybeSingle()
+
+        if (!business) {
+            return NextResponse.json({ error: 'Negocio no encontrado' }, { status: 404 })
+        }
+
+        let autorizado = business.owner_id === user.id
+        if (!autorizado) {
+            const { data: member } = await supabase
+                .from('team_members')
+                .select('id')
+                .eq('business_id', business.id)
+                .eq('user_id', user.id)
+                .eq('active', true)
+                .maybeSingle()
+            autorizado = !!member
+        }
+
+        if (!autorizado) {
+            return NextResponse.json({ error: 'No tenés permisos para este negocio' }, { status: 403 })
+        }
+
+        let phoneNumberId = business.settings?.whatsapp_phone_number_id
+            || process.env.WHATSAPP_PHONE_NUMBER_ID
 
         const safe = {
             serviceName: String(data.serviceName || ''),

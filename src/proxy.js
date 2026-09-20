@@ -1,7 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 
-export async function middleware(request) {
+// Next 16 renombró `middleware.js` a `proxy.js` (misma API, export `proxy`).
+// El archivo viejo seguía funcionando pero con aviso de obsolescencia, y deja
+// de funcionar en la próxima mayor. Además, esto ahora corre en runtime Node
+// en vez de Edge: las librerías que no andaban en Edge acá sí funcionan.
+
+export async function proxy(request) {
     let supabaseResponse = NextResponse.next({ request })
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
