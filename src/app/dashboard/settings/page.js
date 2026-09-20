@@ -10,6 +10,7 @@ import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
 import { useToast } from '@/components/Toast'
 import BusinessPhotosCard from '@/components/business/BusinessPhotosCard'
+import ThemePicker from '@/components/ThemePicker'
 import { SOCIAL_NETWORKS, serializeSocials } from '@/lib/socials'
 import { SocialMark } from '@/components/business/SocialLinks'
 import { appUrl } from '@/lib/app-url'
@@ -25,6 +26,10 @@ export default function SettingsPage() {
 function SettingsContent() {
     const toast = useToast()
     const { business, updateBusiness, profile, loading: authLoading } = useAuth()
+    const [tema, setTema] = useState(business?.settings?.theme ?? null)
+    useEffect(() => {
+        if (business?.settings?.theme !== undefined) setTema(business.settings.theme)
+    }, [business?.settings?.theme])
     const [form, setForm] = useState({
         name: '',
         phone: '',
@@ -240,6 +245,7 @@ function SettingsContent() {
                     max_advance_days: parseInt(maxAdvance) || 30,
                     closed_dates: closedDates,
                     socials: cleanSocials,
+                    theme: tema,
                 }
             })
             setSaved(true)
@@ -426,6 +432,15 @@ function SettingsContent() {
 
                         {/* Fotos de la ficha pública */}
                         <BusinessPhotosCard business={business} />
+
+                        {/* Color de marca */}
+                        <div className="card">
+                            <ThemePicker
+                                valor={tema}
+                                onChange={setTema}
+                                descripcion="Se aplica en tu panel y en la ficha pública que ven tus clientes. Acordate de guardar."
+                            />
+                        </div>
 
                         {/* Redes sociales */}
                         <div className="card">

@@ -4,6 +4,9 @@ import { User, Heart, Settings, HelpCircle, Globe, LogOut, ChevronRight, Moon } 
 import Link from 'next/link'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import DarkModeToggle from '@/components/DarkModeToggle'
+import ThemePicker from '@/components/ThemePicker'
+import { supabase } from '@/lib/supabase'
+import { useState } from 'react'
 import styles from './profile.module.css'
 
 const MENU_ITEMS = [
@@ -101,6 +104,11 @@ export default function ProfilePage() {
                         </div>
                     </div>
 
+                    {/* Color de la app — preferencia personal del cliente */}
+                    <div className={styles.menuCard} style={{ padding: 'var(--space-4)' }}>
+                        <ColorDeLaApp />
+                    </div>
+
                     <div className={styles.menuCard}>
                         {SUPPORT_ITEMS.map((item, i) => {
                             const Icon = item.icon
@@ -124,5 +132,55 @@ export default function ProfilePage() {
                 </div>
             </div>
         </ConsumerLayout>
+    )
+}
+
+
+/**
+ * El cliente elige cómo ver SU app. Se guarda en el perfil para que lo
+ * acompañe entre dispositivos; el ThemePicker ya lo aplicó en pantalla apenas
+ * lo eligió, así que acá solo hay que persistirlo.
+ */
+function ColorDeLaApp() {
+    const { user, profile, refreshProfile } = useAuth()
+    const [guardando, setGuardando] = useState(false)
+    const [error, setError] = useState('')
+
+    const guardar = async (tema) => {
+        if (!supabase || !user?.id) return
+        setGuardando(true)
+        setError('')
+        try {
+            const { error: err } = await supabase
+                .from('profiles')
+                .update({ preferences: { ...(profile?.preferences || {}), theme: tema } })
+                .eq('id', user.id)
+            if (err) throw err
+            await refreshProfile()
+        } catch (err) {
+            console.error('Error al guardar el color:', err)
+            // Sin esto el color se veía aplicado pero no sobrevivía a recargar,
+            // y no había forma de saber que el guardado había fallado.
+            setError('No se pudo guardar. El color se ve ahora, pero puede volver atrás.')
+        }
+        setGuardando(false)
+    }
+
+    return (
+        <>
+            <ThemePicker
+                valor={profile?.preferences?.theme ?? null}
+                onChange={guardar}
+                descripcion="Cambia cómo ves la app en todos tus dispositivos."
+            />
+            {guardando && (
+                <p style={{ fontSize: 11, color: 'var(--text-tertiary)', marginTop: 'var(--space-2)' }}>
+                    Guardando…
+                </p>
+            )}
+            {error && (
+                <p style={{ fontSize: 11, color: 'var(--danger)', marginTop: 'var(--space-2)' }}>{error}</p>
+            )}
+        </>
     )
 }

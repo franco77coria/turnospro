@@ -3,6 +3,7 @@ import { Bricolage_Grotesque, Plus_Jakarta_Sans } from 'next/font/google'
 import { AuthProvider } from '@/context/AuthContext'
 import { ToastProvider } from '@/components/Toast'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
+import ThemeApplier, { SCRIPT_TEMA_INICIAL } from '@/components/ThemeApplier'
 import JsonLd, { buildWebSiteSchema } from '@/components/JsonLd'
 import { Analytics } from '@vercel/analytics/next'
 import { appUrl } from '@/lib/app-url'
@@ -64,10 +65,14 @@ export default function RootLayout({ children }) {
   return (
     <html lang="es" className={`${bricolage.variable} ${jakarta.variable}`}>
       <head>
+        {/* Corre antes del primer pintado: sin esto, cada carga arranca con el
+            color por defecto y salta al del negocio cuando responde la sesión. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA_INICIAL }} />
         <JsonLd data={buildWebSiteSchema()} />
       </head>
       <body className={jakarta.className}>
         <AuthProvider>
+          <ThemeApplier />
           <ToastProvider>
             {children}
           </ToastProvider>
