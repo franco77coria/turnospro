@@ -127,6 +127,23 @@ export function findConflict(startMin, endMin, occupied = [], { bufferTime = 0, 
     ) || null
 }
 
+/** Same professional/capacity rules used by the booking API and previews. */
+export function isSlotAvailable(startMin, endMin, occupied = [], {
+    bufferTime = 0, teamMemberId = null, capacity = 1,
+} = {}) {
+    if (teamMemberId) {
+        if (findConflict(startMin, endMin, occupied, { bufferTime, teamMemberId })) return false
+        // A named professional has their own calendar. With capacity=1 the
+        // caller did not provide a roster; another professional's booking
+        // cannot take this person's slot.
+        if (capacity <= 1) return true
+    }
+    const overlapping = occupied.filter(o =>
+        rangesOverlap(startMin, endMin, o.startMin - bufferTime, o.endMin + bufferTime)
+    )
+    return overlapping.length < Math.max(1, capacity)
+}
+
 /**
  * Genera los horarios disponibles de un día. Única implementación para la
  * reserva pública y el wizard del dashboard.
@@ -139,6 +156,7 @@ export function generateAvailableSlots({
     occupied = [],
     date = null,
     teamMemberId = null,
+    capacity = 1,
     enforceMinAdvance = true,
     now = new Date(),
     includeOccupied = false,
@@ -167,9 +185,10 @@ export function generateAvailableSlots({
             .sort((a, b) => a - b)
             .map(startMin => {
                 const isPast = startMin < minStartToday
-                const hasConflict = !!findConflict(startMin, startMin + serviceDuration, occupied, {
+                const hasConflict = !isSlotAvailable(startMin, startMin + serviceDuration, occupied, {
                     bufferTime: cfg.bufferTime,
                     teamMemberId,
+                    capacity,
                 })
                 return {
                     time: minutesToTime(startMin),
@@ -183,9 +202,10 @@ export function generateAvailableSlots({
         .filter(startMin => startMin >= cfg.startMin)
         .filter(startMin => startMin + serviceDuration <= cfg.endMin)
         .filter(startMin => startMin >= minStartToday)
-        .filter(startMin => !findConflict(startMin, startMin + serviceDuration, occupied, {
+        .filter(startMin => isSlotAvailable(startMin, startMin + serviceDuration, occupied, {
             bufferTime: cfg.bufferTime,
             teamMemberId,
+            capacity,
         }))
         .sort((a, b) => a - b)
         .map(minutesToTime)

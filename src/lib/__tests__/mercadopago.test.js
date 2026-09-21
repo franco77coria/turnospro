@@ -101,6 +101,13 @@ describe('createPlanSubscription — débito automático mensual', () => {
         expect(JSON.stringify(llamadas[0].body)).not.toContain('TEST-token-de-mentira')
     })
 
+    it('limpia saltos de línea agregados por el gestor de secretos', async () => {
+        process.env.MERCADOPAGO_ACCESS_TOKEN = 'APP_USR-token\r\n'
+        const llamadas = mockMercadoPago()
+        await createPlanSubscription(alta())
+        expect(llamadas[0].headers.Authorization).toBe('Bearer APP_USR-token')
+    })
+
     it('lleva business_id y plan_id en external_reference, que es lo que lee el webhook', async () => {
         const llamadas = mockMercadoPago()
         await createPlanSubscription(alta({ planId: 'pro' }))

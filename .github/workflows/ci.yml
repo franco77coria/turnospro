@@ -34,8 +34,5 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      # Fail the build only on high/critical advisories. We surface moderate
-      # advisories in the log as a warning so noise doesn't block PRs, but they
-      # remain visible.
-      - name: Audit (informational)
-        run: npm audit || true
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high

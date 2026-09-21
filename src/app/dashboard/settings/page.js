@@ -35,6 +35,8 @@ function SettingsContent() {
         name: '',
         phone: '',
         address: '',
+        latitude: '',
+        longitude: '',
         business_type: '',
         description: '',
     })
@@ -111,6 +113,8 @@ function SettingsContent() {
                 name: business.name || '',
                 phone: business.phone || '',
                 address: business.address || '',
+                latitude: business.latitude ?? '',
+                longitude: business.longitude ?? '',
                 business_type: business.business_type || '',
                 description: business.settings?.description || '',
             })
@@ -227,11 +231,21 @@ function SettingsContent() {
             setSaving(false)
             return
         }
+        const lat = form.latitude === '' ? null : Number(form.latitude)
+        const lng = form.longitude === '' ? null : Number(form.longitude)
+        if ((lat === null) !== (lng === null) ||
+            (lat !== null && (!Number.isFinite(lat) || lat < -90 || lat > 90 || !Number.isFinite(lng) || lng < -180 || lng > 180))) {
+            setError('Completá latitud y longitud válidas, o dejá ambas vacías.')
+            setSaving(false)
+            return
+        }
         try {
             await updateBusiness({
                 name: form.name,
                 phone: form.phone,
                 address: form.address,
+                latitude: lat,
+                longitude: lng,
                 settings: {
                     ...business?.settings,
                     description: form.description,
@@ -320,6 +334,21 @@ function SettingsContent() {
                                 <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)' }}>
                                     Poné también el barrio o la ciudad: con eso el mapa de tu ficha cae en el lugar exacto.
                                 </span>
+                            </div>
+                            <div className="form-group">
+                                <label className="label">Ubicación exacta (opcional)</label>
+                                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 8 }}>Se usa para calcular kilómetros en la búsqueda rápida. Si estás físicamente en el local, podés cargarla desde tu dispositivo.</p>
+                                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                    <input className="input" type="number" step="any" min="-90" max="90" placeholder="Latitud" aria-label="Latitud" value={form.latitude} onChange={e => setForm(p => ({ ...p, latitude: e.target.value }))} style={{ flex: '1 1 130px' }}/>
+                                    <input className="input" type="number" step="any" min="-180" max="180" placeholder="Longitud" aria-label="Longitud" value={form.longitude} onChange={e => setForm(p => ({ ...p, longitude: e.target.value }))} style={{ flex: '1 1 130px' }}/>
+                                </div>
+                                <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={() => {
+                                    navigator.geolocation?.getCurrentPosition(
+                                        pos => setForm(p => ({ ...p, latitude: String(pos.coords.latitude), longitude: String(pos.coords.longitude) })),
+                                        () => toast.error('No pudimos acceder a tu ubicación. Podés cargar las coordenadas manualmente.'),
+                                        { timeout: 8000, enableHighAccuracy: true },
+                                    )
+                                }}>Usar ubicación de este dispositivo</button>
                             </div>
                         </div>
 

@@ -26,15 +26,18 @@ export default function SubscriptionPage() {
         const status = searchParams.get('status')
         const plan = searchParams.get('plan')
 
-        if (status === 'suscripto' || status === 'success' || status === 'demo_success') {
-            toast.success('¡Pago procesado exitosamente! Tu plan ha sido actualizado.')
-            setNotification(`¡Gracias por suscribirte! Tu negocio cuenta con las ventajas del ${PLANS[plan]?.name || 'plan elegido'}.`)
+        if (status === 'suscripto' || status === 'success') {
+            toast.info('Mercado Pago recibió tu solicitud. El plan se activará cuando confirme el cobro.')
+            setNotification(`Solicitud del ${PLANS[plan]?.name || 'plan elegido'} recibida. La acreditación puede tardar unos minutos.`)
+            refreshProfile?.()
+        } else if (status === 'demo_success') {
+            setNotification('Esta es una demostración; no se realizó ningún cobro ni se activó un plan.')
         } else if (status === 'failure') {
             toast.error('No se pudo completar el pago. Podés intentar nuevamente con otro medio de pago.')
         } else if (status === 'pending') {
             toast.info('Tu pago está pendiente de aprobación. Te notificaremos apenas se acredite.')
         }
-    }, [searchParams, toast])
+    }, [searchParams, toast, refreshProfile])
 
     if (authLoading || !business) {
         return (
@@ -51,11 +54,12 @@ export default function SubscriptionPage() {
 
     // El plan cancelado o pausado NO pierde los días ya pagados: sigue
     // andando hasta plan_expires_at, solo deja de renovarse.
-    const tieneSuscripcionViva = Boolean(business.mp_preapproval_id) && planStatus === 'active'
+    const tieneSuscripcionViva = Boolean(business.mp_preapproval_id || business.mp_pending_preapproval_id || business.mp_previous_preapproval_id)
+    const cambioPendiente = Boolean(business.mp_pending_preapproval_id || business.mp_previous_preapproval_id)
 
     const handleCancelar = async () => {
         if (!window.confirm(
-            'Se da de baja la renovación automática. Seguís usando GLOWUP hasta ' +
+            'Se cancelan las suscripciones y los cambios pendientes. Seguís usando GLOWUP hasta ' +
             (expiresAt ? expiresAt.toLocaleDateString('es-AR') : 'que venza el plan') +
             ', y no se te cobra más. ¿Confirmás?'
         )) return
@@ -77,7 +81,7 @@ export default function SubscriptionPage() {
 
     const handleSubscribe = async (planKey) => {
         if (planKey === 'custom') {
-            window.open(`https://wa.me/5491133985163?text=${encodeURIComponent(`Hola! Tengo más de 3 sucursales y me interesa un plan personalizado para mi negocio: ${business.name}`)}`, '_blank')
+            window.location.href = `mailto:franco.coria.r@gmail.com?subject=${encodeURIComponent('Plan personalizado GLOWUP')}&body=${encodeURIComponent(`Hola, tengo más de 3 sucursales y me interesa un plan personalizado para ${business.name}.`)}`
             return
         }
 
@@ -162,7 +166,7 @@ export default function SubscriptionPage() {
                                     color: 'var(--text-tertiary, #9CA3AF)', textDecoration: 'underline',
                                 }}
                             >
-                                {cancelando ? 'Dando de baja…' : 'Dar de baja la renovación'}
+                                {cancelando ? 'Dando de baja…' : cambioPendiente ? 'Cancelar cambio y renovación' : 'Dar de baja la renovación'}
                             </button>
                         )}
 
@@ -180,6 +184,9 @@ export default function SubscriptionPage() {
                         {notification}
                     </div>
                 )}
+                {cambioPendiente && <p style={{ padding: 12, marginTop: 14, borderRadius: 8, background: '#FFF7ED', color: '#7C3C12', fontSize: 13 }}>
+                    Hay una suscripción pendiente de acreditación o una anterior pendiente de baja. Podés cancelar ambas desde acá si no querés continuar.
+                </p>}
             </div>
 
             {/* SECCIÓN DE PLANES */}
@@ -229,7 +236,7 @@ export default function SubscriptionPage() {
                     <button
                         className="btn btn-primary"
                         onClick={() => handleSubscribe('pro')}
-                        disabled={submittingPlan === 'pro'}
+                        disabled={Boolean(submittingPlan) || cambioPendiente}
                         style={{ width: '100%', background: '#8B5CF6', borderColor: '#8B5CF6' }}
                     >
                         {submittingPlan === 'pro' ? 'Conectando Mercado Pago...' : 'Suscribirme por $20.000/mes'}
@@ -272,7 +279,7 @@ export default function SubscriptionPage() {
                     <button
                         className="btn btn-primary"
                         onClick={() => handleSubscribe('multi')}
-                        disabled={submittingPlan === 'multi'}
+                        disabled={Boolean(submittingPlan) || cambioPendiente}
                         style={{ width: '100%', background: '#111827', borderColor: '#111827' }}
                     >
                         {submittingPlan === 'multi' ? 'Conectando Mercado Pago...' : 'Suscribirme por $35.000/mes'}

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { createClient } from '@supabase/supabase-js'
-import { PLANS } from '@/lib/mercadopago'
+import { PLANS, cancelSubscription } from '@/lib/mercadopago'
 import { logError } from '@/lib/log'
 
 /**
@@ -91,73 +91,46 @@ function leerReferencia(externalReference) {
  * notificaciones por diseño, y sin esto el mismo cobro sumaría 30 días
  * varias veces.
  */
-async function activarPlan(supabase, { business_id, plan_id, claveIdempotencia }) {
+async function activarPlan(supabase, { business_id, plan_id, claveIdempotencia, preapprovalId = null }) {
     const planInfo = PLANS[plan_id]
     if (!business_id || !planInfo) {
         return { ok: false, motivo: 'referencia_invalida' }
     }
 
-    if (claveIdempotencia) {
-        const { error: dupError } = await supabase
-            .from('mp_pagos_aplicados')
-            .insert([{ payment_id: String(claveIdempotencia), business_id, plan_id }])
-
-        if (dupError) {
-            if (dupError.code === '23505') {
-                return { ok: true, motivo: 'ya_aplicado' }
-            }
-            // No sabemos si se aplicó o no: mejor no tocar la suscripción y
-            // que Mercado Pago reintente.
-            logError('mp-webhook/idempotencia', dupError, { business_id })
-            return { ok: false, motivo: 'error_registro' }
+    const { data, error } = await supabase.rpc('apply_mercadopago_payment', {
+        p_payment_id: String(claveIdempotencia),
+        p_business_id: business_id,
+        p_plan_id: plan_id,
+        p_max_locations: planInfo.maxLocations,
+        p_preapproval_id: preapprovalId,
+    })
+    if (error) {
+        logError('mp-webhook/activar', error, { business_id })
+        return { ok: false, motivo: 'error_acreditacion' }
+    }
+    const previousId = data?.[0]?.previous_preapproval_id
+    if (previousId) {
+        try {
+            await cancelSubscription(previousId)
+            const { error: clearError } = await supabase.from('businesses')
+                .update({ mp_previous_preapproval_id: null })
+                .eq('id', business_id)
+                .eq('mp_previous_preapproval_id', previousId)
+            if (clearError) throw clearError
+        } catch (cancelError) {
+            logError('mp-webhook/cancelar-suscripcion-anterior', cancelError, { business_id })
+            return { ok: false, motivo: 'error_cancelacion_anterior' }
         }
     }
-
-    // 30 días desde el vencimiento actual, no desde hoy: quien renueva antes
-    // de que se le venza no tiene por qué perder los días que le quedaban.
-    const { data: bizActual } = await supabase
-        .from('businesses')
-        .select('plan_expires_at')
-        .eq('id', business_id)
-        .maybeSingle()
-
-    const vencimiento = bizActual?.plan_expires_at ? new Date(bizActual.plan_expires_at) : null
-    const base = vencimiento && vencimiento > new Date() ? vencimiento : new Date()
-    const expiresAt = new Date(base)
-    expiresAt.setDate(expiresAt.getDate() + 30)
-
-    const { data: updated, error: updateError } = await supabase
-        .from('businesses')
-        .update({
-            plan_id,
-            plan_status: 'active',
-            plan_expires_at: expiresAt.toISOString(),
-            // El tope lo manda el plan, nunca el external_reference: ese viaja
-            // por el checkout y no es confiable como fuente de permisos.
-            max_locations: planInfo.maxLocations,
-        })
-        .eq('id', business_id)
-        .select('owner_id')
-        .single()
-
-    if (updateError) {
-        logError('mp-webhook/activar', updateError, { business_id })
-        return { ok: false, motivo: 'error_update' }
-    }
-
-    if (updated?.owner_id) {
-        await supabase.from('profiles').update({ approved: true }).eq('id', updated.owner_id)
-    }
-
-    return { ok: true, motivo: 'activado' }
+    return { ok: true, motivo: data?.[0]?.applied ? 'activado' : 'ya_aplicado' }
 }
 
 /** Busca el negocio por el id de suscripción, cuando no viene la referencia. */
 async function negocioPorSuscripcion(supabase, preapprovalId) {
     const { data } = await supabase
         .from('businesses')
-        .select('id, plan_id')
-        .eq('mp_preapproval_id', preapprovalId)
+        .select('id, plan_id, mp_pending_plan_id')
+        .or(`mp_preapproval_id.eq.${preapprovalId},mp_pending_preapproval_id.eq.${preapprovalId}`)
         .maybeSingle()
     return data
 }
@@ -186,7 +159,7 @@ export async function POST(request) {
 
         // --- Validación de firma, antes que cualquier otra cosa ---
         const secreto = env('MERCADOPAGO_WEBHOOK_SECRET')
-        const esProduccion = process.env.VERCEL_ENV === 'production'
+        const esProduccion = process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production'
 
         // `live_mode` venía del CUERPO del pedido, es decir, del que llama.
         // Mandando {"live_mode": false} se salteaba la firma por completo y se
@@ -231,9 +204,7 @@ export async function POST(request) {
 
             // Un cobro programado puede quedar en reintento hasta 10 días. Solo
             // suma mes el que efectivamente se aprobó.
-            const aprobado = cobro.payment?.status
-                ? cobro.payment.status === 'approved'
-                : cobro.status === 'processed'
+            const aprobado = cobro.payment?.status === 'approved' && Boolean(cobro.payment?.id)
 
             if (!aprobado) {
                 return NextResponse.json({ status: 'ok', reason: `cobro ${cobro.status}` })
@@ -243,11 +214,11 @@ export async function POST(request) {
             if (!business_id && cobro.preapproval_id) {
                 const biz = await negocioPorSuscripcion(supabase, cobro.preapproval_id)
                 business_id = biz?.id
-                plan_id = plan_id || biz?.plan_id
+                plan_id = biz?.mp_pending_plan_id || plan_id || biz?.plan_id
             }
 
             const res = await activarPlan(supabase, {
-                business_id, plan_id, claveIdempotencia: recursoId,
+                business_id, plan_id, claveIdempotencia: cobro.payment.id, preapprovalId: cobro.preapproval_id || null,
             })
             return NextResponse.json({ status: res.ok ? 'ok' : 'error', reason: res.motivo },
                 { status: res.ok ? 200 : 500 })
@@ -264,28 +235,34 @@ export async function POST(request) {
             if (!business_id) {
                 const biz = await negocioPorSuscripcion(supabase, recursoId)
                 business_id = biz?.id
-                plan_id = plan_id || biz?.plan_id
+                plan_id = biz?.mp_pending_plan_id || plan_id || biz?.plan_id
             }
             if (!business_id) {
                 return NextResponse.json({ status: 'ignored', reason: 'sin negocio' })
             }
 
             if (sub.status === 'authorized') {
-                // El primer débito llega como una hora después. Se le da acceso
-                // ya: pagó, no tiene por qué esperar mirando una pantalla.
-                const res = await activarPlan(supabase, {
-                    business_id, plan_id, claveIdempotencia: `preapproval-${recursoId}`,
-                })
-                return NextResponse.json({ status: res.ok ? 'ok' : 'error', reason: res.motivo })
+                // Autorización de tarjeta no equivale a pago aprobado.
+                return NextResponse.json({ status: 'ok', reason: 'esperando primer cobro' })
             }
 
             if (sub.status === 'cancelled' || sub.status === 'paused') {
+                // Si se canceló durante el checkout, liberar el cambio
+                // pendiente sin tocar el plan anterior ya pagado.
+                const { error: pendingError } = await supabase
+                    .from('businesses')
+                    .update({ mp_pending_preapproval_id: null, mp_pending_plan_id: null })
+                    .eq('id', business_id)
+                    .eq('mp_pending_preapproval_id', String(recursoId))
+                if (pendingError) throw pendingError
                 // NO se le corta el servicio acá: los días que ya pagó los
                 // conserva hasta plan_expires_at. Solo deja de renovarse.
-                await supabase
+                const { error: statusError } = await supabase
                     .from('businesses')
                     .update({ plan_status: sub.status === 'paused' ? 'paused' : 'cancelled' })
                     .eq('id', business_id)
+                    .eq('mp_preapproval_id', String(recursoId))
+                if (statusError) throw statusError
                 return NextResponse.json({ status: 'ok', reason: sub.status })
             }
 
@@ -304,7 +281,7 @@ export async function POST(request) {
 
         const { business_id, plan_id } = leerReferencia(pago.external_reference)
         const res = await activarPlan(supabase, {
-            business_id, plan_id, claveIdempotencia: recursoId,
+            business_id, plan_id, claveIdempotencia: pago.id, preapprovalId: pago.preapproval_id || null,
         })
 
         return NextResponse.json({ status: res.ok ? 'ok' : 'error', reason: res.motivo },

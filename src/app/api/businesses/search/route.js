@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
 import { resolveOpenStatus } from '@/lib/business-profile'
+import { planVigente } from '@/lib/plan'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,7 +24,7 @@ export async function GET(request) {
             .from('businesses')
             // cover_image_url faltaba: la tarjeta lo consultaba y nunca llegaba,
             // así que un negocio con portada cargada igual mostraba el degradado.
-            .select('id, name, business_type, address, slug, settings, cover_image_url, avg_rating, total_reviews')
+            .select('id, name, business_type, address, slug, settings, cover_image_url, avg_rating, total_reviews, plan_status, plan_expires_at')
             .not('slug', 'is', null)
             .limit(limit)
 
@@ -38,7 +39,7 @@ export async function GET(request) {
         const { data, error } = await query
         if (error) throw error
 
-        const rows = data || []
+        const rows = (data || []).filter(planVigente)
         const ids = rows.map(b => b.id)
 
         // Servicios desde la tabla, no desde el JSONB `businesses.services`.

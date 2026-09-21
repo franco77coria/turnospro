@@ -31,6 +31,8 @@ export default function DateTimeStep({
     selectedDate,
     selectedTime,
     loadingSlots,
+    slotsError,
+    onRetrySlots,
     hasTeamMembers,
     onSelectDate,
     onSelectTime,
@@ -121,6 +123,11 @@ export default function DateTimeStep({
                     {loadingSlots ? (
                         <div className={styles.loadingWrap}>
                             <div className="loading-spinner" />
+                        </div>
+                    ) : slotsError ? (
+                        <div className={styles.emptySlots} role="alert">
+                            <p>{slotsError}</p>
+                            <button type="button" className="btn btn-secondary btn-sm" onClick={onRetrySlots}>Reintentar</button>
                         </div>
                     ) : slots.length === 0 ? (
                         <div className={styles.emptySlots}>

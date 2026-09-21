@@ -37,18 +37,18 @@ export default function PrivacyPage() {
         <p>Utilizamos tu información para:</p>
         <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
           <li>Gestionar y confirmar tus turnos</li>
-          <li>Enviar recordatorios por email o WhatsApp</li>
+          <li>Enviar recordatorios por email</li>
           <li>Mejorar la experiencia de usuario en la plataforma</li>
           <li>Comunicarnos con vos sobre tu cuenta</li>
         </ul>
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.3rem', color: '#fff', marginBottom: '0.5rem' }}>3. WhatsApp Business API</h2>
+        <h2 style={{ fontSize: '1.3rem', color: '#fff', marginBottom: '0.5rem' }}>3. Correos transaccionales</h2>
         <p>
-          Utilizamos la API de WhatsApp Business para enviar notificaciones relacionadas con tus turnos 
-          (confirmaciones, recordatorios, cancelaciones). Los mensajes son enviados únicamente con tu 
-          consentimiento y podés optar por no recibirlos en cualquier momento.
+          Utilizamos un proveedor de email para enviar mensajes relacionados con tus turnos
+          (confirmaciones, recordatorios y cancelaciones). Podés contactarnos para consultar
+          sobre el tratamiento de estos datos.
         </p>
       </section>
 
@@ -68,7 +68,7 @@ export default function PrivacyPage() {
         </p>
         <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
           <li>Con el negocio donde reservaste un turno (nombre, teléfono, email)</li>
-          <li>Proveedores de servicio necesarios (email, WhatsApp) bajo acuerdos de confidencialidad</li>
+          <li>Proveedores de servicio necesarios para el envío de email</li>
           <li>Cuando sea requerido por ley</li>
         </ul>
       </section>

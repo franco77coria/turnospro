@@ -60,7 +60,7 @@ export default function DataDeletionPage() {
           <li>Historial de turnos y reservas</li>
           <li>Datos de contacto (email, teléfono)</li>
           <li>Preferencias y configuraciones</li>
-          <li>Historial de mensajes de WhatsApp almacenados</li>
+          <li>Historial de comunicaciones relacionadas con tus turnos</li>
         </ul>
       </section>
 

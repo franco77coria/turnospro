@@ -55,6 +55,14 @@ export function isTimePast(dateStr, timeStr, tz = DEFAULT_TZ) {
     return target < now
 }
 
+/** Hours until a business-local wall-clock slot, independent of server TZ. */
+export function hoursUntilSlot(dateStr, timeStr, tz = DEFAULT_TZ, now = nowInTimezone(tz)) {
+    const [year, month, day] = dateStr.split('-').map(Number)
+    const [hours, minutes] = timeStr.split(':').map(Number)
+    const slot = new Date(year, month - 1, day, hours, minutes)
+    return (slot.getTime() - now.getTime()) / 36e5
+}
+
 /**
  * Get appointments that are within N hours from now in a timezone
  * @param {Array} appointments - Array of { date: 'YYYY-MM-DD', time: 'HH:MM', ... }

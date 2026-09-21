@@ -96,7 +96,7 @@ export default function BookingPage() {
                     onSelect={(tm) => { b.setSelectedProfessional(tm); b.setStep(3) }} onBack={() => b.setStep(1)} />}
 
                 {b.step === 3 && <DateTimeStep dates={b.dates} slots={b.slots} selectedDate={b.selectedDate} selectedTime={b.selectedTime}
-                    loadingSlots={b.loadingSlots} hasTeamMembers={hasTm} onSelectDate={b.setSelectedDate} onSelectTime={b.setSelectedTime}
+                    loadingSlots={b.loadingSlots} slotsError={b.slotsError} onRetrySlots={b.retrySlots} hasTeamMembers={hasTm} onSelectDate={b.setSelectedDate} onSelectTime={b.setSelectedTime}
                     onContinue={() => b.setStep(4)} onBack={() => b.setStep(hasTm ? 2 : 1)}
                     businessId={biz.id} teamMemberId={b.selectedProfessional?.id} serviceName={b.selectedService?.name} />}
 

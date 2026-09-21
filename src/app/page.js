@@ -21,11 +21,11 @@ const CATEGORIES = [
 
 const FEATURES = [
   { icon: 'Calendar', title: 'Agenda inteligente',  desc: 'Vista día, semana y mes. Reagendá arrastrando.' },
-  { icon: 'Bell',     title: 'Recordatorios auto',  desc: 'WhatsApp y mail, sin que toques un botón.' },
+  { icon: 'Bell',     title: 'Recordatorios auto',  desc: 'Por email, sin que toques un botón.' },
   { icon: 'Wallet',   title: 'Caja & finanzas',     desc: 'Ingresos, gastos, cierre y comisiones.' },
   { icon: 'Users',    title: 'Equipo & roles',      desc: 'Permisos finos para cada persona.' },
   { icon: 'Palette',  title: 'Tu marca, tu portal', desc: 'Slug propio, logo, colores. Sin sentirse template.' },
-  { icon: 'Shield',   title: 'Sin tarifa por turno', desc: 'Gratis siempre. En serio.' },
+  { icon: 'Shield',   title: 'Sin tarifa por turno', desc: 'Pagás el plan, sin comisiones por reserva.' },
 ];
 
 const MARQUEE_ITEMS = [
@@ -85,7 +85,7 @@ export default function Landing() {
             <Reveal as="div" delay={0}>
               <span className="gu-eyebrow">
                 <span className="dot"></span>
-                Reservás en 30 segundos · sin descargar nada
+                Reservá online · sin descargar nada
               </span>
             </Reveal>
             <Reveal as="h1" delay={80}>
@@ -116,7 +116,7 @@ export default function Landing() {
               <span className="gu-emoji-circle" style={{ background: 'var(--mint)', color: 'var(--ink)' }}>
                 <Icons.Bell size={11}/>
               </span>
-              Te avisamos por WhatsApp
+              Te avisamos por email
             </div>
             <div className="gu-sticker s3">
               <Icons.Star size={14} solid/>
@@ -186,7 +186,7 @@ export default function Landing() {
               hoy?
             </h2>
             <p className="gu-section-sub">
-              Más de <strong style={{ color: 'var(--ink)' }}>40 categorías</strong>. Si tu rubro no está, igual lo agendamos. En serio.
+              <strong style={{ color: 'var(--ink)' }}>8 rubros para empezar</strong>. Si el tuyo no aparece, también podés organizarlo.
             </p>
           </Reveal>
 
@@ -235,7 +235,7 @@ export default function Landing() {
             <Reveal className="gu-step" delay={0}>
               <div className="gu-step-num">01</div>
               <h3>Buscá</h3>
-              <p>Filtrá por rubro, barrio, precio o disponibilidad. Vas a ver fotos reales y reseñas reales.</p>
+              <p>Explorá por rubro o nombre, y comprobá los horarios del lugar.</p>
             </Reveal>
             <Reveal className="gu-step" delay={120}>
               <div className="gu-step-num">02</div>
@@ -245,7 +245,7 @@ export default function Landing() {
             <Reveal className="gu-step" delay={240}>
               <div className="gu-step-num">03</div>
               <h3>Brillá</h3>
-              <p>Te llega recordatorio por WhatsApp. Llegás y disfrutás. Después dejás reseña si querés.</p>
+              <p>Te llega un recordatorio por email. Llegás y disfrutás. Después dejás reseña si querés.</p>
             </Reveal>
           </div>
         </div>
@@ -437,7 +437,7 @@ export default function Landing() {
                     <li style={{ display: 'flex', alignItems: 'center', gap: 10 }}><Icons.Check size={16} color="var(--violet)" /> Integraciones a medida</li>
                   </ul>
                 </div>
-                <a href="https://wa.me/5491133985163?text=Hola!%20Me%20interesa%20un%20plan%20personalizado%20para%20m%C3%A1s%20de%203%20sucursales%20en%20TurnosPro" target="_blank" rel="noopener noreferrer" className="gu-btn gu-btn-sm" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
+                <a href="mailto:franco.coria.r@gmail.com?subject=Plan%20personalizado%20GLOWUP" className="gu-btn gu-btn-sm" style={{ width: '100%', justifyContent: 'center', background: 'var(--bg)', border: '1px solid var(--line)', color: 'var(--ink)' }}>
                   Contactar Asesor
                 </a>
               </div>
@@ -466,7 +466,7 @@ export default function Landing() {
               <div className="gu-footer-links">
                 <Link href="/explore">Explorar negocios</Link>
                 <Link href="/explore">Categorías</Link>
-                <Link href="/explore">Mis turnos</Link>
+                <Link href="/book/my-appointments">Mis turnos</Link>
               </div>
             </div>
             <div>
@@ -474,23 +474,20 @@ export default function Landing() {
               <div className="gu-footer-links">
                 <Link href={user ? "/dashboard" : "/register"}>Registrar mi negocio</Link>
                 <Link href="/#business">Funcionalidades</Link>
-                <Link href="/register">Precios</Link>
+                <Link href="/#precios">Precios</Link>
               </div>
             </div>
             <div>
               <h5>Empresa</h5>
               <div className="gu-footer-links">
-                <a href="#" onClick={(e) => e.preventDefault()}>Sobre nosotros</a>
-                <a href="#" onClick={(e) => e.preventDefault()}>Privacidad</a>
-                <a href="#" onClick={(e) => e.preventDefault()}>Términos</a>
+                <a href="mailto:franco.coria.r@gmail.com?subject=Consulta%20GLOWUP">Contacto</a>
+                <Link href="/privacy">Privacidad</Link>
+                <Link href="/terms">Términos</Link>
               </div>
             </div>
           </div>
           <div className="gu-footer-bot">
             <span>© 2026 GLOWUP · Hecho con ♥ en Argentina</span>
-            <span style={{ display: 'inline-flex', gap: 12 }}>
-              <a href="#" aria-label="Instagram" style={{ color: 'var(--ink-mute)' }}><Icons.Instagram size={20}/></a>
-            </span>
           </div>
         </div>
       </footer>

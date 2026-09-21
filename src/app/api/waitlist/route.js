@@ -29,8 +29,8 @@ export async function POST(request) {
         }
         const { business_id, date, client_phone, client_name, client_email, team_member_id, service_name } = parsed.data
 
-        const phoneResult = validateInternationalPhone(client_phone)
-        if (!phoneResult.valid) {
+        const phoneResult = client_phone ? validateInternationalPhone(client_phone) : null
+        if (phoneResult && !phoneResult.valid) {
             return NextResponse.json({ error: phoneResult.error }, { status: 400 })
         }
 
@@ -49,7 +49,7 @@ export async function POST(request) {
         const { data, error } = await supabase.from('waitlist').insert([{
             business_id,
             date,
-            client_phone: phoneResult.formatted,
+            client_phone: phoneResult?.formatted || null,
             client_name: client_name || null,
             client_email: client_email || null,
             team_member_id: team_member_id || null,

@@ -1,111 +1,80 @@
-import { Resend } from 'resend'
 import { NextResponse } from 'next/server'
-import { confirmationEmail, reminderEmail, welcomeEmail, newBookingNotifyEmail, cancellationEmail, cancellationNotifyEmail, reviewRequestEmail } from '@/lib/email-templates'
-import { generateCancelToken } from '@/lib/cancel-token'
-import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { cookies } from 'next/headers'
+import { z } from 'zod'
+import { createSupabaseAdmin } from '@/lib/supabase-admin'
+import { createSupabaseServerClient } from '@/lib/supabase-server'
 import { applyRateLimit } from '@/lib/rate-limit'
-import { EmailRequestSchema, parseBody } from '@/lib/schemas'
+import { sendEmail } from '@/lib/send-email'
+import { formatDateEs } from '@/lib/scheduling'
 import { appUrl } from '@/lib/app-url'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Dashboard-only resend. The recipient and every template value are read from
+// the appointment, never from a browser-supplied email or arbitrary data map.
+const RequestSchema = z.object({
+    appointmentId: z.string().uuid(),
+    type: z.enum(['confirmation', 'cancellation']),
+}).strict()
 
-// All email types require an authenticated session. Public booking flows
-// send confirmations server-side via lib/send-email.js, not via this endpoint.
 export async function POST(request) {
     try {
-        // Authenticate first — closes the open phishing/spam vector that existed
-        // when 'confirmation' was a public type.
         const cookieStore = await cookies()
-        const supabase = createSupabaseServerClient(cookieStore)
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
-        }
+        const authClient = createSupabaseServerClient(cookieStore)
+        const { data: { user } } = await authClient.auth.getUser()
+        if (!user) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
-        // Rate limit per user (10/min) — bound to authenticated identity
-        const rateLimited = await applyRateLimit(request, {
-            prefix: `email:${user.id}`,
-            limit: 10,
-            windowMs: 60000,
+        const limited = await applyRateLimit(request, {
+            prefix: `appointment-email:${user.id}`, limit: 10, windowMs: 60_000,
         })
-        if (rateLimited) return rateLimited
+        if (limited) return limited
 
-        const raw = await request.json().catch(() => null)
-        const parsed = parseBody(EmailRequestSchema, raw)
-        if (!parsed.ok) {
-            return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
+        const parsed = RequestSchema.safeParse(await request.json().catch(() => null))
+        if (!parsed.success) return NextResponse.json({ error: 'Solicitud inválida' }, { status: 400 })
+
+        const supabase = createSupabaseAdmin()
+        const { data: apt, error } = await supabase
+            .from('appointments')
+            .select('id, business_id, client_id, status, date, time, duration, service_name, businesses:business_id (id, owner_id, name, business_type, phone), clients:client_id (name, email)')
+            .eq('id', parsed.data.appointmentId)
+            .maybeSingle()
+        if (error) throw error
+        if (!apt) return NextResponse.json({ error: 'Turno no encontrado' }, { status: 404 })
+
+        let allowed = apt.businesses?.owner_id === user.id
+        if (!allowed) {
+            const { data: member } = await supabase.from('team_members')
+                .select('id').eq('business_id', apt.business_id)
+                .eq('user_id', user.id).eq('active', true).maybeSingle()
+            allowed = Boolean(member)
         }
-        const { type, to, data } = parsed.data
+        if (!allowed) return NextResponse.json({ error: 'Sin permisos para este negocio' }, { status: 403 })
 
-        let html, subject
-
-        switch (type) {
-            case 'confirmation':
-                if (data.appointmentId) {
-                    // Ver send-email.js: el link de cancelación es opcional,
-                    // la confirmación no.
-                    try {
-                        const cancelToken = await generateCancelToken(data.appointmentId)
-                        const baseUrl = appUrl()
-                        data.cancelUrl = `${baseUrl}/cancel/${cancelToken}`
-                    } catch (tokenErr) {
-                        console.error('[api/email] no se pudo firmar el link de cancelación:', tokenErr.message)
-                    }
-                }
-                html = confirmationEmail(data)
-                subject = `Turno confirmado — ${data.serviceName} | ${data.businessName}`
-                break
-
-            case 'reminder':
-                html = reminderEmail(data)
-                subject = `Recordatorio de turno — ${data.hoursUntil <= 1 ? 'En menos de 1 hora' : `En ${data.hoursUntil} horas`} | ${data.businessName}`
-                break
-
-            case 'welcome':
-                html = welcomeEmail(data)
-                subject = `Bienvenido/a a ${data.businessName}`
-                break
-
-            case 'new_booking_notify':
-                html = newBookingNotifyEmail(data)
-                subject = `Nueva reserva — ${data.clientName} | ${data.serviceName}`
-                break
-
-            case 'cancellation':
-                html = cancellationEmail(data)
-                subject = `Turno cancelado — ${data.serviceName} | ${data.businessName}`
-                break
-
-            case 'cancellation_notify':
-                html = cancellationNotifyEmail(data)
-                subject = `Turno cancelado — ${data.clientName} canceló ${data.serviceName}`
-                break
-
-            case 'review_request':
-                html = reviewRequestEmail(data)
-                subject = `¿Cómo fue tu experiencia? — ${data.businessName}`
-                break
-
-            default:
-                return NextResponse.json({ error: 'Tipo de email no válido' }, { status: 400 })
+        if ((parsed.data.type === 'cancellation') !== (apt.status === 'cancelled')) {
+            return NextResponse.json({ error: 'El estado del turno no coincide con el email solicitado' }, { status: 409 })
         }
+        if (!apt.clients?.email) return NextResponse.json({ error: 'El cliente no tiene email' }, { status: 409 })
 
-        const { data: emailData, error } = await resend.emails.send({
-            from: `${data.businessName || 'Tu GlowUp'} <notificaciones@tu-glowup.com>`,
-            to: [to],
-            subject,
-            html,
+        const biz = apt.businesses
+        const result = await sendEmail({
+            type: parsed.data.type,
+            to: apt.clients.email,
+            data: {
+                clientName: apt.clients.name || 'Cliente',
+                serviceName: apt.service_name,
+                date: formatDateEs(apt.date),
+                time: apt.time,
+                duration: apt.duration,
+                businessName: biz?.name || 'GLOWUP',
+                businessType: biz?.business_type || 'custom',
+                businessPhone: biz?.phone,
+                appointmentUrl: `${appUrl()}/book/my-appointments`,
+                bookUrl: `${appUrl()}/book/${apt.business_id}`,
+                appointmentId: parsed.data.type === 'confirmation' ? apt.id : undefined,
+            },
         })
-
-        if (error) {
-            console.error('Resend error:', JSON.stringify(error))
-            return NextResponse.json({ error: 'Error enviando email' }, { status: 500 })
-        }
-
-        return NextResponse.json({ success: true, id: emailData?.id })
+        if (result?.error) throw new Error(result.error)
+        return NextResponse.json({ success: true })
     } catch (err) {
-        console.error('Email API error:', err)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+        console.error('Appointment email error:', err)
+        return NextResponse.json({ error: 'No se pudo enviar el email' }, { status: 500 })
     }
 }

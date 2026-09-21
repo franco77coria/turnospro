@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { createPlanSubscription, cancelSubscription, PLANS } from '@/lib/mercadopago'
 import { applyRateLimit } from '@/lib/rate-limit'
 import { logError } from '@/lib/log'
+import { createSupabaseAdmin } from '@/lib/supabase-admin'
 
 /**
  * POST — arranca una suscripción con débito automático mensual.
@@ -46,7 +47,7 @@ export async function POST(request) {
 
         const { data: business, error: bizError } = await supabase
             .from('businesses')
-            .select('id, name, mp_preapproval_id')
+            .select('id, name, mp_preapproval_id, mp_pending_preapproval_id, mp_previous_preapproval_id')
             .eq('id', businessId)
             .eq('owner_id', user.id)
             .single()
@@ -55,18 +56,13 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Negocio no encontrado o sin permisos' }, { status: 404 })
         }
 
-        // Si ya tenía una suscripción viva, se cancela antes de crear la
-        // nueva. Sin esto, cambiar de plan deja DOS débitos automáticos
-        // corriendo sobre la misma tarjeta.
-        if (business.mp_preapproval_id) {
-            try {
-                await cancelSubscription(business.mp_preapproval_id)
-            } catch (err) {
-                // Puede fallar legítimamente: ya estaba cancelada, o es de una
-                // cuenta de prueba. No es motivo para frenar el alta nueva.
-                logError('subscribe/cancelar-anterior', err, { businessId })
-            }
+        if (business.mp_pending_preapproval_id || business.mp_previous_preapproval_id) {
+            return NextResponse.json({ error: 'Hay un cambio de plan en proceso. Esperá la confirmación o cancelalo antes de iniciar otro.' }, { status: 409 })
         }
+
+        // Fallar antes de crear una suscripción externa si no podremos
+        // persistirla para el webhook.
+        const admin = createSupabaseAdmin()
 
         const suscripcion = await createPlanSubscription({
             business,
@@ -74,19 +70,30 @@ export async function POST(request) {
             userEmail: user.email,
         })
 
+        if (suscripcion.is_demo) {
+            return NextResponse.json({ success: true, checkoutUrl: suscripcion.init_point, isDemo: true })
+        }
+
         // Se guarda ANTES de mandar al checkout: si el dueño paga y no
         // tenemos el id, el webhook llega con una suscripción que no sabemos
         // de quién es.
-        const { error: updateError } = await supabase
+        const { data: stored, error: updateError } = await admin
             .from('businesses')
-            .update({ mp_preapproval_id: suscripcion.id })
+            .update({ mp_pending_preapproval_id: suscripcion.id, mp_pending_plan_id: planId })
             .eq('id', business.id)
+            .is('mp_pending_preapproval_id', null)
+            .is('mp_previous_preapproval_id', null)
+            .select('id')
+            .maybeSingle()
 
-        if (updateError && !suscripcion.is_demo) {
+        if (!stored || updateError) {
+            try { await cancelSubscription(suscripcion.id) } catch (cancelError) {
+                logError('subscribe/cancelar-huerfana', cancelError, { businessId })
+            }
             logError('subscribe/guardar-id', updateError, { businessId })
             return NextResponse.json(
-                { error: 'No se pudo iniciar la suscripción. Probá de nuevo.' },
-                { status: 500 }
+                { error: 'Ya hay un cambio en proceso o no se pudo guardar la suscripción.' },
+                { status: stored ? 500 : 409 }
             )
         }
 
@@ -129,7 +136,7 @@ export async function DELETE(request) {
 
         const { data: business } = await supabase
             .from('businesses')
-            .select('id, mp_preapproval_id')
+            .select('id, mp_preapproval_id, mp_pending_preapproval_id, mp_previous_preapproval_id')
             .eq('id', businessId)
             .eq('owner_id', user.id)
             .maybeSingle()
@@ -137,16 +144,20 @@ export async function DELETE(request) {
         if (!business) {
             return NextResponse.json({ error: 'Negocio no encontrado o sin permisos' }, { status: 404 })
         }
-        if (!business.mp_preapproval_id) {
+        if (!business.mp_preapproval_id && !business.mp_pending_preapproval_id && !business.mp_previous_preapproval_id) {
             return NextResponse.json({ error: 'No hay una suscripción activa' }, { status: 400 })
         }
 
-        await cancelSubscription(business.mp_preapproval_id)
+        for (const id of [business.mp_preapproval_id, business.mp_pending_preapproval_id, business.mp_previous_preapproval_id]) {
+            if (id && !id.startsWith('demo-')) await cancelSubscription(id)
+        }
 
-        await supabase
+        const admin = createSupabaseAdmin()
+        const { error: updateError } = await admin
             .from('businesses')
-            .update({ plan_status: 'cancelled', mp_preapproval_id: null })
+            .update({ plan_status: 'cancelled', mp_preapproval_id: null, mp_pending_preapproval_id: null, mp_pending_plan_id: null, mp_previous_preapproval_id: null })
             .eq('id', business.id)
+        if (updateError) throw updateError
 
         return NextResponse.json({ success: true })
     } catch (err) {

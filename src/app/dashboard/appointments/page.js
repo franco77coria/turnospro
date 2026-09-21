@@ -132,22 +132,12 @@ function OwnerAppointmentsPage() {
                                 .eq('id', apt.client_id)
 
                             if (clientInfo.email) {
-                                const formattedDate = formatDateEs(apt.date, { weekday: 'long', day: 'numeric', month: 'long' })
                                 fetch('/api/email', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
                                         type: 'cancellation',
-                                        to: clientInfo.email,
-                                        data: {
-                                            clientName: clientInfo.name || 'Cliente',
-                                            serviceName: apt.service_name,
-                                            date: formattedDate,
-                                            time: apt.time,
-                                            businessName: business?.name || 'Tu GlowUp',
-                                            businessType: business?.business_type || 'custom',
-                                            businessPhone: business?.phone,
-                                        }
+                                        appointmentId: apt.id,
                                     })
                                 }).catch(() => {})
                             }

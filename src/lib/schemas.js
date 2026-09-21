@@ -51,9 +51,9 @@ export const AvailabilityCheckSchema = z.object({
 export const WaitlistEntrySchema = z.object({
     business_id: uuid,
     date: dateStr,
-    client_phone: phoneStr,
+    client_phone: phoneStr.nullish(),
     client_name: optionalShortText(200),
-    client_email: emailStr.nullish(),
+    client_email: emailStr,
     team_member_id: uuid.nullish(),
     service_name: optionalShortText(200),
 })

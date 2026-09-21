@@ -1,4 +1,3 @@
-import { sendWhatsAppText } from '@/lib/whatsapp'
 import { sendEmail } from '@/lib/send-email'
 import { formatDateEs } from '@/lib/scheduling'
 import { appUrl } from '@/lib/app-url'
@@ -19,7 +18,6 @@ export async function notifyWaitlist(supabase, {
     serviceName,
     businessName,
     businessSlug,
-    phoneNumberId,
 }) {
     try {
         // Find matching waitlist entries (not yet notified, same date)
@@ -34,7 +32,8 @@ export async function notifyWaitlist(supabase, {
 
         // Filter: match team_member_id if specified, or entries with no preference
         const matches = entries.filter(entry =>
-            !entry.team_member_id || !teamMemberId || entry.team_member_id === teamMemberId
+            (!entry.team_member_id || entry.team_member_id === teamMemberId) &&
+            (!entry.service_name || entry.service_name.toLocaleLowerCase('es-AR') === String(serviceName || '').toLocaleLowerCase('es-AR'))
         )
 
         if (!matches.length) return { notified: 0 }
@@ -68,19 +67,6 @@ export async function notifyWaitlist(supabase, {
                     if (result?.success || result?.id) delivered = true
                 } catch (err) {
                     console.error('Waitlist email error:', err?.message)
-                }
-            }
-
-            if (phoneNumberId && entry.client_phone) {
-                try {
-                    await sendWhatsAppText({
-                        to: entry.client_phone,
-                        text: `Se libero un turno${serviceName ? ` de ${serviceName}` : ''} el ${formattedDate} en ${businessName || 'tu negocio favorito'}. Reservalo antes de que se ocupe: ${bookingLink}`,
-                        phoneNumberId,
-                    })
-                    delivered = true
-                } catch (err) {
-                    console.error('Waitlist WhatsApp error:', err?.message)
                 }
             }
 

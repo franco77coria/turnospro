@@ -183,6 +183,18 @@ describe('scheduling', () => {
             expect(paraTm1).toEqual([])
         })
 
+        it('con varios profesionales no ofrece el mismo horario cuando todos están ocupados', () => {
+            const settings = { work_hours: { start: '10:00', end: '11:00' } }
+            const occupied = toOccupiedRanges([
+                { time: '10:00', duration: 60, team_member_id: 'a' },
+                { time: '10:00', duration: 60, team_member_id: 'b' },
+            ])
+            expect(generateAvailableSlots({ settings, duration: 60, occupied, capacity: 2 })).toEqual([])
+            expect(generateAvailableSlots({ settings, duration: 60, occupied: occupied.slice(0, 1), capacity: 2 })).toEqual(['10:00'])
+            expect(generateAvailableSlots({ settings, duration: 60, occupied: occupied.slice(0, 1), capacity: 2, teamMemberId: 'a' })).toEqual([])
+            expect(generateAvailableSlots({ settings, duration: 60, occupied: occupied.slice(0, 1), capacity: 2, teamMemberId: 'b' })).toEqual(['10:00'])
+        })
+
         it('con includeOccupied=true devuelve la lista completa de horarios con flag available', () => {
             const occupied = toOccupiedRanges([
                 { id: 'a', time: '10:45', duration: 45, status: 'confirmed' },

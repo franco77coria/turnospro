@@ -92,11 +92,15 @@ export async function sendEmail({ type, to, data }) {
             return { success: true, id: emailData?.id }
         }
 
-        // Client-side: use fetch to API route
+        // Client-side: only appointment emails can be requested. The server
+        // resolves the recipient and content from the authorized appointment.
+        if (!['confirmation', 'cancellation'].includes(type) || !data?.appointmentId) {
+            return { error: 'El email debe enviarse desde el servidor' }
+        }
         const res = await fetch('/api/email', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type, to, data }),
+            body: JSON.stringify({ type, appointmentId: data.appointmentId }),
         })
 
         const result = await res.json()

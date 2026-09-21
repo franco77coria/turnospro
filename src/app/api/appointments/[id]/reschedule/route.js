@@ -68,16 +68,8 @@ export async function POST(request, { params }) {
             }
         }
 
-        // Si no está logueado o no coincide por token/sesión, denegar
-        if (!isAuthorized && !user) {
-            // Permitir reprogramar si la petición viene del cliente directo (con email de sesión o guest match)
-            if (body?.guest_email && apt.clients?.email && body.guest_email.toLowerCase() === apt.clients.email.toLowerCase()) {
-                isAuthorized = true
-            }
-        }
-
         if (!isAuthorized) {
-            return NextResponse.json({ error: 'No tenés permisos para reprogramar este turno' }, { status: 403 })
+            return NextResponse.json({ error: 'Iniciá sesión con el email de la reserva para reprogramar este turno' }, { status: 403 })
         }
 
         // 3. Verify availability for the requested new slot.

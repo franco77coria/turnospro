@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { planVigente } from '@/lib/plan'
 import Link from 'next/link'
 import Image from 'next/image'
-import { MapPin, Phone, Star, Clock, ArrowRight, MessageCircle } from 'lucide-react'
+import { MapPin, Phone, Star, Clock, ArrowRight } from 'lucide-react'
 import JsonLd, { buildLocalBusinessSchema } from '@/components/JsonLd'
 import PhotoGallery from '@/components/business/PhotoGallery'
 import SocialLinks from '@/components/business/SocialLinks'
@@ -12,7 +12,6 @@ import { nowInTimezone } from '@/lib/timezone'
 import {
     buildMapQuery,
     buildOpeningHoursSpecification,
-    buildWhatsAppLink,
     collapseWeeklyHours,
     hasConfiguredHours,
     resolveOpenStatus,
@@ -186,11 +185,6 @@ export default async function BusinessProfilePage({ params }) {
     const socials = resolveSocialLinks(settings)
     const mapQuery = buildMapQuery(business.address)
 
-    const whatsapp = buildWhatsAppLink(
-        business.phone,
-        `Hola ${name}! Te escribo desde tu página de GLOWUP.`
-    )
-
     const rating = Number(business.avg_rating) || 0
     // Un rating sin reseñas mostraba "4.5 (0)" mientras la sección quedaba oculta.
     const reviewCount = business.total_reviews || reviews.length
@@ -257,16 +251,6 @@ export default async function BusinessProfilePage({ params }) {
                             <Link href={bookUrl} className={styles.ctaMain}>
                                 Reservar turno <ArrowRight size={16} />
                             </Link>
-                            {whatsapp && (
-                                <a
-                                    className={styles.ctaGhost}
-                                    href={whatsapp}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <MessageCircle size={16} /> Escribir por WhatsApp
-                                </a>
-                            )}
                         </div>
 
                         <p className={styles.reassure}>
@@ -491,7 +475,7 @@ function FichaPausada({ nombre }) {
                     No está tomando reservas online en este momento. Si necesitás un turno,
                     lo mejor es escribirle o llamar directamente.
                 </p>
-                <a href="/explore" className="btn btn-secondary">Ver otros negocios</a>
+                <Link href="/explore" className="btn btn-secondary">Ver otros negocios</Link>
             </div>
         </main>
     )

@@ -37,7 +37,7 @@ export default function TermsPage() {
         <ul style={{ paddingLeft: '1.5rem', marginTop: '0.5rem' }}>
           <li>Reserva de turnos online</li>
           <li>Gestión de agenda para negocios</li>
-          <li>Notificaciones por email y WhatsApp</li>
+          <li>Notificaciones por email</li>
           <li>Panel de administración para negocios</li>
         </ul>
       </section>
@@ -72,11 +72,11 @@ export default function TermsPage() {
       </section>
 
       <section style={{ marginBottom: '2rem' }}>
-        <h2 style={{ fontSize: '1.3rem', color: '#fff', marginBottom: '0.5rem' }}>6. Comunicaciones por WhatsApp</h2>
+        <h2 style={{ fontSize: '1.3rem', color: '#fff', marginBottom: '0.5rem' }}>6. Comunicaciones por email</h2>
         <p>
-          Al proporcionar tu número de teléfono y reservar un turno, aceptás recibir mensajes 
-          transaccionales relacionados con tus reservas (confirmaciones, recordatorios, cancelaciones) 
-          a través de WhatsApp. Podés dejar de recibir estos mensajes contactándonos.
+          Al proporcionar tu email y reservar un turno, podés recibir mensajes
+          transaccionales relacionados con tus reservas (confirmaciones, recordatorios y cancelaciones).
+          Podés consultarnos sobre estos mensajes por email.
         </p>
       </section>
 
