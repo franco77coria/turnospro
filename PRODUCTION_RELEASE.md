@@ -15,21 +15,25 @@ reserva quedó ejecutable solo por `service_role`. Una reserva de prueba y dos
 reservas con profesional de licencia se ensayaron dentro de transacciones
 revertidas.
 
-La rama pasa 239 pruebas, ESLint sin errores y `next build`. La búsqueda guiada
+La rama pasa las pruebas automatizadas, ESLint y `next build`. La búsqueda guiada
 respondió con servicios y turnos reales desde la base. Resend aceptó un mensaje
 de prueba usando la clave configurada en Vercel para producción. El token de
 Mercado Pago configurado en Vercel respondió correctamente a `/users/me`.
 
-**Pendiente antes de declarar listo el cobro real:** completar el flujo de
-suscripción y primer pago con comprador y tarjeta de prueba, verificar el
-webhook firmado y los reintentos, el cambio de plan y su cancelación. La
-existencia del token y las pruebas unitarias no comprueban ese recorrido. Aún
-no se desplegó esta rama.
-El ensayo de alta pendiente con la credencial TEST no creó ninguna suscripción:
-Mercado Pago rechazó `test_payer@example.com` por pertenecer a otro país y
-rechazó un email inferido del ID de un usuario de prueba con `User bad request`.
-Para repetirlo hace falta el email exacto del comprador de prueba que figura
-en el panel de Mercado Pago.
+La CLI de Mercado Pago creó un comprador de prueba de Argentina. Con ese
+comprador y la credencial TEST, la API creó una suscripción pendiente con enlace
+de pago y confirmó su cancelación. También autorizó una suscripción con tarjeta
+de prueba y confirmó su cancelación. Ambas usaron una referencia de negocio
+ficticia: no modificaron un negocio real ni generaron cobros reales. La prueba
+del webhook verifica firma inválida, autorización sin crédito y crédito por ID
+del pago aprobado. La función SQL de acreditación se ejecutó dos veces con el
+mismo ID dentro de una transacción revertida y no extendió el plan otra vez.
+
+**Pendiente para el despliegue:** observar el primer débito periódico real de
+prueba y su notificación en el entorno desplegado. [Mercado Pago indica](https://www.mercadopago.com.ar/developers/es/docs/subscriptions/integration-configuration/subscription-no-associated-plan/authorized-payments) que la
+primera cuota de una suscripción autorizada puede acreditarse una hora después;
+por eso la prueba inmediata de autorización no reemplaza ese control. Validar
+también un cambio de plan completo. Aún no se desplegó esta rama.
 
 El asesor de seguridad de Supabase todavía informa advertencias conocidas:
 `public_busy_slots` se ejecuta con permisos de la vista para exponer únicamente
