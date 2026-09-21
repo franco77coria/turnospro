@@ -25,6 +25,11 @@ suscripción y primer pago con comprador y tarjeta de prueba, verificar el
 webhook firmado y los reintentos, el cambio de plan y su cancelación. La
 existencia del token y las pruebas unitarias no comprueban ese recorrido. Aún
 no se desplegó esta rama.
+El ensayo de alta pendiente con la credencial TEST no creó ninguna suscripción:
+Mercado Pago rechazó `test_payer@example.com` por pertenecer a otro país y
+rechazó un email inferido del ID de un usuario de prueba con `User bad request`.
+Para repetirlo hace falta el email exacto del comprador de prueba que figura
+en el panel de Mercado Pago.
 
 El asesor de seguridad de Supabase todavía informa advertencias conocidas:
 `public_busy_slots` se ejecuta con permisos de la vista para exponer únicamente
