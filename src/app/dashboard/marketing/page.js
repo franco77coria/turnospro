@@ -150,7 +150,7 @@ function MarketingContent() {
                             <ImageIcon size={18} /> Flyer de turnos libres
                         </h3>
                         <p style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-tertiary)', margin: 'var(--space-1) 0 var(--space-4)', lineHeight: 1.5 }}>
-                            Mostrá los horarios que te quedan del día y publicalo en Instagram o mandalo por WhatsApp.
+                            Mostrá los horarios disponibles y publicalos en Instagram o compartí el flyer con tus clientes.
                         </p>
                     </div>
                     <span className="badge badge-neutral" style={{ flexShrink: 0 }}>Beta</span>

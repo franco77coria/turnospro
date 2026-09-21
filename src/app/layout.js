@@ -7,6 +7,7 @@ import ThemeApplier, { SCRIPT_TEMA_INICIAL } from '@/components/ThemeApplier'
 import JsonLd, { buildWebSiteSchema } from '@/components/JsonLd'
 import { Analytics } from '@vercel/analytics/next'
 import { appUrl } from '@/lib/app-url'
+import FloatingConciergeWrapper from '@/components/concierge/FloatingConciergeWrapper'
 
 const bricolage = Bricolage_Grotesque({
   subsets: ['latin'],
@@ -25,8 +26,6 @@ const jakarta = Plus_Jakarta_Sans({
 export const viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
   themeColor: '#FF2E8E',
 }
@@ -63,7 +62,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="es" className={`${bricolage.variable} ${jakarta.variable}`}>
+    <html lang="es" className={`${bricolage.variable} ${jakarta.variable}`} suppressHydrationWarning>
       <head>
         {/* Corre antes del primer pintado: sin esto, cada carga arranca con el
             color por defecto y salta al del negocio cuando responde la sesión. */}
@@ -75,6 +74,7 @@ export default function RootLayout({ children }) {
           <ThemeApplier />
           <ToastProvider>
             {children}
+            <FloatingConciergeWrapper />
           </ToastProvider>
         </AuthProvider>
         <ServiceWorkerRegister />

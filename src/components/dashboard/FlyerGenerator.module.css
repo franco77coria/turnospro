@@ -21,6 +21,8 @@
     width: auto;
     min-width: 160px;
 }
+.campo select { min-width: 190px; max-width: 270px; }
+.qrHidden { position: absolute; width: 1px; height: 1px; overflow: hidden; pointer-events: none; }
 
 .formatos {
     display: flex;

@@ -12,6 +12,7 @@ import { CancelTokenSchema, parseBody } from '@/lib/schemas'
 import { formatDateEs } from '@/lib/scheduling'
 import { z } from 'zod'
 import { appUrl } from '@/lib/app-url'
+import { hoursUntilSlot } from '@/lib/timezone'
 
 const SessionCancelSchema = z.object({
     appointment_id: z.string().uuid(),
@@ -135,7 +136,7 @@ export async function POST(request) {
 
         const { data: appointment, error: fetchErr } = await supabase
             .from('appointments')
-            .select('*, businesses:business_id (name, slug, business_type, phone, settings, owner_id), clients:client_id (name, email)')
+            .select('*, businesses:business_id (name, slug, business_type, phone, settings, owner_id, timezone), clients:client_id (name, email)')
             .eq('id', appointmentId)
             .single()
 
@@ -152,9 +153,7 @@ export async function POST(request) {
         }
 
         const minCancelHours = appointment.businesses?.settings?.min_cancel_hours ?? 2
-        const appointmentDateTime = new Date(`${appointment.date}T${appointment.time}:00`)
-        const now = new Date()
-        const hoursUntil = (appointmentDateTime - now) / (1000 * 60 * 60)
+        const hoursUntil = hoursUntilSlot(appointment.date, appointment.time, appointment.businesses?.timezone || undefined)
 
         if (hoursUntil < minCancelHours) {
             return NextResponse.json({
@@ -287,7 +286,6 @@ export async function POST(request) {
                 serviceName: appointment.service_name,
                 businessName: appointment.businesses?.name,
                 businessSlug: appointment.businesses?.slug,
-                phoneNumberId: appointment.businesses?.settings?.whatsapp_phone_number_id || process.env.WHATSAPP_PHONE_NUMBER_ID,
             })
         } catch (e) {
             console.error('Waitlist notify error (non-critical):', e)

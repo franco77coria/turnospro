@@ -278,16 +278,7 @@ export default function CalendarPage() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         type: 'cancellation',
-                        to: editingApt.clients.email,
-                        data: {
-                            clientName: editingApt.clients.name || 'Cliente',
-                            serviceName: editForm.service_name || editingApt.service_name,
-                            date: editForm.date || editingApt.date,
-                            time: editForm.time || editingApt.time,
-                            businessName: business?.name || 'Tu GlowUp',
-                            businessType: business?.business_type || 'custom',
-                            businessPhone: business?.phone,
-                        }
+                        appointmentId: editingApt.id,
                     })
                 }).catch(() => {})
             }

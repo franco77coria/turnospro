@@ -129,6 +129,12 @@ export async function POST(request) {
         }
         let { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id, guest_name, guest_email, guest_phone } = parsed.data
 
+        // An anonymous caller must never attach a booking to a client record
+        // merely by knowing its UUID. Guest contact resolution happens below.
+        if (!user && client_id) {
+            return NextResponse.json({ error: 'No se puede indicar un cliente sin iniciar sesión' }, { status: 403 })
+        }
+
         const supabase = createSupabaseAdmin()
 
         // 3. Flujo de Invitado (Guest Booking): Si no hay cliente logueado, crear/vincular cliente por email o teléfono

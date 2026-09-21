@@ -16,7 +16,7 @@ export const PLANS = {
             'Control de inventario y stock de productos',
             'Sistema de comisiones de personal',
             'Caja diaria y finanzas completas',
-            'WhatsApp directo con mensajes prearmados',
+            'Contacto por email con mensajes prearmados',
             'Notificaciones por Email',
             'Generador de flyers para redes sociales',
         ]
@@ -67,7 +67,7 @@ export const PLANS = {
             'Control de inventario y stock de productos',
             'Sistema de comisiones de personal',
             'Caja diaria y finanzas completas',
-            'WhatsApp directo con mensajes prearmados',
+            'Contacto por email con mensajes prearmados',
             'Notificaciones por Email',
         ]
     }
@@ -88,6 +88,9 @@ export async function createPlanPreference({ business, planId, userEmail }) {
 
     // Si no está configurado el Access Token de Mercado Pago, devolvemos un link simulado o lanzamos error claro
     if (!accessToken) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+            throw new Error('Mercado Pago no está configurado')
+        }
         console.warn('⚠️ MERCADOPAGO_ACCESS_TOKEN no configurado en entorno')
     }
 
@@ -183,6 +186,9 @@ export async function createPlanSubscription({ business, planId, userEmail }) {
     // Sin token no se puede cobrar. En desarrollo devolvemos un link simulado
     // para poder recorrer la pantalla; en producción esto no debería pasar.
     if (!accessToken) {
+        if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production') {
+            throw new Error('Mercado Pago no está configurado')
+        }
         console.warn('MERCADOPAGO_ACCESS_TOKEN no configurado')
         return {
             id: `demo-sub-${Date.now()}`,

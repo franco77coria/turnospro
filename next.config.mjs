@@ -15,7 +15,7 @@ const nextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=()'
+            value: 'camera=(), microphone=(), geolocation=(self), payment=(), usb=(), interest-cohort=(), browsing-topics=()'
           },
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           { key: 'X-DNS-Prefetch-Control', value: 'on' },
@@ -31,7 +31,7 @@ const nextConfig = {
               // bloqueaba y la analítica nunca registró un solo evento.
               // Si algún día se configura NEXT_PUBLIC_SENTRY_DSN, Sentry va a
               // necesitar su propia entrada en connect-src.
-              "script-src 'self' 'unsafe-inline' https://va.vercel-scripts.com",
+              `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === 'development' ? " 'unsafe-eval'" : ''} https://va.vercel-scripts.com`,
               "script-src-attr 'none'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",

@@ -87,8 +87,8 @@ function ExploreContent() {
                 {/* Search section — sticky on mobile */}
                 <div className={styles.searchSection}>
                     <div className={styles.topHeader}>
-                        <Link href="/dashboard" className={styles.backBtn} aria-label="Volver al Dashboard">
-                            <ArrowLeft size={16} /> Volver al Dashboard
+                        <Link href="/" className={styles.backBtn} aria-label="Volver al inicio">
+                            <ArrowLeft size={16} /> Inicio
                         </Link>
                     </div>
 

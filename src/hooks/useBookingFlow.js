@@ -35,6 +35,8 @@ export function useBookingFlow() {
     const [error, setError] = useState('')
     const [occupiedSlots, setOccupiedSlots] = useState([])
     const [loadingSlots, setLoadingSlots] = useState(false)
+    const [slotsError, setSlotsError] = useState('')
+    const [slotReloadKey, setSlotReloadKey] = useState(0)
     const [isFavorite, setIsFavorite] = useState(false)
     const [couponCode, setCouponCode] = useState('')
     const [appliedCoupon, setAppliedCoupon] = useState(null)
@@ -145,36 +147,37 @@ export function useBookingFlow() {
     useEffect(() => {
         if (!selectedDate || !business?.id || !supabase) return
         setLoadingSlots(true)
+        setSlotsError('')
         setSelectedTime('')
-        const tmId = selectedProfessional?.id
         // `public_busy_slots`, no `appointments`: RLS no deja que un invitado lea
         // la tabla, así que la consulta devolvía cero filas y TODOS los horarios
         // aparecían libres. La vista expone solo hora y duración, sin datos del cliente.
-        let query = supabase
+        const query = supabase
             .from('public_busy_slots')
             .select('time, duration, team_member_id')
             .eq('business_id', business.id)
             .eq('date', selectedDate)
-        // Filter by professional if one is selected
-        if (tmId) query = query.eq('team_member_id', tmId)
         query.then(({ data, error }) => {
             if (error) {
-                // Si la vista todavía no existe (migración sin aplicar), es mejor
-                // gritarlo que mostrar en silencio la agenda entera como libre.
                 console.error('[Booking] No se pudieron leer los horarios ocupados:', error.message)
+                setSlotsError('No pudimos verificar los horarios. Probá de nuevo en un momento.')
+                setOccupiedSlots([])
+            } else {
+                setOccupiedSlots(toOccupiedRanges(data))
             }
-            setOccupiedSlots(toOccupiedRanges(data))
             setLoadingSlots(false)
         })
-    }, [selectedDate, business?.id, selectedProfessional?.id])
+    }, [selectedDate, business?.id, selectedProfessional?.id, slotReloadKey])
 
     // Horarios disponibles y ocupados (para mostrarlos griseados)
     function getTimeSlots() {
-        if (!business) return []
+        if (!business || slotsError || loadingSlots) return []
         return generateAvailableSlots({
             settings: business.settings,
             duration: selectedService?.duration || DEFAULT_DURATION,
             occupied: occupiedSlots,
+            teamMemberId: selectedProfessional?.id || null,
+            capacity: Math.max(1, teamMembers.length),
             date: selectedDate,
             enforceMinAdvance: true,
             includeOccupied: true,
@@ -473,6 +476,8 @@ export function useBookingFlow() {
         selectedTime,
         setSelectedTime,
         loadingSlots,
+        slotsError,
+        retrySlots: () => setSlotReloadKey(value => value + 1),
         // Form
         form,
         setForm,

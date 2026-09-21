@@ -1,6 +1,7 @@
 import React from 'react';
 
-function Icon({ d, size = 20, stroke = 2, fill = 'none', children, ...rest }) {
+function Icon({ d, size = 20, stroke = 2, fill = 'none', solid: _solid, children, ...rest }) {
+  void _solid;
   return (
     <svg
       width={size} height={size}

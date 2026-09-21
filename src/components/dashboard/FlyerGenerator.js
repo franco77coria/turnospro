@@ -3,22 +3,23 @@
 /**
  * Genera el flyer de turnos libres del día para publicar.
  *
- * WIP — primera versión. Lo que falta está anotado al final del archivo.
- *
  * Los horarios salen de generateAvailableSlots, el mismo generador de la
  * pantalla de reserva. Si el flyer tuviera su propia copia de la regla,
  * publicaría horarios que la app no ofrece.
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Download, Share2, Image as ImageIcon, RefreshCw } from 'lucide-react'
+import { Download, Share2, RefreshCw } from 'lucide-react'
+import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { FORMATOS, dibujarFlyer } from '@/lib/flyer'
 import {
     generateAvailableSlots, formatDateEs, formatDateLocal,
-    toOccupiedRanges, DEFAULT_DURATION,
+    toOccupiedRanges, isWorkDay,
 } from '@/lib/scheduling'
+import { loadBusinessServices } from '@/lib/services'
+import { nowInTimezone } from '@/lib/timezone'
 import { resolverTema, derivarPaleta } from '@/lib/theme'
 import { appUrl } from '@/lib/app-url'
 import styles from './FlyerGenerator.module.css'
@@ -36,50 +37,97 @@ function leerFuentes() {
 export default function FlyerGenerator() {
     const { business } = useAuth()
     const canvasRef = useRef(null)
+    const qrRef = useRef(null)
+    const dateInitialized = useRef(null)
     const [fecha, setFecha] = useState(formatDateLocal(new Date()))
     const [formatoId, setFormatoId] = useState('feed')
     const [horarios, setHorarios] = useState([])
     const [cargando, setCargando] = useState(false)
     const [error, setError] = useState('')
+    const [services, setServices] = useState([])
+    const [members, setMembers] = useState([])
+    const [updatedAt, setUpdatedAt] = useState('')
+    const [catalogReloadKey, setCatalogReloadKey] = useState(0)
 
     const formato = FORMATOS[formatoId]
+    const bookingUrl = `${appUrl()}${business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`}`
+
+    useEffect(() => {
+        if (!business?.id || dateInitialized.current === business.id) return
+        dateInitialized.current = business.id
+        setFecha(formatDateLocal(nowInTimezone(business.timezone || undefined)))
+    }, [business?.id, business?.timezone])
+
+    useEffect(() => {
+        if (!business?.id || !supabase) return
+        let active = true
+        setError('')
+        Promise.all([
+            loadBusinessServices(supabase, business.id, { activeOnly: true }),
+            supabase.from('team_members').select('id, name').eq('business_id', business.id).eq('active', true),
+        ]).then(([catalog, team]) => {
+            if (!active) return
+            setServices(catalog)
+            if (team.error) throw team.error
+            setMembers(team.data || [])
+        }).catch(() => { if (active) setError('No pudimos cargar el catálogo o el equipo.') })
+        return () => { active = false }
+    }, [business?.id, catalogReloadKey])
 
     // ── Traer los turnos del día y derivar la grilla ──
     const cargar = useCallback(async () => {
-        if (!supabase || !business?.id) return
+        if (!supabase || !business?.id || !services.length) return
         setCargando(true)
         setError('')
         try {
-            const { data, error: err } = await supabase
+            const [bookings, closures, absences] = await Promise.all([
+                supabase
                 .from('appointments')
                 .select('id, time, duration, team_member_id, status')
                 .eq('business_id', business.id)
                 .eq('date', fecha)
-                .not('status', 'in', '("cancelled","no_show")')
+                .not('status', 'in', '("cancelled","no_show")'),
+                supabase.from('business_closures').select('date').eq('business_id', business.id).eq('date', fecha),
+                supabase.from('team_absences').select('team_member_id, start_date, end_date')
+                    .eq('business_id', business.id).lte('start_date', fecha).gte('end_date', fecha),
+            ])
 
             // Nunca derivar disponibilidad de un select que puede volver vacío
             // por permisos: sin esto, un error de RLS se publicaría como
             // "tengo todo el día libre".
-            if (err) throw err
+            if (bookings.error || closures.error || absences.error) throw bookings.error || closures.error || absences.error
 
-            const ocupados = toOccupiedRanges(data || [])
-            const slots = generateAvailableSlots({
+            const closed = !isWorkDay(business.settings, fecha) || closures.data?.length ||
+                business.settings?.closed_dates?.some(c => c.date === fecha)
+            const absentIds = new Set((absences.data || []).map(a => a.team_member_id))
+            const availableTeam = members.filter(m => !absentIds.has(m.id))
+            const noCapacity = members.length > 0 && availableTeam.length === 0
+            // El horario del local se calcula con el servicio más corto que
+            // efectivamente puede reservarse. La elección final la hace el
+            // cliente y la API vuelve a validar duración y ocupación.
+            const shortestDuration = Math.min(...services.map(s => s.duration))
+            const now = nowInTimezone(business.timezone || undefined)
+
+            const ocupados = toOccupiedRanges(bookings.data || [])
+            const slots = closed || noCapacity ? [] : generateAvailableSlots({
                 settings: business.settings,
-                duration: parseInt(business.settings?.slot_duration, 10) || DEFAULT_DURATION,
+                duration: shortestDuration,
                 occupied: ocupados,
+                capacity: Math.max(1, availableTeam.length),
                 date: fecha,
-                includeOccupied: true,
-                // Para un día futuro no aplica la antelación mínima de hoy.
-                enforceMinAdvance: fecha === formatDateLocal(new Date()),
+                includeOccupied: false,
+                now,
+                enforceMinAdvance: true,
             })
-            setHorarios(slots)
+            setHorarios(slots.slice(0, 12).map(time => ({ time, available: true })))
+            setUpdatedAt(new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }))
         } catch (e) {
             console.error('Flyer: error al cargar turnos', e)
             setError('No se pudieron leer los turnos del día. Probá de nuevo.')
             setHorarios([])
         }
         setCargando(false)
-    }, [business?.id, business?.settings, fecha])
+    }, [business?.id, business?.settings, business?.timezone, fecha, services, members])
 
     useEffect(() => { cargar() }, [cargar])
 
@@ -92,17 +140,22 @@ export default function FlyerGenerator() {
             canvas.width = formato.ancho
             canvas.height = formato.alto
             const ctx = canvas.getContext('2d')
-            const tema = resolverTema(business?.settings?.theme)
+            // Si la barbería no eligió una marca propia, el flyer arranca
+            // con una paleta enérgica; las demás categorías y los temas
+            // elegidos por el dueño conservan sus colores.
+            const tema = business?.business_type === 'barberia' && !business?.settings?.theme
+                ? { primario: '#FA4B20', secundario: '#3122A5' }
+                : resolverTema(business?.settings?.theme)
             const { claro } = derivarPaleta(tema.primario, tema.secundario)
-
-            const base = appUrl().replace(/^https?:\/\/(www\.)?/, '')
-            const ruta = business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`
 
             dibujarFlyer(ctx, {
                 nombreNegocio: business?.name || 'Mi negocio',
                 fechaTexto: formatDateEs(fecha, { weekday: 'long', day: 'numeric', month: 'long' }),
                 horarios,
-                enlace: `${base}${ruta}`,
+                enlace: bookingUrl,
+                esHoy: fecha === formatDateLocal(nowInTimezone(business?.timezone || undefined)),
+                actualizado: updatedAt,
+                qrCanvas: qrRef.current,
                 colorPrimario: claro['--pink'],
                 colorSecundario: claro['--violet'],
             }, formato, leerFuentes())
@@ -112,7 +165,7 @@ export default function FlyerGenerator() {
         // flyer sale con otra tipografía que la app.
         if (document.fonts?.ready) document.fonts.ready.then(pintar)
         else pintar()
-    }, [horarios, formato, business, fecha, error])
+    }, [horarios, formato, business, fecha, error, bookingUrl, updatedAt])
 
     const nombreArchivo = () =>
         `turnos-${(business?.slug || 'glowup')}-${fecha}-${formatoId}.png`
@@ -156,7 +209,7 @@ export default function FlyerGenerator() {
                         type="date"
                         className="input"
                         value={fecha}
-                        min={formatDateLocal(new Date())}
+                        min={formatDateLocal(nowInTimezone(business?.timezone || undefined))}
                         onChange={(e) => setFecha(e.target.value)}
                     />
                 </div>
@@ -182,7 +235,7 @@ export default function FlyerGenerator() {
             {error ? (
                 <div className={styles.aviso}>
                     <p>{error}</p>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={cargar}>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => services.length ? cargar() : setCatalogReloadKey(key => key + 1)}>
                         <RefreshCw size={14} /> Reintentar
                     </button>
                 </div>
@@ -192,35 +245,29 @@ export default function FlyerGenerator() {
                         {cargando
                             ? 'Leyendo la agenda…'
                             : horarios.length === 0
-                                ? 'Ese día el negocio no atiende.'
-                                : <><strong>{libres}</strong> {libres === 1 ? 'turno libre' : 'turnos libres'} de {horarios.length}</>}
+                                ? services.length ? 'No quedan horarios libres para este día.' : 'Cargá al menos un servicio activo para generar el flyer.'
+                                : <><strong>{libres}</strong> {libres === 1 ? 'horario libre' : 'horarios libres'} para mostrar</>}
                     </p>
 
                     <div className={styles.vistaPrevia}>
                         <canvas ref={canvasRef} className={styles.canvas} aria-label="Vista previa del flyer" />
                     </div>
+                    <p className={styles.resumen}>Horarios del local para el servicio activo más corto. La disponibilidad se verificó a las {updatedAt || '—'}; actualizá antes de compartir. En historias, agregá el sticker de enlace para que se pueda reservar tocándolo.</p>
+                    <div className={styles.acciones}>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={cargar} disabled={cargando}><RefreshCw size={15} /> Actualizar horarios</button>
+                    </div>
 
                     <div className={styles.acciones}>
-                        <button type="button" className="btn btn-primary" onClick={descargar} disabled={cargando}>
+                        <button type="button" className="btn btn-primary" onClick={descargar} disabled={cargando || !libres}>
                             <Download size={15} /> Descargar
                         </button>
-                        <button type="button" className="btn btn-secondary" onClick={compartir} disabled={cargando}>
+                        <button type="button" className="btn btn-secondary" onClick={compartir} disabled={cargando || !libres}>
                             <Share2 size={15} /> Compartir
                         </button>
                     </div>
                 </>
             )}
+            <div className={styles.qrHidden} aria-hidden="true"><QRCodeCanvas value={bookingUrl} size={180} ref={qrRef} /></div>
         </div>
     )
 }
-
-/*
- * Pendiente (WIP):
- *  - QR al link de reserva, para la historia de Instagram donde no hay enlace
- *    clickeable salvo que tengas el sticker.
- *  - Logo del negocio arriba, cuando tenga uno cargado.
- *  - Filtrar por profesional: en un negocio con varios, "turnos libres" hoy
- *    mezcla la disponibilidad de todos.
- *  - Un par de variantes de diseño para que no publiquen siempre la misma
- *    imagen.
- */
