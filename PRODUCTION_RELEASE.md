@@ -5,6 +5,34 @@ Esta rama incluye la búsqueda guiada, el nuevo flyer del negocio, correo como
 local no modifica el esquema de Supabase: las migraciones deben ejecutarse antes
 del despliegue del código.
 
+## Estado verificado el 21/09/2026
+
+Las seis migraciones de abajo ya se aplicaron al proyecto Supabase vinculado
+`ubbaybpyuenhhzwpysdb`. `migration-verify.sql` pasó todos sus controles.
+También se probó con un usuario autenticado que no puede cambiar campos de
+facturación, mientras que sí puede guardar ajustes normales. La función de
+reserva quedó ejecutable solo por `service_role`. Una reserva de prueba y dos
+reservas con profesional de licencia se ensayaron dentro de transacciones
+revertidas.
+
+La rama pasa 239 pruebas, ESLint sin errores y `next build`. La búsqueda guiada
+respondió con servicios y turnos reales desde la base. Resend aceptó un mensaje
+de prueba usando la clave configurada en Vercel para producción. El token de
+Mercado Pago configurado en Vercel respondió correctamente a `/users/me`.
+
+**Pendiente antes de declarar listo el cobro real:** completar el flujo de
+suscripción y primer pago con comprador y tarjeta de prueba, verificar el
+webhook firmado y los reintentos, el cambio de plan y su cancelación. La
+existencia del token y las pruebas unitarias no comprueban ese recorrido. Aún
+no se desplegó esta rama.
+
+El asesor de seguridad de Supabase todavía informa advertencias conocidas:
+`public_busy_slots` se ejecuta con permisos de la vista para exponer únicamente
+ocupación sin datos de clientes; `accept_invite` requiere sesión y un token de
+invitación de un solo uso; `btree_gist` y `pg_trgm` están en `public`, cuyo
+permiso `CREATE` está cerrado a los roles web. Sigue pendiente activar en Auth
+la protección contra contraseñas filtradas.
+
 ## Orden de base de datos
 
 1. Comprobar si existen `businesses.plan_id`, `plan_status`,
@@ -19,6 +47,10 @@ del despliegue del código.
    bloquea la edición de campos de facturación desde cuentas del navegador.
 4. Ejecutar `migration-waitlist-email-only.sql` para permitir que la lista de
    espera guarde email sin teléfono.
+5. Ejecutar `migration-function-permissions.sql` para cerrar funciones internas
+   heredadas y dejar la aceptación de invitaciones solo a usuarios autenticados.
+6. Ejecutar `migration-close-public-schema.sql` para habilitar RLS en tablas
+   heredadas, quitar la vista de equipo obsoleta y fijar los `search_path`.
 
 Comprobaciones SQL tras las migraciones:
 
@@ -42,6 +74,10 @@ SELECT is_nullable FROM information_schema.columns
 La prueba de permisos importante es intentar, con JWT de un dueño de prueba,
 actualizar `plan_expires_at` por PostgREST y confirmar que falla. Un cambio
 normal de `settings` debe seguir funcionando.
+
+También comprobar que `anon` y `authenticated` no pueden ejecutar
+`book_appointment`; las reservas públicas deben entrar exclusivamente por
+`POST /api/appointments`, que valida servicio, precio, jornada y plan.
 
 ## Variables y pruebas externas
 

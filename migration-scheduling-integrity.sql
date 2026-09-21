@@ -124,6 +124,7 @@ DECLARE
   v_end INTEGER;
   v_buffer INTEGER := 0;
   v_capacity INTEGER;
+  v_team_size INTEGER;
   v_overlaps INTEGER;
   v_probe int4range;
   v_appointment_id UUID;
@@ -154,6 +155,14 @@ BEGIN
   -- a) El profesional pedido ya tiene algo encima.
   IF p_team_member_id IS NOT NULL THEN
     IF EXISTS (
+      SELECT 1 FROM team_absences
+      WHERE business_id = p_business_id
+        AND team_member_id = p_team_member_id
+        AND start_date <= p_date AND end_date >= p_date
+    ) THEN
+      RAISE EXCEPTION 'SLOT_CONFLICT: El profesional no trabaja ese dia';
+    END IF;
+    IF EXISTS (
       SELECT 1 FROM appointments
       WHERE business_id = p_business_id
         AND "date" = p_date
@@ -167,8 +176,20 @@ BEGIN
 
   -- b) Capacidad del negocio. Sin equipo cargado se atiende de a uno, así que
   --    cualquier superposición lo llena.
-  SELECT greatest(1, count(*)::int) INTO v_capacity
+  SELECT count(*)::int,
+         count(*) FILTER (WHERE NOT EXISTS (
+           SELECT 1 FROM team_absences a
+           WHERE a.business_id = p_business_id
+             AND a.team_member_id = team_members.id
+             AND a.start_date <= p_date AND a.end_date >= p_date
+         ))::int
+    INTO v_team_size, v_capacity
     FROM team_members WHERE business_id = p_business_id AND active = true;
+  IF v_team_size = 0 THEN
+    v_capacity := 1;
+  ELSIF v_capacity = 0 THEN
+    RAISE EXCEPTION 'SLOT_CONFLICT: No hay profesionales disponibles ese dia';
+  END IF;
 
   SELECT count(*)::int INTO v_overlaps
     FROM appointments
@@ -188,6 +209,14 @@ BEGIN
   RETURN v_appointment_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+-- SECURITY DEFINER no puede quedar disponible desde la anon key: de lo
+-- contrario se saltea la validación de servicio, precio, jornada y plan que
+-- realiza POST /api/appointments. Solo el backend con service role reserva.
+REVOKE ALL ON FUNCTION public.book_appointment(UUID, UUID, UUID, TEXT, DATE, TIME, INTEGER, NUMERIC, TEXT)
+  FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.book_appointment(UUID, UUID, UUID, TEXT, DATE, TIME, INTEGER, NUMERIC, TEXT)
+  TO service_role;
 
 
 -- ──────────────────────────────────────────

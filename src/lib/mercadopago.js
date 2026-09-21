@@ -1,6 +1,12 @@
 // Helper de integración con Mercado Pago para Suscripciones SaaS B2B de TurnosPro
 import { appUrl as getAppUrl } from '@/lib/app-url'
 
+function mercadoPagoAccessToken() {
+    // Hosting dashboards and CLIs may preserve a trailing newline when a
+    // secret is loaded through stdin. It must not reach Authorization.
+    return (process.env.MERCADOPAGO_ACCESS_TOKEN || '').replace(/\\r|\\n/g, '').trim()
+}
+
 export const PLANS = {
     pro: {
         id: 'pro',
@@ -77,7 +83,7 @@ export const PLANS = {
  * Crea una preferencia de Checkout Pro en Mercado Pago para la suscripción de un negocio.
  */
 export async function createPlanPreference({ business, planId, userEmail }) {
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    const accessToken = mercadoPagoAccessToken()
     const plan = PLANS[planId]
 
     if (!plan || planId === 'custom') {
@@ -180,7 +186,7 @@ export async function createPlanSubscription({ business, planId, userEmail }) {
         throw new Error('Falta el email del titular de la suscripción')
     }
 
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    const accessToken = mercadoPagoAccessToken()
     const appUrl = getAppUrl()
 
     // Sin token no se puede cobrar. En desarrollo devolvemos un link simulado
@@ -233,7 +239,7 @@ export async function createPlanSubscription({ business, planId, userEmail }) {
 
 /** Consulta el estado de una suscripción. */
 export async function getSubscription(preapprovalId) {
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    const accessToken = mercadoPagoAccessToken()
     if (!accessToken) throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado')
 
     const res = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
@@ -248,7 +254,7 @@ export async function getSubscription(preapprovalId) {
  * los días que ya pagó los conserva, así que NO se le corta el servicio acá.
  */
 export async function cancelSubscription(preapprovalId) {
-    const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+    const accessToken = mercadoPagoAccessToken()
     if (!accessToken) throw new Error('MERCADOPAGO_ACCESS_TOKEN no configurado')
 
     const res = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {

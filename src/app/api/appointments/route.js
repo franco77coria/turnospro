@@ -249,75 +249,36 @@ export async function POST(request) {
         duration = validacion.duration
         service_name = validacion.serviceName
 
-        // 5. Atomic booking RPC (race-condition safe) — with fallback to insert.
-        try {
-            const { data: appointmentId, error: rpcError } = await supabase.rpc('book_appointment', {
-                p_business_id: business_id,
-                p_client_id: client_id || null,
-                p_team_member_id: team_member_id || null,
-                p_service_name: service_name,
-                p_date: date,
-                p_time: time,
-                p_duration: duration || 30,
-                p_price: price || 0,
-                p_notes: notes || null,
-            })
+        // 5. Atomic booking RPC (race-condition safe). This is mandatory:
+        // falling back to a direct insert reintroduces the race the RPC fixes.
+        const { data: appointmentId, error: rpcError } = await supabase.rpc('book_appointment', {
+            p_business_id: business_id,
+            p_client_id: client_id || null,
+            p_team_member_id: team_member_id || null,
+            p_service_name: service_name,
+            p_date: date,
+            p_time: time,
+            p_duration: duration || 30,
+            p_price: price || 0,
+            p_notes: notes || null,
+        })
 
-            if (rpcError) {
-                if (rpcError.message?.includes('SLOT_CONFLICT') || rpcError.code === '23P01') {
-                    return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
-                }
-                throw rpcError
+        if (rpcError) {
+            if (rpcError.message?.includes('SLOT_CONFLICT') || rpcError.code === '23P01') {
+                return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
             }
-
-            notifyPush(supabase, business_id, client_id, service_name, date, time)
-            notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
-            await sendBookingSideEffects(supabase, {
-                appointmentId, business_id, client_id, team_member_id,
-                service_name, date, time, duration, send_emails, coupon_id,
-                guest_name, guest_email, guest_phone, user_email: user?.email,
-            })
-
-            return NextResponse.json({ success: true, appointmentId })
-        } catch (rpcErr) {
-            if (rpcErr.message?.includes('function') && rpcErr.message?.includes('does not exist')) {
-                const { data: created, error: insertErr } = await supabase
-                    .from('appointments')
-                    .insert([{
-                        business_id,
-                        client_id: client_id || null,
-                        team_member_id: team_member_id || null,
-                        service_name,
-                        date,
-                        time,
-                        duration: duration || 30,
-                        price: price || 0,
-                        notes: notes || null,
-                        status: 'pending',
-                    }])
-                    .select('id')
-                    .single()
-
-                if (insertErr) {
-                    // 23505 = índice único, 23P01 = constraint de exclusión por superposición
-                    if (insertErr.code === '23505' || insertErr.code === '23P01') {
-                        return NextResponse.json({ error: 'El horario ya está ocupado. Elegí otro.' }, { status: 409 })
-                    }
-                    throw insertErr
-                }
-
-                notifyPush(supabase, business_id, client_id, service_name, date, time)
-                notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
-                await sendBookingSideEffects(supabase, {
-                    appointmentId: created.id, business_id, client_id, team_member_id,
-                    service_name, date, time, duration, send_emails, coupon_id,
-                    guest_name, guest_email, guest_phone, user_email: user?.email,
-                })
-
-                return NextResponse.json({ success: true, appointmentId: created.id })
-            }
-            throw rpcErr
+            throw rpcError
         }
+
+        notifyPush(supabase, business_id, client_id, service_name, date, time)
+        notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)
+        await sendBookingSideEffects(supabase, {
+            appointmentId, business_id, client_id, team_member_id,
+            service_name, date, time, duration, send_emails, coupon_id,
+            guest_name, guest_email, guest_phone, user_email: user?.email,
+        })
+
+        return NextResponse.json({ success: true, appointmentId })
     } catch (err) {
         console.error('Booking API error:', err)
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
