@@ -95,7 +95,7 @@ export function dibujarFlyer(ctx, datos, formato, fuentes) {
     const { ancho: W, alto: H } = formato
     const {
         nombreNegocio = 'Mi negocio', fechaTexto = '', horarios = [], enlace = '',
-        esHoy = true, actualizado = '', qrCanvas,
+        esHoy = true, actualizado = '', qrCanvas, coverImage,
         colorPrimario = '#FF2E8E', colorSecundario = '#6E2BFF',
     } = datos
     const libre = horarios.filter(h => h.available).slice(0, 12)
@@ -110,6 +110,23 @@ export function dibujarFlyer(ctx, datos, formato, fuentes) {
     bg.addColorStop(1, mezclar(colorSecundario, '#1A1022', 0.52))
     ctx.fillStyle = bg
     ctx.fillRect(0, 0, W, H)
+    if (coverImage) {
+        const scale = Math.max(W / coverImage.width, H / coverImage.height)
+        const sourceWidth = W / scale
+        const sourceHeight = H / scale
+        ctx.save()
+        ctx.globalAlpha = 0.23
+        ctx.filter = 'blur(32px)'
+        ctx.drawImage(
+            coverImage,
+            (coverImage.width - sourceWidth) / 2,
+            (coverImage.height - sourceHeight) / 2,
+            sourceWidth,
+            sourceHeight,
+            -35, -35, W + 70, H + 70,
+        )
+        ctx.restore()
+    }
     ctx.fillStyle = 'rgba(255,255,255,.08)'
     ctx.beginPath()
     ctx.arc(W * .93, H * .08, 360, 0, Math.PI * 2)

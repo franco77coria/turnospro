@@ -141,11 +141,12 @@ export function buildWhatsAppLink(phone, message = '') {
     if (digits.length < 8) return null
 
     let international
-    if (raw.startsWith('+')) {
-        international = digits
-    } else if (digits.startsWith('54')) {
-        // 54 sin el 9 de celular no sirve para WhatsApp.
+    if (digits.startsWith('54')) {
+        // El formulario guarda Argentina como +54 11…, pero WhatsApp necesita
+        // el 9 de celular entre el país y el código de área.
         international = digits.startsWith('549') ? digits : `549${digits.slice(2)}`
+    } else if (raw.startsWith('+')) {
+        international = digits
     } else if (digits.length === 10) {
         international = `549${digits}`
     } else {

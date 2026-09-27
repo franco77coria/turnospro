@@ -34,6 +34,24 @@ function leerFuentes() {
     return { display: `${display}, sans-serif`, cuerpo: `${cuerpo}, sans-serif` }
 }
 
+function cargarPortada(url) {
+    if (!url) return Promise.resolve(null)
+    return new Promise(resolve => {
+        const image = new window.Image()
+        const timeout = window.setTimeout(() => resolve(null), 7000)
+        image.crossOrigin = 'anonymous'
+        image.onload = () => {
+            window.clearTimeout(timeout)
+            resolve(image)
+        }
+        image.onerror = () => {
+            window.clearTimeout(timeout)
+            resolve(null)
+        }
+        image.src = url
+    })
+}
+
 export default function FlyerGenerator() {
     const { business } = useAuth()
     const canvasRef = useRef(null)
@@ -48,6 +66,7 @@ export default function FlyerGenerator() {
     const [members, setMembers] = useState([])
     const [updatedAt, setUpdatedAt] = useState('')
     const [catalogReloadKey, setCatalogReloadKey] = useState(0)
+    const [previewReady, setPreviewReady] = useState(false)
 
     const formato = FORMATOS[formatoId]
     const bookingUrl = `${appUrl()}${business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`}`
@@ -135,8 +154,11 @@ export default function FlyerGenerator() {
     useEffect(() => {
         const canvas = canvasRef.current
         if (!canvas || error) return
+        let active = true
+        setPreviewReady(false)
 
-        const pintar = () => {
+        const pintar = (coverImage) => {
+            if (!active) return
             canvas.width = formato.ancho
             canvas.height = formato.alto
             const ctx = canvas.getContext('2d')
@@ -158,13 +180,16 @@ export default function FlyerGenerator() {
                 qrCanvas: qrRef.current,
                 colorPrimario: claro['--pink'],
                 colorSecundario: claro['--violet'],
+                coverImage,
             }, formato, leerFuentes())
+            setPreviewReady(true)
         }
 
-        // Sin esperar a las fuentes, el canvas dibuja con la de respaldo y el
-        // flyer sale con otra tipografía que la app.
-        if (document.fonts?.ready) document.fonts.ready.then(pintar)
-        else pintar()
+        // Esperar la tipografía y la foto evita exportar una versión distinta
+        // de la vista previa. Si la imagen no admite CORS, queda el celular ilustrado.
+        Promise.all([document.fonts?.ready || Promise.resolve(), cargarPortada(business?.cover_image_url)])
+            .then(([, coverImage]) => pintar(coverImage))
+        return () => { active = false }
     }, [horarios, formato, business, fecha, error, bookingUrl, updatedAt])
 
     const nombreArchivo = () =>
@@ -258,10 +283,10 @@ export default function FlyerGenerator() {
                     </div>
 
                     <div className={styles.acciones}>
-                        <button type="button" className="btn btn-primary" onClick={descargar} disabled={cargando || !libres}>
+                        <button type="button" className="btn btn-primary" onClick={descargar} disabled={cargando || !libres || !previewReady}>
                             <Download size={15} /> Descargar
                         </button>
-                        <button type="button" className="btn btn-secondary" onClick={compartir} disabled={cargando || !libres}>
+                        <button type="button" className="btn btn-secondary" onClick={compartir} disabled={cargando || !libres || !previewReady}>
                             <Share2 size={15} /> Compartir
                         </button>
                     </div>

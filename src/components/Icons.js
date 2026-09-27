@@ -32,6 +32,7 @@ export const Icons = {
   Star:      (p) => <Icon size={p?.size} {...p}><path d="m12 2 3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.27 5.82 22 7 14.14l-5-4.87 6.91-1.01z" fill={p?.solid ? 'currentColor' : 'none'}/></Icon>,
   Clock:     (p) => <Icon size={p?.size} {...p}><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></Icon>,
   Calendar:  (p) => <Icon size={p?.size} {...p}><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></Icon>,
+  Image:     (p) => <Icon size={p?.size} {...p}><rect x="2" y="3" width="20" height="18" rx="3"/><circle cx="8" cy="9" r="2"/><path d="m2 17 5-5 4 4 4-5 7 7"/></Icon>,
   ArrowRight:(p) => <Icon size={p?.size} {...p}><path d="M5 12h14M13 5l7 7-7 7"/></Icon>,
   ArrowLeft: (p) => <Icon size={p?.size} {...p}><path d="M19 12H5M11 19l-7-7 7-7"/></Icon>,
   Check:     (p) => <Icon size={p?.size} stroke={p?.stroke || 3} {...p}><path d="M20 6 9 17l-5-5"/></Icon>,
