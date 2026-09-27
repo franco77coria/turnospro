@@ -3,7 +3,18 @@
 .dato { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-tertiary); text-decoration: none; }
 a.dato:hover { color: var(--accent); }
 .email { max-width: 22ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sinEmail { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
-.botonEmail { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border-radius: var(--r-xs); background: var(--accent-light); color: var(--pink-ink); text-decoration: none; font-size: 12px; font-weight: 700; }
-.botonEmail:hover, .botonEmail:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-@media (max-width: 640px) { .etiqueta { display: none; } }
+.acciones { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.sinContacto { font-size: 11px; color: var(--text-tertiary); font-style: italic; }
+.botonWhatsApp,
+.botonEmail { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 7px 10px; border-radius: var(--r-xs); text-decoration: none; font-size: 12px; font-weight: 700; }
+.botonWhatsApp { background: #e8f9ef; color: #137333; }
+.botonEmail { background: var(--accent-light); color: var(--pink-ink); }
+.botonWhatsApp:hover,
+.botonWhatsApp:focus-visible { outline: 2px solid #25d366; outline-offset: 2px; }
+.botonEmail:hover,
+.botonEmail:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) {
+    .botonWhatsApp,
+    .botonEmail { min-width: 40px; justify-content: center; }
+    .etiqueta { display: none; }
+}

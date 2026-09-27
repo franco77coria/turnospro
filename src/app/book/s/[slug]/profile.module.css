@@ -104,6 +104,38 @@
     text-wrap: pretty;
 }
 
+.description {
+    margin: var(--space-5) 0 0;
+    padding-left: var(--space-4);
+    border-left: 2px solid var(--pink);
+    max-width: 62ch;
+}
+
+.description summary { cursor: pointer; list-style: none; }
+.description summary::-webkit-details-marker { display: none; }
+.descriptionText {
+    display: block;
+    color: var(--ink);
+    font-size: clamp(17px, 2.4vw, 21px);
+    line-height: 1.5;
+    white-space: pre-line;
+}
+.description:not([open]) .descriptionText {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
+}
+.readMore, .readLess {
+    display: inline-block;
+    margin-top: 8px;
+    color: var(--pink-ink);
+    font-size: var(--font-size-sm);
+    font-weight: 700;
+}
+.readLess, .description[open] .readMore { display: none; }
+.description[open] .readLess { display: inline-block; }
+
 .status {
     display: flex;
     align-items: center;

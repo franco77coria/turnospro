@@ -103,6 +103,10 @@ describe('business-profile', () => {
             expect(buildWhatsAppLink('+54 9 11 6872-7107')).toBe('https://wa.me/5491168727107')
         })
 
+        it('agrega el 9 móvil al formato argentino que guarda el formulario', () => {
+            expect(buildWhatsAppLink('+54 11 6872-7107')).toBe('https://wa.me/5491168727107')
+        })
+
         it('agrega el 9 que WhatsApp necesita si falta', () => {
             expect(buildWhatsAppLink('541168727107')).toBe('https://wa.me/5491168727107')
         })

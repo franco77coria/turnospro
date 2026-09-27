@@ -227,11 +227,17 @@ export default async function BusinessProfilePage({ params }) {
                             {business.address && <> en {business.address}</>}
                         </p>
 
-                        {settings.description && (
-                            <blockquote className={styles.quote}>
-                                {settings.description}
-                            </blockquote>
-                        )}
+                        {settings.description && (settings.description.length > 200 ? (
+                            <details className={styles.description}>
+                                <summary>
+                                    <span className={styles.descriptionText}>{settings.description}</span>
+                                    <span className={styles.readMore}>Leer más</span>
+                                    <span className={styles.readLess}>Leer menos</span>
+                                </summary>
+                            </details>
+                        ) : (
+                            <blockquote className={styles.quote}>{settings.description}</blockquote>
+                        ))}
 
                         {/* Estado real, no una tabla que hay que interpretar */}
                         {(status || availability?.nextSlot || cheapest !== null) && (

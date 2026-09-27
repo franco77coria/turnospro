@@ -7,6 +7,7 @@ import { Icons } from '@/components/Icons';
 import Reveal, { useReveal } from '@/components/Reveal';
 import Marquee from '@/components/Marquee';
 import DarkModeToggle from '@/components/DarkModeToggle';
+import FlyerShowcase from '@/components/FlyerShowcase';
 
 const CATEGORIES = [
   { key: 'barberia', name: 'Barbería', desc: 'Cortes, barba, color', icon: 'Scissors', tint: 'pink' },
@@ -20,12 +21,12 @@ const CATEGORIES = [
 ];
 
 const FEATURES = [
+  { icon: 'Image', title: 'Flyer de horarios libres', desc: 'Publicá los turnos del día con tu marca, tu portada y un QR para reservar.' },
   { icon: 'Calendar', title: 'Agenda inteligente',  desc: 'Vista día, semana y mes. Reagendá arrastrando.' },
   { icon: 'Bell',     title: 'Recordatorios auto',  desc: 'Por email, sin que toques un botón.' },
   { icon: 'Wallet',   title: 'Caja & finanzas',     desc: 'Ingresos, gastos, cierre y comisiones.' },
   { icon: 'Users',    title: 'Equipo & roles',      desc: 'Permisos finos para cada persona.' },
   { icon: 'Palette',  title: 'Tu marca, tu portal', desc: 'Slug propio, logo, colores. Sin sentirse template.' },
-  { icon: 'Shield',   title: 'Sin tarifa por turno', desc: 'Pagás el plan, sin comisiones por reserva.' },
 ];
 
 const MARQUEE_ITEMS = [
@@ -35,6 +36,7 @@ const MARQUEE_ITEMS = [
   'Peluquería',
   'Spa',
   'Veterinaria',
+  'Consultorio',
   'Estética',
   'Tu rubro'
 ];
@@ -93,7 +95,7 @@ export default function Landing() {
               turno se siente <span className="gu-italic">brillante.</span>
             </Reveal>
             <Reveal as="p" delay={160}>
-              Encontrá <span style={{ color: 'var(--ink)', fontWeight: 600 }}>barberías, peluquerías, spa, lash, uñas y mucho más</span> cerca tuyo. Mirá disponibilidad en tiempo real y reservá sin llamar a nadie.
+              Encontrá <span style={{ color: 'var(--ink)', fontWeight: 600 }}>barberías, veterinarias, consultorios y espacios de belleza</span> cerca tuyo. Mirá disponibilidad en tiempo real y reservá sin llamar a nadie.
             </Reveal>
             <Reveal as="div" delay={240} className="gu-hero-actions">
               <Link href="/explore" className="gu-btn gu-btn-pink gu-btn-lg">
@@ -138,34 +140,34 @@ export default function Landing() {
                     Para vos
                   </div>
                   <div className="gu-phone-title">
-                    Hola Sofi,<br/>
-                    <em>brillá hoy</em>
+                    Encontrá tu<br/>
+                    <em>turno hoy</em>
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
                   <div className="gu-phone-card">
-                    <div className="gu-phone-thumb t1">N</div>
+                    <div className="gu-phone-thumb t1">B</div>
                     <div className="gu-phone-info">
-                      <span className="gu-phone-name">Nina Studio</span>
-                      <span className="gu-phone-meta"><Icons.Star size={10} solid/> 4.9 · Palermo</span>
+                      <span className="gu-phone-name">Barbería</span>
+                      <span className="gu-phone-meta">Corte y barba</span>
                     </div>
                     <span className="gu-phone-pill">Hoy 18:30</span>
                   </div>
                   <div className="gu-phone-card">
-                    <div className="gu-phone-thumb t2">L</div>
+                    <div className="gu-phone-thumb t2">V</div>
                     <div className="gu-phone-info">
-                      <span className="gu-phone-name">Loop Hair Lab</span>
-                      <span className="gu-phone-meta"><Icons.Star size={10} solid/> 4.8 · Villa Crespo</span>
+                      <span className="gu-phone-name">Veterinaria</span>
+                      <span className="gu-phone-meta">Consulta general</span>
                     </div>
-                    <span className="gu-phone-pill" style={{ background: 'var(--pink)' }}>Nuevo</span>
+                    <span className="gu-phone-pill" style={{ background: 'var(--pink)' }}>Mañana</span>
                   </div>
                   <div className="gu-phone-card">
-                    <div className="gu-phone-thumb t3">B</div>
+                    <div className="gu-phone-thumb t3">C</div>
                     <div className="gu-phone-info">
-                      <span className="gu-phone-name">Brisa Spa</span>
-                      <span className="gu-phone-meta"><Icons.Star size={10} solid/> 5.0 · Recoleta</span>
+                      <span className="gu-phone-name">Consultorio</span>
+                      <span className="gu-phone-meta">Kinesiología</span>
                     </div>
-                    <span className="gu-phone-pill" style={{ background: 'var(--mint)', color: 'var(--ink)' }}>−20%</span>
+                    <span className="gu-phone-pill" style={{ background: 'var(--mint)', color: 'var(--ink)' }}>Online</span>
                   </div>
                 </div>
               </div>
@@ -182,7 +184,7 @@ export default function Landing() {
         <div className="gu-container">
           <Reveal className="gu-section-head">
             <h2 className="gu-section-title">
-              ¿Qué se te <em>antoja</em><br/>
+              ¿Qué turno <em>necesitás</em><br/>
               hoy?
             </h2>
             <p className="gu-section-sub">
@@ -244,7 +246,7 @@ export default function Landing() {
             </Reveal>
             <Reveal className="gu-step" delay={240}>
               <div className="gu-step-num">03</div>
-              <h3>Brillá</h3>
+              <h3>Confirmá</h3>
               <p>Te llega un recordatorio por email. Llegás y disfrutás. Después dejás reseña si querés.</p>
             </Reveal>
           </div>
@@ -255,7 +257,7 @@ export default function Landing() {
       <section className="gu-section gu-biz" id="business">
         <div className="gu-container">
           <div className="gu-biz-grid">
-            <div>
+            <div className="gu-biz-intro">
               <Reveal>
                 <span className="gu-eyebrow">
                   <span className="dot" style={{ background: 'var(--pink)', boxShadow: '0 0 0 3px color-mix(in oklab, var(--pink) 30%, transparent)' }}></span> 
@@ -267,25 +269,10 @@ export default function Landing() {
                 <em>sin levantar el teléfono.</em>
               </Reveal>
               <Reveal as="p" className="gu-section-sub" delay={160} style={{ marginTop: 16, fontSize: 17, maxWidth: 480 }}>
-                Tus clientes reservan online 24/7, vos cobrás. Nosotros nos encargamos del resto. Sin tarjeta de crédito para empezar.
+                Mostrá los horarios que te quedan libres en un flyer listo para compartir. Tus clientes reservan online y vos seguís con tu día.
               </Reveal>
 
-              <Reveal as="div" delay={220} className="gu-feature-list">
-                {FEATURES.map((f) => {
-                  const IconC = Icons[f.icon] || Icons.Zap;
-                  return (
-                    <div key={f.title} className="gu-feature">
-                      <div className="gu-feature-icon"><IconC size={22}/></div>
-                      <div>
-                        <h4>{f.title}</h4>
-                        <p>{f.desc}</p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </Reveal>
-
-              <Reveal delay={360} style={{ marginTop: 32 }}>
+              <Reveal delay={220} style={{ marginTop: 28 }}>
                 <Link href={user ? "/dashboard" : "/register"} className="gu-btn gu-btn-primary gu-btn-lg">
                   {user ? "Ir a mi Dashboard" : "Crear mi negocio gratis"}
                   <Icons.ArrowRight size={18}/>
@@ -293,54 +280,23 @@ export default function Landing() {
               </Reveal>
             </div>
 
-            <Reveal delay={120}>
-              <div className="gu-dash-card">
-                <div className="gu-dash-head">
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--ink-mute)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 600 }}>
-                      Agenda · Hoy
+            <Reveal className="gu-biz-visual" delay={120}>
+              <FlyerShowcase />
+            </Reveal>
+
+            <Reveal as="div" delay={220} className="gu-feature-list gu-biz-features">
+              {FEATURES.map((f) => {
+                const IconC = Icons[f.icon] || Icons.Zap;
+                return (
+                  <div key={f.title} className="gu-feature">
+                    <div className="gu-feature-icon"><IconC size={22}/></div>
+                    <div>
+                      <h4>{f.title}</h4>
+                      <p>{f.desc}</p>
                     </div>
-                    <div className="gu-dash-title">Martes 19 de mayo</div>
                   </div>
-                  <button className="gu-btn gu-btn-pink gu-btn-sm" type="button">
-                    <Icons.Plus size={14}/> Nuevo
-                  </button>
-                </div>
-
-                <div className="gu-dash-day">
-                  {['L','M','M','J','V','S','D'].map((d, i) => (
-                    <div key={i} className={`gu-dash-dow ${i === 1 ? 'active' : ''}`}>
-                      {d}<span>{i+18}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="gu-dash-list">
-                  {[
-                    { time: '09:30', bar: '', name: 'María González', service: 'Color + brushing · 90 min' },
-                    { time: '11:00', bar: 'v', name: 'Julia Pérez',     service: 'Manicura semi · 45 min' },
-                    { time: '14:00', bar: 'y', name: 'Federico Rey',    service: 'Corte + barba · 50 min' },
-                    { time: '15:30', bar: 'm', name: 'Camila S.',       service: 'Lash lift · 60 min' },
-                  ].map((appt, i) => (
-                    <div key={i} className="gu-dash-item">
-                      <span className="gu-dash-time">{appt.time}</span>
-                      <span className={`gu-dash-bar ${appt.bar}`}></span>
-                      <div className="gu-dash-info">
-                        <b>{appt.name}</b>
-                        <small>{appt.service}</small>
-                      </div>
-                      <span className="gu-dash-status">
-                        <Icons.Check size={11} stroke={3}/>
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, padding: '12px 0 0', borderTop: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: 12, color: 'var(--ink-mute)' }}>Total del día</div>
-                  <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 18, letterSpacing: '-0.01em' }}>$ 78.500</div>
-                </div>
-              </div>
+                );
+              })}
             </Reveal>
           </div>
         </div>

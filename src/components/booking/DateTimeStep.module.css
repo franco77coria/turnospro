@@ -227,6 +227,34 @@
     gap: 16px;
 }
 
+.availableIntro {
+    margin: 0;
+    color: var(--ink);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.occupiedDetails {
+    border-top: 1px solid var(--line);
+    padding-top: 12px;
+}
+
+.occupiedDetails summary {
+    width: fit-content;
+    color: var(--ink-soft);
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.occupiedDetails summary:hover {
+    color: var(--pink);
+}
+
+.occupiedDetails .timeGrid {
+    margin-top: 12px;
+}
+
 .timeGroup {
     display: flex;
     flex-direction: column;
@@ -307,7 +335,6 @@
     border-color: color-mix(in oklab, var(--line) 80%, transparent);
     cursor: not-allowed;
     user-select: none;
-    pointer-events: none;
 }
 
 .timeOccupied .timeText {

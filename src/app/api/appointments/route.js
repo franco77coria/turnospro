@@ -143,7 +143,7 @@ export async function POST(request) {
             if (guest_email) {
                 const { data: foundByEmail } = await supabase
                     .from('clients')
-                    .select('id')
+                    .select('id, name, email, phone')
                     .eq('business_id', business_id)
                     .ilike('email', guest_email.trim())
                     .limit(1)
@@ -153,7 +153,7 @@ export async function POST(request) {
             if (!existingClient && guest_phone) {
                 const { data: foundByPhone } = await supabase
                     .from('clients')
-                    .select('id')
+                    .select('id, name, email, phone')
                     .eq('business_id', business_id)
                     .eq('phone', guest_phone.trim())
                     .limit(1)
@@ -163,6 +163,19 @@ export async function POST(request) {
 
             if (existingClient) {
                 client_id = existingClient.id
+                // Una reserva nueva también completa datos que faltaban en
+                // una ficha creada antes. Los datos existentes se conservan.
+                const missingContact = {
+                    ...(!existingClient.name && guest_name ? { name: guest_name.trim() } : {}),
+                    ...(!existingClient.email && guest_email ? { email: guest_email.trim() } : {}),
+                    ...(!existingClient.phone && guest_phone ? { phone: guest_phone.trim() } : {}),
+                }
+                if (Object.keys(missingContact).length > 0) {
+                    await supabase
+                        .from('clients')
+                        .update(missingContact)
+                        .eq('id', existingClient.id)
+                }
             } else {
                 // Registrar nuevo cliente en la base del negocio
                 const { data: newClient, error: createClientErr } = await supabase

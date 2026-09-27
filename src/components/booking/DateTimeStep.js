@@ -51,7 +51,7 @@ export default function DateTimeStep({
         if (selectedRef.current && scrollRef.current) {
             const container = scrollRef.current
             const el = selectedRef.current
-            const scrollLeft = el.offsetLeft - container.offsetWidth / 2 + el.offsetWidth / 2
+            const scrollLeft = container.scrollLeft + el.getBoundingClientRect().left - container.getBoundingClientRect().left - (container.clientWidth - el.clientWidth) / 2
             container.scrollTo({ left: scrollLeft, behavior: 'smooth' })
         }
     }, [selectedDate])
@@ -62,8 +62,10 @@ export default function DateTimeStep({
         }
     }
 
-    const groups = groupSlotsByPeriod(slots)
-    const hasAnyAvailable = slots.some(s => (typeof s === 'string' ? true : s.available))
+    const availableSlots = slots.filter(s => typeof s === 'string' || s.available)
+    const occupiedSlots = slots.filter(s => typeof s !== 'string' && !s.available)
+    const groups = groupSlotsByPeriod(availableSlots)
+    const hasAnyAvailable = availableSlots.length > 0
 
     // Parse selected date for display
     const selectedDateObj = selectedDate ? new Date(selectedDate + 'T12:00:00') : null
@@ -167,9 +169,10 @@ export default function DateTimeStep({
                                 </div>
                             )}
 
+                            {hasAnyAvailable && <p className={styles.availableIntro}>{availableSlots.length} {availableSlots.length === 1 ? 'horario libre' : 'horarios libres'} para elegir</p>}
                             {groups.map(group => {
                                 const Icon = group.icon
-                                const availableCount = group.slots.filter(s => (typeof s === 'string' ? true : s.available)).length
+                                const availableCount = group.slots.length
                                 return (
                                     <div key={group.id} className={styles.timeGroup}>
                                         <div className={styles.groupHeader}>
@@ -182,26 +185,20 @@ export default function DateTimeStep({
                                         <div className={styles.timeGrid}>
                                             {group.slots.map(slot => {
                                                 const timeStr = typeof slot === 'string' ? slot : slot.time
-                                                const isAvailable = typeof slot === 'string' ? true : slot.available
                                                 const isSelected = selectedTime === timeStr
 
                                                 return (
                                                     <button
                                                         key={timeStr}
                                                         type="button"
-                                                        disabled={!isAvailable}
                                                         className={`
                                                             ${styles.timeChip} 
                                                             ${isSelected ? styles.timeSelected : ''} 
-                                                            ${!isAvailable ? styles.timeOccupied : ''}
                                                         `}
-                                                        onClick={() => isAvailable && onSelectTime(timeStr)}
-                                                        title={!isAvailable ? `${timeStr} - No disponible (Ocupado)` : `Reservar a las ${timeStr}`}
+                                                        onClick={() => onSelectTime(timeStr)}
+                                                        title={`Reservar a las ${timeStr}`}
                                                     >
                                                         <span className={styles.timeText}>{timeStr}</span>
-                                                        {!isAvailable && (
-                                                            <span className={styles.occupiedLabel}>Ocupado</span>
-                                                        )}
                                                     </button>
                                                 )
                                             })}
@@ -209,6 +206,19 @@ export default function DateTimeStep({
                                     </div>
                                 )
                             })}
+                            {occupiedSlots.length > 0 && (
+                                <details key={selectedDate} className={styles.occupiedDetails}>
+                                    <summary>Ver {occupiedSlots.length} {occupiedSlots.length === 1 ? 'horario ocupado' : 'horarios ocupados'}</summary>
+                                    <div className={styles.timeGrid}>
+                                        {occupiedSlots.map(slot => (
+                                            <span key={slot.time} className={`${styles.timeChip} ${styles.timeOccupied}`} title={`${slot.time} - Ocupado`}>
+                                                <span className={styles.timeText}>{slot.time}</span>
+                                                <span className={styles.occupiedLabel}>Ocupado</span>
+                                            </span>
+                                        ))}
+                                    </div>
+                                </details>
+                            )}
                         </div>
                     )}
                 </div>
