@@ -2,7 +2,7 @@
 import { useAuth } from '@/context/AuthContext'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import { useState, useEffect } from 'react'
-import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download, UserX } from 'lucide-react'
+import { Save, Trash2, Plus, X, Calendar, Clock, Shield, Link2, Copy, Check, Download, UserX, MessageCircle, RotateCcw } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { todayLocal } from '@/lib/scheduling'
 import { QRCodeSVG } from 'qrcode.react'
@@ -15,6 +15,13 @@ import FeedbackTrigger from '@/components/FeedbackTrigger'
 import { SOCIAL_NETWORKS, serializeSocials } from '@/lib/socials'
 import { SocialMark } from '@/components/business/SocialLinks'
 import { appUrl } from '@/lib/app-url'
+import {
+    CLIENT_MESSAGE_TEMPLATE_MAX_LENGTH,
+    CLIENT_MESSAGE_TOKENS,
+    DEFAULT_CLIENT_MESSAGE_TEMPLATE,
+    mensajeParaCliente,
+} from '@/lib/client-contact'
+import styles from './settings.module.css'
 
 export default function SettingsPage() {
     return (
@@ -44,6 +51,7 @@ function SettingsContent() {
     const [saved, setSaved] = useState(false)
     const [error, setError] = useState('')
     const [copied, setCopied] = useState(false)
+    const [clientMessageTemplate, setClientMessageTemplate] = useState(DEFAULT_CLIENT_MESSAGE_TEMPLATE)
 
     // Work hours
     const [workHoursForm, setWorkHoursForm] = useState({
@@ -157,6 +165,7 @@ function SettingsContent() {
             setMaxAdvance(business.settings?.max_advance_days ?? 30)
             setClosedDates(business.settings?.closed_dates || [])
             setSocials(business.settings?.socials || {})
+            setClientMessageTemplate(business.settings?.client_message_template || DEFAULT_CLIENT_MESSAGE_TEMPLATE)
         }
     }, [business?.id, business?.name, business?.phone, business?.address, business?.business_type, business?.settings])
 
@@ -261,6 +270,7 @@ function SettingsContent() {
                     closed_dates: closedDates,
                     socials: cleanSocials,
                     theme: tema,
+                    client_message_template: clientMessageTemplate.trim() || DEFAULT_CLIENT_MESSAGE_TEMPLATE,
                 }
             })
             setSaved(true)
@@ -274,6 +284,13 @@ function SettingsContent() {
 
     const DAY_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
     const FULL_DAY_NAMES = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado']
+    const clientMessagePreview = mensajeParaCliente('confirmar', {
+        clientName: 'Lucas Fernández',
+        businessName: form.name || business?.name || 'tu negocio',
+        serviceName: 'Corte y barba',
+        date: '2026-10-08',
+        time: '18:30',
+    }, clientMessageTemplate)
 
     if (authLoading || !business?.id) {
         return (
@@ -603,6 +620,58 @@ function SettingsContent() {
 
                     {/* COLUMNA DERECHA: Políticas, Feriados y Cuenta */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                        <div className="card">
+                            <div className={styles.messageHeader}>
+                                <div>
+                                    <h3 className={styles.cardTitle}><MessageCircle size={18} /> Mensaje al cliente</h3>
+                                    <p className={styles.cardDescription}>
+                                        Se abre listo para enviar cuando tocás WhatsApp o Email desde un turno.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="btn btn-ghost btn-sm"
+                                    onClick={() => setClientMessageTemplate(DEFAULT_CLIENT_MESSAGE_TEMPLATE)}
+                                >
+                                    <RotateCcw size={13} /> Restablecer
+                                </button>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="label" htmlFor="client-message-template">Plantilla de confirmación</label>
+                                <textarea
+                                    id="client-message-template"
+                                    className={`input ${styles.messageTextarea}`}
+                                    rows={5}
+                                    maxLength={CLIENT_MESSAGE_TEMPLATE_MAX_LENGTH}
+                                    value={clientMessageTemplate}
+                                    onChange={e => setClientMessageTemplate(e.target.value)}
+                                />
+                                <div className={styles.messageMeta}>
+                                    <span>Variables disponibles</span>
+                                    <span>{clientMessageTemplate.length}/{CLIENT_MESSAGE_TEMPLATE_MAX_LENGTH}</span>
+                                </div>
+                                <div className={styles.tokenList}>
+                                    {CLIENT_MESSAGE_TOKENS.map(item => (
+                                        <button
+                                            key={item.token}
+                                            type="button"
+                                            className={styles.token}
+                                            title={`Insertar ${item.label.toLowerCase()}`}
+                                            onClick={() => setClientMessageTemplate(prev => `${prev}${prev && !prev.endsWith(' ') ? ' ' : ''}${item.token}`)}
+                                        >
+                                            {item.token}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className={styles.messagePreview}>
+                                <span>Así lo va a recibir el cliente</span>
+                                <p>{clientMessagePreview || 'Escribí un mensaje para ver la previsualización.'}</p>
+                            </div>
+                        </div>
+
                         {/* Booking Settings */}
                         <div className="card">
                             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>

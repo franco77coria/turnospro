@@ -344,7 +344,7 @@ function OwnerAppointmentsPage() {
                                                     {formatVisitsLabel(apt.clients.total_visits)}
                                                 </span>
                                             )}
-                                            <ClientContact appointment={apt} businessName={business?.name} />
+                                            <ClientContact appointment={apt} businessName={business?.name} messageTemplate={business?.settings?.client_message_template} />
                                         </div>
                                     </td>
                                     <td>{apt.service_name}</td>
@@ -377,7 +377,7 @@ function OwnerAppointmentsPage() {
                                 {apt.clients?.name || 'Cliente'}
                             </span>
                             <span className={styles.aptCardService}>{apt.service_name}</span>
-                            <ClientContact appointment={apt} businessName={business?.name} />
+                            <ClientContact appointment={apt} businessName={business?.name} messageTemplate={business?.settings?.client_message_template} />
                             <div className={styles.aptCardMeta}>
                                 {statusBadge(apt.status)}
                                 {apt.team_members?.name && (

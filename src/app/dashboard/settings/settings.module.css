@@ -48,3 +48,96 @@
     font-family: var(--font-display);
     color: var(--pink);
 }
+
+.messageHeader {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.cardTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-1);
+    color: var(--text-primary);
+    font-size: var(--font-size-md);
+    font-weight: 700;
+}
+
+.cardDescription {
+    max-width: 52ch;
+    margin: 0;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+    line-height: 1.5;
+}
+
+.messageTextarea {
+    min-height: 124px;
+    resize: vertical;
+    line-height: 1.55;
+}
+
+.messageMeta {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    color: var(--text-tertiary);
+    font-size: 11px;
+}
+
+.tokenList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: var(--space-2);
+}
+
+.token {
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 1px solid var(--border);
+    border-radius: var(--r-xs);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    font: 700 11px/1 var(--font-body);
+    cursor: pointer;
+}
+
+.token:hover,
+.token:focus-visible {
+    border-color: var(--accent);
+    color: var(--pink-ink);
+    outline: none;
+}
+
+.messagePreview {
+    padding: var(--space-3);
+    border-radius: var(--r-sm);
+    background: #e8f9ef;
+    color: #174c2a;
+}
+
+.messagePreview span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+.messagePreview p {
+    margin: 0;
+    font-size: var(--font-size-sm);
+    line-height: 1.55;
+    white-space: pre-wrap;
+}
+
+@media (max-width: 520px) {
+    .messageHeader { flex-direction: column; }
+}

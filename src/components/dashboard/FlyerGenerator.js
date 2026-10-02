@@ -9,7 +9,7 @@
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { Download, Share2, RefreshCw } from 'lucide-react'
+import { Check, Copy, Download, Share2, RefreshCw } from 'lucide-react'
 import { QRCodeCanvas } from 'qrcode.react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
@@ -67,6 +67,7 @@ export default function FlyerGenerator() {
     const [updatedAt, setUpdatedAt] = useState('')
     const [catalogReloadKey, setCatalogReloadKey] = useState(0)
     const [previewReady, setPreviewReady] = useState(false)
+    const [captionCopied, setCaptionCopied] = useState(false)
 
     const formato = FORMATOS[formatoId]
     const bookingUrl = `${appUrl()}${business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`}`
@@ -195,6 +196,11 @@ export default function FlyerGenerator() {
     const nombreArchivo = () =>
         `turnos-${(business?.slug || 'glowup')}-${fecha}-${formatoId}.png`
 
+    const libres = horarios.filter((h) => h.available).length
+    const caption = horarios.length
+        ? `Hay turnos disponibles en ${business?.name || 'nuestro negocio'} para ${formatDateEs(fecha, { weekday: 'long', day: 'numeric', month: 'long' })}.\n\nHorarios: ${horarios.map(h => h.time.slice(0, 5)).join(', ')}.\n\nReservá acá: ${bookingUrl}`
+        : `Reservá tu turno en ${business?.name || 'nuestro negocio'}: ${bookingUrl}`
+
     const descargar = () => {
         canvasRef.current?.toBlob((blob) => {
             if (!blob) return
@@ -214,7 +220,7 @@ export default function FlyerGenerator() {
             const file = new File([blob], nombreArchivo(), { type: 'image/png' })
             if (navigator.canShare?.({ files: [file] })) {
                 try {
-                    await navigator.share({ files: [file], title: 'Turnos libres' })
+                    await navigator.share({ files: [file], title: 'Turnos libres', text: caption })
                 } catch { /* el usuario canceló */ }
             } else {
                 descargar()
@@ -222,7 +228,15 @@ export default function FlyerGenerator() {
         }, 'image/png')
     }
 
-    const libres = horarios.filter((h) => h.available).length
+    const copiarTexto = async () => {
+        try {
+            await navigator.clipboard.writeText(caption)
+            setCaptionCopied(true)
+            window.setTimeout(() => setCaptionCopied(false), 2000)
+        } catch {
+            setCaptionCopied(false)
+        }
+    }
 
     return (
         <div className={styles.contenedor}>
@@ -278,6 +292,15 @@ export default function FlyerGenerator() {
                         <canvas ref={canvasRef} className={styles.canvas} aria-label="Vista previa del flyer" />
                     </div>
                     <p className={styles.resumen}>Horarios del local para el servicio activo más corto. La disponibilidad se verificó a las {updatedAt || '—'}; actualizá antes de compartir. En historias, agregá el sticker de enlace para que se pueda reservar tocándolo.</p>
+                    <div className={styles.captionBox}>
+                        <div>
+                            <strong>Texto listo para publicar</strong>
+                            <span>Incluye los horarios y el enlace de reserva para quien mira desde el celular.</span>
+                        </div>
+                        <button type="button" className="btn btn-secondary btn-sm" onClick={copiarTexto} disabled={cargando || !libres}>
+                            {captionCopied ? <><Check size={14} /> Copiado</> : <><Copy size={14} /> Copiar texto</>}
+                        </button>
+                    </div>
                     <div className={styles.acciones}>
                         <button type="button" className="btn btn-secondary btn-sm" onClick={cargar} disabled={cargando}><RefreshCw size={15} /> Actualizar horarios</button>
                     </div>

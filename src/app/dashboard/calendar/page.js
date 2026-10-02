@@ -1488,7 +1488,11 @@ export default function CalendarPage() {
                                         <label className="label">Cliente</label>
                                         <input className="input" type="text" value={editingApt.clients?.name || 'Cliente'} disabled />
                                         <div style={{ marginTop: 'var(--space-2)' }}>
-                                            <ClientContact appointment={editingApt} businessName={business?.name} />
+                                            <ClientContact
+                                                appointment={editingApt}
+                                                businessName={business?.name}
+                                                messageTemplate={business?.settings?.client_message_template}
+                                            />
                                         </div>
                                         {editingApt.clients?.notes && (
                                             <p style={{ marginTop: 'var(--space-2)', fontSize: 12, color: 'var(--text-tertiary)' }}>

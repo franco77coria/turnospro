@@ -8,6 +8,16 @@
 
 import { formatDateEs } from './scheduling'
 
+export const CLIENT_MESSAGE_TEMPLATE_MAX_LENGTH = 600
+export const DEFAULT_CLIENT_MESSAGE_TEMPLATE = 'Hola {cliente}! Te escribimos de {negocio}. Tenés turno para {servicio} el {fecha} a las {hora}. ¿Confirmás que venís?'
+export const CLIENT_MESSAGE_TOKENS = [
+    { token: '{cliente}', label: 'Nombre del cliente' },
+    { token: '{negocio}', label: 'Nombre del negocio' },
+    { token: '{servicio}', label: 'Servicio' },
+    { token: '{fecha}', label: 'Fecha' },
+    { token: '{hora}', label: 'Hora' },
+]
+
 /** Primer nombre, para que el saludo no quede acartonado. */
 export function primerNombre(nombreCompleto) {
     if (!nombreCompleto || typeof nombreCompleto !== 'string') return ''
@@ -28,6 +38,27 @@ function fechaLegible(date) {
     } catch {
         return String(date)
     }
+}
+
+/**
+ * Reemplaza únicamente las variables documentadas. Las desconocidas quedan a
+ * la vista para que el dueño pueda detectar el error en la previsualización.
+ */
+export function personalizarMensajeCliente(template, datos = {}) {
+    const values = {
+        cliente: primerNombre(datos.clientName),
+        negocio: datos.businessName || '',
+        servicio: datos.serviceName || 'tu turno',
+        fecha: fechaLegible(datos.date),
+        hora: (datos.time || '').slice(0, 5),
+    }
+
+    return String(template || '')
+        .slice(0, CLIENT_MESSAGE_TEMPLATE_MAX_LENGTH)
+        .replace(/\{(cliente|negocio|servicio|fecha|hora)\}/g, (_, key) => values[key])
+        .replace(/[ \t]+([,.;!?])/g, '$1')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim()
 }
 
 const TIPOS = {
@@ -53,12 +84,15 @@ const TIPOS = {
  * @param {{clientName?:string, businessName?:string, serviceName?:string, date?:string, time?:string}} datos
  * @returns {string}
  */
-export function mensajeParaCliente(tipo, datos = {}) {
+export function mensajeParaCliente(tipo, datos = {}, customTemplate = '') {
     const armar = TIPOS[tipo] || TIPOS.libre
     const d = {
         ...datos,
         serviceName: datos.serviceName || 'tu turno',
         time: (datos.time || '').slice(0, 5),
+    }
+    if (tipo === 'confirmar' && customTemplate?.trim()) {
+        return personalizarMensajeCliente(customTemplate, d)
     }
     // Sin fecha ni hora, un mensaje de turno queda cojo: mejor el saludo simple.
     if (tipo !== 'libre' && (!d.date || !d.time)) return TIPOS.libre(d)
