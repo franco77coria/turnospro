@@ -8,6 +8,7 @@ import { APPOINTMENT_STATUS } from '@/lib/data'
 import { Icons } from '@/components/Icons'
 import Link from 'next/link'
 import NotificationBell from '@/components/NotificationBell'
+import BusinessReadinessChecklist from '@/components/dashboard/BusinessReadinessChecklist'
 
 // ── CLIENT DASHBOARD ──
 function ClientDashboard() {
@@ -382,6 +383,8 @@ function OwnerDashboard() {
           </Link>
         </div>
       </div>
+
+      <BusinessReadinessChecklist business={business} />
 
       {/* KPIS ROW */}
       <div className="dash-kpis">

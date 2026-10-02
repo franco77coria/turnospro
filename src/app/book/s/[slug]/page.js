@@ -19,6 +19,7 @@ import {
     resolveTodayAvailability,
 } from '@/lib/business-profile'
 import { resolveSocialLinks } from '@/lib/socials'
+import { normalizeBookingSource, withBookingSource } from '@/lib/booking-source'
 import styles from './profile.module.css'
 
 // La ficha muestra disponibilidad de hoy, así que no puede quedar muy vieja.
@@ -139,8 +140,9 @@ function formatPrice(value) {
     return `$${Number(value).toLocaleString('es-AR')}`
 }
 
-export default async function BusinessProfilePage({ params }) {
+export default async function BusinessProfilePage({ params, searchParams }) {
     const { slug } = await params
+    const query = await searchParams
     const data = await loadProfile(slug)
 
     if (!data) notFound()
@@ -161,7 +163,8 @@ export default async function BusinessProfilePage({ params }) {
     // <title>, al <h1> y al texto de los botones.
     const name = business.name?.trim() || 'Negocio'
     const typeName = TYPE_NAMES[business.business_type] || 'Servicios'
-    const bookUrl = `/book/${business.id}`
+    const source = normalizeBookingSource(query?.source)
+    const bookUrl = withBookingSource(`/book/${business.id}`, source)
     const grouped = groupByCategory(services)
 
     const shortestService = services.reduce(
@@ -299,7 +302,7 @@ export default async function BusinessProfilePage({ params }) {
                                         <li key={svc.id}>
                                             {/* La fila entera es el link, y lleva el servicio elegido
                                                 al wizard: antes se descartaba y había que elegirlo de nuevo. */}
-                                            <Link href={`${bookUrl}?service=${svc.id}`} className={styles.serviceRow}>
+                                            <Link href={withBookingSource(`/book/${business.id}`, source, { service: svc.id })} className={styles.serviceRow}>
                                                 <span className={styles.serviceInfo}>
                                                     <span className={styles.serviceName}>{svc.name}</span>
                                                     <span className={styles.serviceMeta}>

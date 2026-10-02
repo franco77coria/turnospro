@@ -3,10 +3,11 @@ import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, MapPin, Store, Star, ArrowLeft, Navigation, RefreshCw } from 'lucide-react'
+import { Search, MapPin, Store, Star, ArrowLeft, Navigation, RefreshCw, LocateFixed, Check } from 'lucide-react'
 import { BUSINESS_TEMPLATES } from '@/lib/data'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import { buildMapQuery } from '@/lib/business-profile'
+import { withBookingSource } from '@/lib/booking-source'
 import styles from './explore.module.css'
 
 const CATEGORIES = [
@@ -29,17 +30,23 @@ function ExploreContent() {
     const [loading, setLoading] = useState(true)
     const [loadError, setLoadError] = useState(false)
     const [selectedBusinessId, setSelectedBusinessId] = useState(null)
+    const [location, setLocation] = useState(null)
+    const [locationState, setLocationState] = useState('idle')
     const debounceRef = useRef(null)
     const requestRef = useRef(0)
     const mapRef = useRef(null)
 
-    async function fetchBusinesses(q, type) {
+    async function fetchBusinesses(q, type, currentLocation = location) {
         const requestId = ++requestRef.current
         setLoading(true)
         setLoadError(false)
         const params = new URLSearchParams()
         if (q) params.set('q', q)
         if (type) params.set('type', type)
+        if (currentLocation) {
+            params.set('lat', String(currentLocation.lat))
+            params.set('lng', String(currentLocation.lng))
+        }
 
         try {
             const response = await fetch(`/api/businesses/search?${params.toString()}`)
@@ -118,6 +125,29 @@ function ExploreContent() {
         requestAnimationFrame(() => mapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
     }
 
+    function useMyLocation() {
+        if (!navigator.geolocation) {
+            setLocationState('unsupported')
+            return
+        }
+        setLocationState('loading')
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const next = { lat: position.coords.latitude, lng: position.coords.longitude }
+                setLocation(next)
+                setLocationState('ready')
+                fetchBusinesses(query, typeFilter, next)
+            },
+            () => setLocationState('denied'),
+            { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+        )
+    }
+
+    const profileHref = (biz, source = 'search') => withBookingSource(
+        biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`,
+        source
+    )
+
     return (
         <ConsumerLayout>
             <div className={styles.explorePage}>
@@ -134,8 +164,8 @@ function ExploreContent() {
                         <input
                             className={styles.searchInput}
                             type="text"
-                            placeholder="Buscar por nombre del local"
-                            aria-label="Buscar negocios por nombre"
+                            placeholder="Buscar local o servicio (ej. corte)"
+                            aria-label="Buscar negocios por nombre o servicio"
                             value={query}
                             onChange={e => handleQueryChange(e.target.value)}
                         />
@@ -152,6 +182,19 @@ function ExploreContent() {
                                 </button>
                         ))}
                     </div>
+                    <div className={styles.locationRow}>
+                        <button
+                            type="button"
+                            className={`${styles.locationButton} ${location ? styles.locationActive : ''}`}
+                            onClick={useMyLocation}
+                            disabled={locationState === 'loading'}
+                        >
+                            {location ? <Check size={15} /> : <LocateFixed size={15} />}
+                            {locationState === 'loading' ? 'Buscando ubicación…' : location ? 'Ordenado por distancia' : 'Ordenar por distancia'}
+                        </button>
+                        {locationState === 'denied' && <span>No pudimos acceder a tu ubicación.</span>}
+                        {locationState === 'unsupported' && <span>Tu navegador no permite ubicación.</span>}
+                    </div>
                 </div>
 
                 <div className={styles.results}>
@@ -166,7 +209,7 @@ function ExploreContent() {
                             </div>
                             <h3>No pudimos cargar los locales</h3>
                             <p>Revisá tu conexión y volvé a intentar.</p>
-                            <button type="button" className="btn btn-secondary" onClick={() => fetchBusinesses(query, typeFilter)}>
+                            <button type="button" className="btn btn-secondary" onClick={() => fetchBusinesses(query, typeFilter, location)}>
                                 <RefreshCw size={15} /> Reintentar
                             </button>
                         </div>
@@ -188,11 +231,17 @@ function ExploreContent() {
                                     <div className={styles.mapHeader}>
                                         <div>
                                             <h3 id="explore-map-title">Ubicación de {selectedBusiness.name}</h3>
-                                            <p>{selectedBusiness.address || 'Ubicación cargada por el negocio'}</p>
+                                            <p>
+                                                {selectedBusiness.address || 'Ubicación cargada por el negocio'}
+                                                {selectedBusiness.distance_km != null && ` · ${selectedBusiness.distance_km.toFixed(1)} km`}
+                                            </p>
                                         </div>
-                                        <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={styles.directionsLink}>
-                                            <Navigation size={15} /> Cómo llegar
-                                        </a>
+                                        <div className={styles.mapActions}>
+                                            <Link href={profileHref(selectedBusiness, 'map')} className={styles.mapBookLink}>Reservar acá</Link>
+                                            <a href={directionsUrl} target="_blank" rel="noopener noreferrer" className={styles.directionsLink}>
+                                                <Navigation size={15} /> Cómo llegar
+                                            </a>
+                                        </div>
                                     </div>
                                     {mapBusinesses.length > 1 && (
                                         <div className={styles.mapPicker} aria-label="Elegir un local para mostrar en el mapa">
@@ -224,7 +273,7 @@ function ExploreContent() {
                             <div className={styles.resultsGrid}>
                                 {businesses.map(biz => (
                                     <article key={biz.id} className={styles.bizCard}>
-                                        <Link href={biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`} className={styles.bizMainLink}>
+                                        <Link href={profileHref(biz)} className={styles.bizMainLink}>
                                             <div className={styles.bizCardImage}>
                                             {/* Con foto, el nombre va debajo. Sin foto, el nombre ES
                                                 la portada y no se repite abajo. */}
@@ -264,10 +313,16 @@ function ExploreContent() {
                                                 {BUSINESS_TEMPLATES[biz.business_type]?.name || biz.business_type}
                                                 {biz.services_count > 0 && ` · ${biz.services_count} servicio${biz.services_count !== 1 ? 's' : ''}`}
                                             </div>
+                                            {biz.matching_services?.length > 0 && (
+                                                <div className={styles.serviceMatches}>
+                                                    {biz.matching_services.map(service => <span key={service}>{service}</span>)}
+                                                </div>
+                                            )}
                                             {biz.address && (
                                                 <div className={styles.bizAddress}>
                                                     <MapPin size={13} />
                                                     {biz.address}
+                                                    {biz.distance_km != null && <strong>{biz.distance_km.toFixed(1)} km</strong>}
                                                 </div>
                                             )}
                                             {biz.price_from != null && (
@@ -278,7 +333,7 @@ function ExploreContent() {
                                             </div>
                                         </Link>
                                         <div className={styles.bizActions}>
-                                            <Link href={biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`} className={styles.bookLink}>
+                                            <Link href={profileHref(biz)} className={styles.bookLink}>
                                                 Ver horarios
                                             </Link>
                                             {(biz.address || (biz.latitude != null && biz.longitude != null)) && (

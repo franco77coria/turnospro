@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/context/AuthContext'
 import { validateInternationalPhone } from '@/lib/phone-validation'
 import { loadBusinessServices } from '@/lib/services'
+import { normalizeBookingSource } from '@/lib/booking-source'
 import {
     DEFAULT_DURATION,
     formatDateLocal,
@@ -16,9 +17,11 @@ import {
 
 export function useBookingFlow() {
     const { id } = useParams()
+    const searchParams = useSearchParams()
     // La ficha manda ?service={id}: sin esto el usuario ya había elegido y el
     // wizard le pedía elegir de nuevo, justo en el momento de mayor intención.
-    const preselectedServiceId = useSearchParams().get('service')
+    const preselectedServiceId = searchParams.get('service')
+    const bookingSource = normalizeBookingSource(searchParams.get('source'))
     const { user, loading: authLoading } = useAuth()
     const [business, setBusiness] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -371,6 +374,7 @@ export function useBookingFlow() {
                     notes: form.note?.trim() || null,
                     send_emails: true,
                     coupon_id: appliedCoupon?.id || null,
+                    booking_source: bookingSource,
                 }),
             })
 

@@ -109,6 +109,43 @@
     display: none;
 }
 
+.locationRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    min-height: 36px;
+}
+
+.locationRow > span {
+    color: var(--ink-soft);
+    font-size: 11px;
+}
+
+.locationButton {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 36px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-full);
+    background: var(--surface);
+    color: var(--ink);
+    font: 700 12px/1 var(--font-body);
+    cursor: pointer;
+}
+
+.locationButton:hover,
+.locationButton:focus-visible,
+.locationActive {
+    border-color: var(--pink);
+    color: var(--pink-deep);
+    outline: none;
+}
+
+.locationButton:disabled { cursor: wait; opacity: .65; }
+
 .categoryPill {
     display: flex;
     align-items: center;
@@ -191,6 +228,7 @@
 }
 
 .directionsLink,
+.mapBookLink,
 .bookLink,
 .mapButton {
     display: inline-flex;
@@ -202,6 +240,27 @@
     font: 700 12px/1 var(--font-body);
     text-decoration: none;
     cursor: pointer;
+}
+
+.mapActions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.mapBookLink {
+    padding: 0 13px;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    background: var(--surface);
+}
+
+.mapBookLink:hover,
+.mapBookLink:focus-visible {
+    border-color: var(--pink);
+    color: var(--pink-deep);
+    outline: none;
 }
 
 .directionsLink {
@@ -478,6 +537,21 @@
     font-weight: 500;
 }
 
+.serviceMatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.serviceMatches span {
+    padding: 4px 8px;
+    border-radius: var(--r-full);
+    background: var(--pink-tint);
+    color: var(--pink-deep);
+    font-size: 11px;
+    font-weight: 700;
+}
+
 .bizAddress {
     display: flex;
     align-items: center;
@@ -487,6 +561,13 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.bizAddress strong {
+    margin-left: auto;
+    color: var(--ink);
+    font-size: 11px;
+    flex-shrink: 0;
 }
 
 /* Loading & Empty State */
@@ -582,6 +663,7 @@
     }
 
     .mapHeader { flex-direction: column; }
-    .directionsLink { width: 100%; }
+    .mapActions { width: 100%; }
+    .directionsLink, .mapBookLink { flex: 1; }
     .mapFrame { height: 260px; }
 }
