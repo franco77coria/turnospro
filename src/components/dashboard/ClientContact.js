@@ -7,13 +7,13 @@ import { formatPhoneDisplay } from '@/lib/phone-validation'
 import styles from './ClientContact.module.css'
 
 /** Contacto manual del negocio: abre WhatsApp o el cliente de correo, sin enviar en silencio. */
-export default function ClientContact({ appointment, businessName, compact = false }) {
+export default function ClientContact({ appointment, businessName, messageTemplate = '', compact = false }) {
     const client = appointment?.clients || {}
     const data = {
         clientName: client.name, businessName,
         serviceName: appointment?.service_name, date: appointment?.date, time: appointment?.time,
     }
-    const message = mensajeParaCliente('confirmar', data)
+    const message = mensajeParaCliente('confirmar', data, messageTemplate)
     const whatsapp = buildWhatsAppLink(client.phone, message)
     const mailto = client.email && `mailto:${encodeURIComponent(client.email)}?subject=${encodeURIComponent(`Tu turno en ${businessName || 'GLOWUP'}`)}&body=${encodeURIComponent(message)}`
     if (!whatsapp && !mailto && compact) return null

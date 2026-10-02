@@ -24,7 +24,7 @@ export async function GET(request) {
             .from('businesses')
             // cover_image_url faltaba: la tarjeta lo consultaba y nunca llegaba,
             // así que un negocio con portada cargada igual mostraba el degradado.
-            .select('id, name, business_type, address, slug, settings, cover_image_url, avg_rating, total_reviews, plan_status, plan_expires_at')
+            .select('id, name, business_type, address, latitude, longitude, slug, settings, cover_image_url, avg_rating, total_reviews, plan_status, plan_expires_at')
             .not('slug', 'is', null)
             .limit(limit)
 
@@ -69,6 +69,8 @@ export async function GET(request) {
             name: (biz.name || '').trim(),
             business_type: biz.business_type,
             address: biz.address || '',
+            latitude: biz.latitude == null ? null : Number(biz.latitude),
+            longitude: biz.longitude == null ? null : Number(biz.longitude),
             slug: biz.slug,
             cover_image_url: biz.cover_image_url || null,
             services_count: countByBusiness.get(biz.id) || 0,

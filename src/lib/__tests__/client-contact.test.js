@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mensajeParaCliente, primerNombre, TIPOS_DE_MENSAJE } from '../client-contact'
+import { mensajeParaCliente, personalizarMensajeCliente, primerNombre, TIPOS_DE_MENSAJE } from '../client-contact'
 import { buildWhatsAppLink } from '../business-profile'
 
 const turno = {
@@ -66,6 +66,19 @@ describe('mensajeParaCliente', () => {
     it('sin nombre de cliente saluda igual, sin dejar el hueco', () => {
         const m = mensajeParaCliente('confirmar', { ...turno, clientName: null })
         expect(m.startsWith('Hola!')).toBe(true)
+    })
+
+    it('usa la plantilla personalizada para confirmar un turno', () => {
+        const m = mensajeParaCliente(
+            'confirmar',
+            turno,
+            'Hola {cliente}, soy de {negocio}. Te espero para {servicio} el {fecha} a las {hora}.',
+        )
+        expect(m).toBe('Hola Ana, soy de Barone Barber. Te espero para Corte y barba el jueves, 15 de octubre a las 14:30.')
+    })
+
+    it('conserva variables desconocidas para que el error sea visible', () => {
+        expect(personalizarMensajeCliente('Hola {nombre}', turno)).toBe('Hola {nombre}')
     })
 })
 

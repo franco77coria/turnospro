@@ -95,6 +95,34 @@
     flex-wrap: wrap;
 }
 
+.captionBox {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-sm);
+    background: var(--bg-secondary);
+}
+
+.captionBox div {
+    display: grid;
+    gap: 3px;
+}
+
+.captionBox strong {
+    color: var(--text-primary);
+    font-size: var(--font-size-sm);
+}
+
+.captionBox span {
+    max-width: 56ch;
+    color: var(--text-tertiary);
+    font-size: var(--font-size-xs);
+    line-height: 1.45;
+}
+
 .aviso {
     display: flex;
     flex-direction: column;
@@ -115,5 +143,10 @@
 
     .acciones > * {
         flex: 1;
+    }
+
+    .captionBox {
+        align-items: stretch;
+        flex-direction: column;
     }
 }
