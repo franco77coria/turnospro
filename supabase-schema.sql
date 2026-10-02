@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   status TEXT DEFAULT 'pending',
   notes TEXT,
   price NUMERIC,
+  booking_source TEXT NOT NULL DEFAULT 'direct' CHECK (booking_source IN ('direct', 'search', 'map', 'flyer')),
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 

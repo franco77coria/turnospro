@@ -5,7 +5,8 @@ import { formatDateLocal } from '@/lib/scheduling'
 import { useState, useEffect, useCallback } from 'react'
 import PermissionGate from '@/components/PermissionGate'
 import { PERMISSIONS } from '@/lib/data'
-import { TrendingUp, Users, CalendarDays, AlertTriangle, DollarSign } from 'lucide-react'
+import { TrendingUp, CalendarDays, AlertTriangle, DollarSign } from 'lucide-react'
+import { BOOKING_SOURCES, BOOKING_SOURCE_LABELS } from '@/lib/booking-source'
 
 export default function AnalyticsPage() {
     return (
@@ -43,12 +44,24 @@ function AnalyticsContent() {
         const endStr = formatDateLocal(now)
 
         // Fetch appointments
-        const { data: appointments } = await supabase
+        let appointmentsResult = await supabase
             .from('appointments')
-            .select('status, service_name, date, team_member_id, price')
+            .select('status, service_name, date, team_member_id, price, booking_source')
             .eq('business_id', businessId)
             .gte('date', startStr)
             .lte('date', endStr)
+
+        // Despliegue tolerante: si la UI llega antes que la migración, el resto
+        // de Estadísticas sigue funcionando y las reservas previas quedan como directas.
+        if (appointmentsResult.error?.code === '42703' || appointmentsResult.error?.code === 'PGRST204') {
+            appointmentsResult = await supabase
+                .from('appointments')
+                .select('status, service_name, date, team_member_id, price')
+                .eq('business_id', businessId)
+                .gte('date', startStr)
+                .lte('date', endStr)
+        }
+        const appointments = appointmentsResult.data
 
         // Fetch transactions (extend to 6 months for monthly chart)
         const sixMonthsAgo = new Date()
@@ -78,6 +91,11 @@ function AnalyticsContent() {
         const occupancyRate = totalApts > 0 ? Math.round((completed / totalApts) * 100) : 0
         const noShowRate = totalApts > 0 ? Math.round((noShow / totalApts) * 100) : 0
         const cancelRate = totalApts > 0 ? Math.round((cancelled / totalApts) * 100) : 0
+        const sourceBreakdown = BOOKING_SOURCES.map(source => ({
+            source,
+            label: BOOKING_SOURCE_LABELS[source],
+            count: apts.filter(appointment => (appointment.booking_source || 'direct') === source).length,
+        }))
 
         // Revenue
         const totalIncome = txns.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0)
@@ -161,6 +179,7 @@ function AnalyticsContent() {
             totalIncome, totalExpenses,
             topServices, proStats, revenueByDay,
             topServicesByRevenue, busiestDay, monthlyRevenue,
+            sourceBreakdown,
         })
         setLoading(false)
     }, [businessId, period])
@@ -204,6 +223,31 @@ function AnalyticsContent() {
                         <StatCard icon={TrendingUp} label="Tasa completados" value={`${stats.occupancyRate}%`} color="var(--success)" />
                         <StatCard icon={AlertTriangle} label="No asistieron" value={`${stats.noShowRate}%`} color="var(--warning)" subtitle={`${stats.noShow} turnos`} />
                         <StatCard icon={DollarSign} label="Ingresos" value={`$${stats.totalIncome.toLocaleString()}`} color="var(--success)" />
+                    </div>
+
+                    <div className="card" style={{ marginBottom: 'var(--space-5)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 'var(--space-3)', marginBottom: 'var(--space-4)', flexWrap: 'wrap' }}>
+                            <div>
+                                <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, margin: 0 }}>Reservas por origen</h3>
+                                <p style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)', margin: '4px 0 0' }}>Mide turnos creados, no solo clics en los enlaces.</p>
+                            </div>
+                            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>{stats.totalApts} en el período</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 'var(--space-3)' }}>
+                            {stats.sourceBreakdown.map(item => {
+                                const share = stats.totalApts > 0 ? Math.round((item.count / stats.totalApts) * 100) : 0
+                                return (
+                                    <div key={item.source} style={{ padding: 'var(--space-3)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-md)', background: 'var(--bg-secondary)' }}>
+                                        <span style={{ display: 'block', color: 'var(--text-tertiary)', fontSize: 'var(--font-size-xs)' }}>{item.label}</span>
+                                        <strong style={{ display: 'block', marginTop: 4, fontSize: 'var(--font-size-xl)', color: 'var(--text-primary)' }}>{item.count}</strong>
+                                        <div style={{ height: 5, marginTop: 8, borderRadius: 3, background: 'var(--bg-tertiary)', overflow: 'hidden' }}>
+                                            <div style={{ width: `${share}%`, height: '100%', background: item.source === 'flyer' ? 'var(--accent)' : item.source === 'map' ? 'var(--success)' : 'var(--text-tertiary)' }} />
+                                        </div>
+                                        <span style={{ display: 'block', marginTop: 5, color: 'var(--text-tertiary)', fontSize: 10 }}>{share}% del total</span>
+                                    </div>
+                                )
+                            })}
+                        </div>
                     </div>
 
                     {/* Revenue Chart (CSS bar chart) */}

@@ -316,7 +316,7 @@ function SettingsContent() {
                     {/* COLUMNA IZQUIERDA: Información del Negocio y Horarios */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                         {/* Business Info */}
-                        <div className="card">
+                        <div className="card" id="business-profile">
                             <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, marginBottom: 'var(--space-4)', color: 'var(--text-primary)' }}>Datos del negocio</h3>
                             <div className="form-group">
                                 <label className="label">Nombre del negocio</label>
@@ -370,7 +370,7 @@ function SettingsContent() {
                         </div>
 
                         {/* Work Schedule */}
-                        <div className="card">
+                        <div className="card" id="business-hours">
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)', flexWrap: 'wrap', gap: 'var(--space-2)' }}>
                                 <h3 style={{ fontSize: 'var(--font-size-md)', fontWeight: 600, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--text-primary)' }}>
                                     <Clock size={18} /> Horario de atención
@@ -478,7 +478,9 @@ function SettingsContent() {
                         </div>
 
                         {/* Fotos de la ficha pública */}
-                        <BusinessPhotosCard business={business} />
+                        <div id="business-photos">
+                            <BusinessPhotosCard business={business} />
+                        </div>
 
                         {/* Feedback del dueño */}
                         <div className="card">

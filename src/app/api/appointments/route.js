@@ -127,7 +127,7 @@ export async function POST(request) {
         if (!parsed.ok) {
             return NextResponse.json({ error: parsed.error, issues: parsed.issues }, { status: 400 })
         }
-        let { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id, guest_name, guest_email, guest_phone } = parsed.data
+        let { business_id, client_id, team_member_id, service_name, date, time, duration, price, notes, send_emails, coupon_id, guest_name, guest_email, guest_phone, booking_source } = parsed.data
 
         // An anonymous caller must never attach a booking to a client record
         // merely by knowing its UUID. Guest contact resolution happens below.
@@ -282,6 +282,12 @@ export async function POST(request) {
             }
             throw rpcError
         }
+
+        const { error: sourceError } = await supabase
+            .from('appointments')
+            .update({ booking_source })
+            .eq('id', appointmentId)
+        if (sourceError) console.error('[Booking] No se pudo guardar el origen:', sourceError.message)
 
         notifyPush(supabase, business_id, client_id, service_name, date, time)
         notifyBusinessPush(supabase, business_id, team_member_id, service_name, date, time, client_id)

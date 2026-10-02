@@ -8,6 +8,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ConsumerLayout from '@/components/layout/ConsumerLayout'
 import styles from './book.module.css'
+import { withBookingSource } from '@/lib/booking-source'
 
 const RUBRO_LABELS = {
     barberia: 'Barbería', peluqueria: 'Peluquería', unas: 'Uñas',
@@ -30,7 +31,7 @@ function formatPrice(value) {
 }
 
 function BizCard({ biz }) {
-    const href = biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`
+    const href = withBookingSource(biz.slug ? `/book/s/${biz.slug}` : `/book/${biz.id}`, 'search')
     const image = biz.cover_image_url || biz.logo_url
     return (
         <Link href={href} className={styles.bizCard}>

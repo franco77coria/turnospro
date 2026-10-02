@@ -28,6 +28,7 @@ export const BookingSchema = z.object({
     guest_name: optionalShortText(200),
     guest_email: emailStr.nullish(),
     guest_phone: z.string().max(30).nullish(),
+    booking_source: z.enum(['direct', 'search', 'map', 'flyer']).optional().default('direct'),
 })
 
 export const CancelTokenSchema = z.object({

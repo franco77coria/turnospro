@@ -22,6 +22,7 @@ import { loadBusinessServices } from '@/lib/services'
 import { nowInTimezone } from '@/lib/timezone'
 import { resolverTema, derivarPaleta } from '@/lib/theme'
 import { appUrl } from '@/lib/app-url'
+import { withBookingSource } from '@/lib/booking-source'
 import styles from './FlyerGenerator.module.css'
 
 /** Familias reales de las fuentes del sistema de diseño, para el canvas. */
@@ -70,7 +71,8 @@ export default function FlyerGenerator() {
     const [captionCopied, setCaptionCopied] = useState(false)
 
     const formato = FORMATOS[formatoId]
-    const bookingUrl = `${appUrl()}${business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`}`
+    const bookingPath = business?.slug ? `/book/s/${business.slug}` : `/book/${business?.id || ''}`
+    const bookingUrl = `${appUrl()}${withBookingSource(bookingPath, 'flyer')}`
 
     useEffect(() => {
         if (!business?.id || dateInitialized.current === business.id) return
